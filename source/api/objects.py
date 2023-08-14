@@ -1,10 +1,12 @@
 from typing import TypedDict
 
+
 class Player(TypedDict):
     name: str
     country: str
     clan_id: int
     id: int
+
 
 class Score(TypedDict):
     id: int
@@ -19,6 +21,7 @@ class Score(TypedDict):
     accuracy: float
     mods: int
     mode: int
+
 
 class Beatmap(TypedDict):
     beatmap_id: int
@@ -35,10 +38,12 @@ class Beatmap(TypedDict):
     max_combo: int
     mode: int
 
+
 class Clan(TypedDict):
     clan_id: int
     clan_name: str
     clan_tag: str
+
 
 class GamemodeStatistics(TypedDict):
     total_pp: float
@@ -51,7 +56,24 @@ class GamemodeStatistics(TypedDict):
     ranked_score: int
     total_hits: int
 
+
 class Ranking(TypedDict):
     global_ranking: int
     country_ranking: int
-    
+
+
+class Gamemode(TypedDict):
+    mode: int
+    relax: int
+
+
+gamemodes = {
+    "std": Gamemode(mode=0, relax=0),
+    "std_rx": Gamemode(mode=0, relax=1),
+    "std_ap": Gamemode(mode=0, relax=2),
+    "taiko": Gamemode(mode=1, relax=0),
+    "taiko_rx": Gamemode(mode=1, relax=1),
+    "ctb": Gamemode(mode=2, relax=0),
+    "ctb_rx": Gamemode(mode=2, relax=1),
+    "mania": Gamemode(mode=3, relax=0),
+}
