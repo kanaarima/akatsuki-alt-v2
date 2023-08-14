@@ -21,6 +21,7 @@ class Score(TypedDict):
     accuracy: float
     mods: int
     mode: int
+    rank: str
 
 
 class Beatmap(TypedDict):
