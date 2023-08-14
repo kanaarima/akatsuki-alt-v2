@@ -2,20 +2,23 @@ from typing import TypedDict
 
 class Player(TypedDict):
     name: str
+    country: str
     clan_id: int
     id: int
 
 class Score(TypedDict):
+    id: int
     beatmap_id: int
-    mods: int
-    pp: float
+    score: int
     combo: int
+    pp: float
     count_300: int
     count_100: int
     count_50: int
     count_miss: int
     accuracy: float
-    score: int
+    mods: int
+    mode: int
 
 class Beatmap(TypedDict):
     beatmap_id: int
@@ -37,8 +40,18 @@ class Clan(TypedDict):
     clan_name: str
     clan_tag: str
 
-class GamemodeStatistics:
+class GamemodeStatistics(TypedDict):
     total_pp: float
+    total_1s: int
     profile_accuracy: float
+    max_combo: int
+    play_count: int
+    play_time: int
+    total_score: int
+    ranked_score: int
+    total_hits: int
+
+class Ranking(TypedDict):
+    global_ranking: int
+    country_ranking: int
     
-    count_1s: int
