@@ -1,0 +1,8 @@
+{
+    "common": {
+        "data_directory": "../data/"
+    },
+    "backend": {
+        "tasks": {}
+    }
+}
