@@ -27,6 +27,24 @@ def _stats_from_chosen_mode(chosen_mode) -> GamemodeStatistics:
     return stats
 
 
+def _score_from_apiscore(apiscore, gamemode: Gamemode) -> Score:
+    return Score(
+        id=int(apiscore["id"]),
+        beatmap_id=apiscore["beatmap"]["beatmap_id"],
+        mode=gamemode["mode"],
+        mods=apiscore["mods"],
+        accuracy=apiscore["accuracy"],
+        count_300=apiscore["count_300"],
+        count_100=apiscore["count_100"],
+        count_50=apiscore["count_50"],
+        count_miss=apiscore["count_miss"],
+        pp=apiscore["pp"],
+        combo=apiscore["max_combo"],
+        score=apiscore["score"],
+        rank=apiscore["rank"],
+    )
+
+
 def get_user_leaderboard(
     gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
 ) -> List[Tuple[Player, GamemodeStatistics, Ranking]]:
@@ -69,24 +87,24 @@ def get_user_1s(
         if not apiscores:
             return total, res
         for apiscore in apiscores:
-            res.append(
-                Score(
-                    id=int(apiscore["id"]),
-                    beatmap_id=apiscore["beatmap"]["beatmap_id"],
-                    mode=gamemode["mode"],
-                    mods=apiscore["mods"],
-                    accuracy=apiscore["accuracy"],
-                    count_300=apiscore["count_300"],
-                    count_100=apiscore["count_100"],
-                    count_50=apiscore["count_50"],
-                    count_miss=apiscore["count_miss"],
-                    pp=apiscore["pp"],
-                    combo=apiscore["max_combo"],
-                    score=apiscore["score"],
-                    rank=apiscore["rank"],
-                )
-            )
+            res.append(_score_from_apiscore(apiscore))
     return total, res
+
+
+def get_user_best(userid: int, gamemode: Gamemode, pages=1, length=100) -> List[Score]:
+    res = list()
+    for page in range(pages):
+        req = requests.get_request(
+            f"users/scores/best?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
+        )
+        if req.status_code != 200:
+            return res
+        apiscores = req.json()["scores"]
+        if not apiscores:
+            return res
+        for apiscore in apiscores:
+            res.append(_score_from_apiscore(apiscore, gamemode))
+    return res
 
 
 def get_user_stats(
