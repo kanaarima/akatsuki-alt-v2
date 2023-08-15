@@ -1,5 +1,6 @@
 from enum import Enum
-from api.objects import Gamemode, Player, GamemodeStatistics, Score
+from api.objects import Gamemode, Player, GamemodeStatistics, Score, Clan, Ranking
+import api.objects as objects
 import utils.api
 
 requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/")
@@ -9,6 +10,20 @@ class Sort_Method(Enum):
     PP = "pp"
     SCORE = "score"
     PP_ALL = "magic"
+    COUNT_1S = "1s"
+
+
+def _stats_from_chosen_mode(chosen_mode):
+    stats = GamemodeStatistics(
+        ranked_score=chosen_mode["ranked_score"],
+        total_score=chosen_mode["total_score"],
+        play_count=chosen_mode["playcount"],
+        play_time=chosen_mode["playtime"],
+        accuracy=chosen_mode["accuracy"],
+        total_hits=chosen_mode["total_hits"],
+        total_pp=chosen_mode["pp"],
+    )
+    return stats
 
 
 def get_user_leaderboard(gamemode: Gamemode, sort: Sort_Method, pages=1, length=100):
@@ -26,30 +41,24 @@ def get_user_leaderboard(gamemode: Gamemode, sort: Sort_Method, pages=1, length=
             user = Player(
                 id=apiuser["id"], name=apiuser["username"], country=apiuser["country"]
             )
-            stats = GamemodeStatistics(
-                ranked_score=apiuser["chosen_mode"]["ranked_score"],
-                total_score=apiuser["chosen_mode"]["total_score"],
-                play_count=apiuser["chosen_mode"]["playcount"],
-                play_time=apiuser["chosen_mode"]["playtime"],
-                accuracy=apiuser["chosen_mode"]["accuracy"],
-                total_hits=apiuser["chosen_mode"]["total_hits"],
-                total_pp=apiuser["chosen_mode"]["pp"],
-            )
+            stats = _stats_from_chosen_mode(apiuser["chosen_mode"])
             res.append((user, stats))
     return res
 
 
 def get_user_1s(userid: int, gamemode: Gamemode, pages=1, length=100):
     res = list()
+    total = 0
     for page in range(pages):
         req = requests.get_request(
             f"users/scores/first?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
         if req.status_code != 200:  # TODO:
-            return res
+            return total, res
         apiscores = req.json()["scores"]
+        total = apiscores["total"]
         if not apiscores:
-            return res
+            return total, res
         for apiscore in apiscores:
             res.append(
                 Score(
@@ -68,4 +77,76 @@ def get_user_1s(userid: int, gamemode: Gamemode, pages=1, length=100):
                     rank=apiscore["rank"],
                 )
             )
+    return total, res
+
+
+def get_user_stats(userid: int):
+    req = requests.get_request(f"users/full?id={userid}&relax=-1")
+    if req.status_code != 200:
+        return
+    data = req.json()
+    user = Player(id=data["id"], name=data["username"], country=data["country"])
+    user_stats = dict()
+    for name, gamemode in objects.gamemodes.items():
+        apistats = data["stats"][gamemode["relax"]][name.split("_")[0]]
+        stats = _stats_from_chosen_mode(apistats)
+        ranking = Ranking(
+            global_ranking=apistats["global_leaderboard_rank"],
+            country_ranking=apistats["country_leaderboard_rank"],
+        )
+        user_stats[name] = (stats, ranking)
+    return (user, user_stats)
+
+
+def get_clan_leaderboard(gamemode: Gamemode, sort: Sort_Method, pages=1, length=50):
+    res = list()
+    for page in range(pages):
+        if sort == Sort_Method.COUNT_1S:
+            req = requests.get_request(
+                f"clans/stats/first?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
+            )
+            if req.status_code != 200:  # TODO:
+                return res
+            apiclans = req.json()["clans"]
+            for apiclan in apiclans:
+                clan = Clan(
+                    clan_id=apiclan["clan"],
+                    clan_name=apiclan["name"],
+                    clan_tag=apiclan["tag"],
+                )
+                stats = GamemodeStatistics(total_1s=apiclan["count"])
+                res.append((clan, stats))
+        else:
+            req = requests.get_request(
+                f"clans/stats/all?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
+            )
+            if req.status_code != 200:  # TODO:
+                return res
+            apiclans = req.json()["clans"]
+            for apiclan in apiclans:
+                clan = Clan(
+                    clan_id=apiclan["id"],
+                    clan_name=apiclan["name"],
+                )
+                stats = _stats_from_chosen_mode(apiclan["chosen_mode"])
+                res.append((clan, stats))
     return res
+
+
+def get_clan_stats(clan_id, gamemode: Gamemode):
+    req = requests.get_request(
+        f"clans/stats?id={clan_id}&m={gamemode['mode']}&rx={gamemode['relax']}"
+    )
+    if req.status_code != 200:
+        return
+    data = req.json()
+    clan = Clan(
+        clan_id=data["clan"]["id"],
+        clan_name=data["clan"]["name"],
+        clan_tag=data["clan"]["tag"],
+    )
+    stats = _stats_from_chosen_mode(data["clan"]["chosen_mode"])
+    ranking = Ranking(
+        global_ranking=data["clan"]["chosen_mode"]["global_leaderboard_rank"]
+    )
+    return (clan, stats, ranking)
