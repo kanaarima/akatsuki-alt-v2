@@ -29,7 +29,7 @@ def _stats_from_chosen_mode(chosen_mode) -> GamemodeStatistics:
 
 def get_user_leaderboard(
     gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
-) -> List[Tuple[Player, GamemodeStatistics]]:
+) -> List[Tuple[Player, GamemodeStatistics, Ranking]]:
     res = list()
     for page in range(pages):
         req = requests.get_request(
@@ -45,7 +45,11 @@ def get_user_leaderboard(
                 id=apiuser["id"], name=apiuser["username"], country=apiuser["country"]
             )
             stats = _stats_from_chosen_mode(apiuser["chosen_mode"])
-            res.append((user, stats))
+            ranking = Ranking(
+                global_ranking=apiuser["chosen_mode"]["global_leaderboard_rank"],
+                country_ranking=apiuser["chosen_mode"]["country_leaderboard_rank"],
+            )
+            res.append((user, stats, ranking))
     return res
 
 
@@ -107,8 +111,9 @@ def get_user_stats(
 
 def get_clan_leaderboard(
     gamemode: Gamemode, sort: Sort_Method, pages=1, length=50
-) -> List[Tuple[Clan, GamemodeStatistics]]:
+) -> List[Tuple[Clan, GamemodeStatistics, Ranking]]:
     res = list()
+    rank = 1
     for page in range(pages):
         if sort == Sort_Method.COUNT_1S:
             req = requests.get_request(
@@ -124,7 +129,11 @@ def get_clan_leaderboard(
                     clan_tag=apiclan["tag"],
                 )
                 stats = GamemodeStatistics(total_1s=apiclan["count"])
-                res.append((clan, stats))
+                ranking = Ranking(
+                    global_ranking=rank,
+                )
+                res.append((clan, stats, ranking))
+                rank += 1
         else:
             req = requests.get_request(
                 f"clans/stats/all?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
@@ -138,7 +147,11 @@ def get_clan_leaderboard(
                     clan_name=apiclan["name"],
                 )
                 stats = _stats_from_chosen_mode(apiclan["chosen_mode"])
-                res.append((clan, stats))
+                ranking = Ranking(
+                    global_ranking=rank,
+                )
+                res.append((clan, stats, ranking))
+                rank += 1
     return res
 
 
