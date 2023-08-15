@@ -140,6 +140,8 @@ def get_clan_leaderboard(
             if req.status_code != 200:  # TODO:
                 return res
             apiclans = req.json()["clans"]
+            if not apiclans:
+                return res
             for apiclan in apiclans:
                 clan = Clan(
                     clan_id=apiclan["clan"],
@@ -159,6 +161,8 @@ def get_clan_leaderboard(
             if req.status_code != 200:  # TODO:
                 return res
             apiclans = req.json()["clans"]
+            if not apiclans:
+                return res
             for apiclan in apiclans:
                 clan = Clan(
                     clan_id=apiclan["id"],
