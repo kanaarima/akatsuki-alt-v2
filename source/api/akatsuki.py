@@ -1,5 +1,6 @@
-from enum import Enum
 from api.objects import Gamemode, Player, GamemodeStatistics, Score, Clan, Ranking
+from typing import List, Tuple, Dict
+from enum import Enum
 import api.objects as objects
 import utils.api
 
@@ -13,7 +14,7 @@ class Sort_Method(Enum):
     COUNT_1S = "1s"
 
 
-def _stats_from_chosen_mode(chosen_mode):
+def _stats_from_chosen_mode(chosen_mode) -> GamemodeStatistics:
     stats = GamemodeStatistics(
         ranked_score=chosen_mode["ranked_score"],
         total_score=chosen_mode["total_score"],
@@ -26,7 +27,9 @@ def _stats_from_chosen_mode(chosen_mode):
     return stats
 
 
-def get_user_leaderboard(gamemode: Gamemode, sort: Sort_Method, pages=1, length=100):
+def get_user_leaderboard(
+    gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
+) -> List[Tuple[Player, GamemodeStatistics]]:
     res = list()
     for page in range(pages):
         req = requests.get_request(
@@ -46,7 +49,9 @@ def get_user_leaderboard(gamemode: Gamemode, sort: Sort_Method, pages=1, length=
     return res
 
 
-def get_user_1s(userid: int, gamemode: Gamemode, pages=1, length=100):
+def get_user_1s(
+    userid: int, gamemode: Gamemode, pages=1, length=100
+) -> Tuple[int, List[Score]]:
     res = list()
     total = 0
     for page in range(pages):
@@ -80,7 +85,9 @@ def get_user_1s(userid: int, gamemode: Gamemode, pages=1, length=100):
     return total, res
 
 
-def get_user_stats(userid: int):
+def get_user_stats(
+    userid: int,
+) -> Tuple[Player, Dict[str, Tuple[GamemodeStatistics, Ranking]]]:
     req = requests.get_request(f"users/full?id={userid}&relax=-1")
     if req.status_code != 200:
         return
@@ -98,7 +105,9 @@ def get_user_stats(userid: int):
     return (user, user_stats)
 
 
-def get_clan_leaderboard(gamemode: Gamemode, sort: Sort_Method, pages=1, length=50):
+def get_clan_leaderboard(
+    gamemode: Gamemode, sort: Sort_Method, pages=1, length=50
+) -> List[Tuple[Clan, GamemodeStatistics]]:
     res = list()
     for page in range(pages):
         if sort == Sort_Method.COUNT_1S:
@@ -133,7 +142,9 @@ def get_clan_leaderboard(gamemode: Gamemode, sort: Sort_Method, pages=1, length=
     return res
 
 
-def get_clan_stats(clan_id, gamemode: Gamemode):
+def get_clan_stats(
+    clan_id, gamemode: Gamemode
+) -> Tuple[Clan, GamemodeStatistics, Ranking]:
     req = requests.get_request(
         f"clans/stats?id={clan_id}&m={gamemode['mode']}&rx={gamemode['relax']}"
     )
