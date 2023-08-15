@@ -1,5 +1,6 @@
 from api.files import DataFile
 from enum import Enum
+import config
 
 
 class TaskStatus(Enum):
@@ -9,9 +10,12 @@ class TaskStatus(Enum):
 
 
 class Task:
-    def __init__(self) -> None:
+    def __init__(self, asynchronous=False) -> None:
+        self.asynchronous = asynchronous
         self.task_id = type(self).__name__
-        self.file = DataFile(f"tasks/{self.task_id}.json.gz")
+        self.file = DataFile(
+            f"{config.config['common']['data_directory']}/tasks/{self.task_id}.json.gz"
+        )
         self.suspended = False
 
     def can_run(self) -> bool:
