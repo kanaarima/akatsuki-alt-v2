@@ -58,7 +58,19 @@ def get_user_leaderboard(
         apiusers = req.json()["users"]
         if not apiusers:
             return res
+        rank = 0
+        country_rank = {}
+
+        def get(country):
+            if country in country_rank:
+                country_rank[country] += 1
+                return country_rank[country]
+            else:
+                country_rank[country] = 1
+                return 1
+
         for apiuser in apiusers:
+            rank += 1
             user = Player(
                 id=apiuser["id"], name=apiuser["username"], country=apiuser["country"]
             )
@@ -67,6 +79,10 @@ def get_user_leaderboard(
                 global_ranking=apiuser["chosen_mode"]["global_leaderboard_rank"],
                 country_ranking=apiuser["chosen_mode"]["country_leaderboard_rank"],
             )
+            if sort != Sort_Method.PP:
+                ranking = Ranking(
+                    global_ranking=rank, country_ranking=get(user["country"])
+                )
             res.append((user, stats, ranking))
     return res
 
