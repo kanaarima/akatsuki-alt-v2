@@ -14,6 +14,9 @@ class Sort_Method(Enum):
     COUNT_1S = "1s"
 
 
+Sort_Method.PP
+
+
 def _stats_from_chosen_mode(chosen_mode) -> GamemodeStatistics:
     stats = GamemodeStatistics(
         ranked_score=chosen_mode["ranked_score"],
@@ -51,7 +54,7 @@ def get_user_leaderboard(
     res = list()
     for page in range(pages):
         req = requests.get_request(
-            f"leaderboard?mode={gamemode['mode']}&p={page+1}&l={length}&rx={gamemode['relax']}&sort={sort}"
+            f"leaderboard?mode={gamemode['mode']}&p={page+1}&l={length}&rx={gamemode['relax']}&sort={sort.value}"
         )
         if req.status_code != 200:  # TODO:
             return res
