@@ -82,7 +82,7 @@ def get_user_leaderboard(
                 global_ranking=apiuser["chosen_mode"]["global_leaderboard_rank"],
                 country_ranking=apiuser["chosen_mode"]["country_leaderboard_rank"],
             )
-            if sort != Sort_Method.PP:
+            if sort != Sort_Method.PP or not ranking["global_ranking"]:
                 ranking = Ranking(
                     global_ranking=rank, country_ranking=get(user["country"])
                 )
