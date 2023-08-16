@@ -6,6 +6,10 @@ import time
 
 class DataFile:
     def __init__(self, filepath) -> None:
+        # Create parent directory
+        Path([item[::-1] for item in filepath[::-1].split("/", 1)][::-1][0]).mkdir(
+            parents=True, exist_ok=True
+        )
         self.filepath = filepath
         self.data = None
 
@@ -40,3 +44,7 @@ class DataFile:
 
     def unlock(self):
         Path(self.filepath + ".lock").unlink(missing_ok=True)
+
+
+def exists(filepath):
+    return Path(filepath).exists()
