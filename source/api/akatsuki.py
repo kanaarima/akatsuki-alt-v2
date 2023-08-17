@@ -1,4 +1,12 @@
-from api.objects import Gamemode, Player, GamemodeStatistics, Score, Clan, Ranking
+from api.objects import (
+    Gamemode,
+    Player,
+    GamemodeStatistics,
+    Score,
+    Clan,
+    Ranking,
+    Beatmap,
+)
 from typing import List, Tuple, Dict
 from enum import Enum
 import api.objects as objects
@@ -48,6 +56,27 @@ def _score_from_apiscore(apiscore, gamemode: Gamemode) -> Score:
     )
 
 
+def _beatmap_from_apimap(apimap):
+    s = apimap["song_name"].split("-")
+    s2 = apimap["song_name"].split("[")
+    artist = s[0]
+    title = s[1].split("[")[0]
+    difficulty = s2[1][:-1]
+    return Beatmap(
+        beatmap_id=apimap["beatmap_id"],
+        beatmap_set_id=apimap["beatmapset_id"],
+        artist=artist,
+        title=title,
+        difficulty=difficulty,
+        star_rating=apimap["difficulty"],
+        length=apimap["hit_length"],
+        drain_time=apimap["hit_length"],
+        max_combo=apimap["max_combo"],
+        ar=apimap["ar"],
+        od=apimap["od"],
+    )
+
+
 def get_user_leaderboard(
     gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
 ) -> List[Tuple[Player, GamemodeStatistics, Ranking]]:
@@ -57,10 +86,10 @@ def get_user_leaderboard(
             f"leaderboard?mode={gamemode['mode']}&p={page+1}&l={length}&rx={gamemode['relax']}&sort={sort.value}"
         )
         if req.status_code != 200:  # TODO:
-            return res
+            break
         apiusers = req.json()["users"]
         if not apiusers:
-            return res
+            break
         rank = 0
         country_rank = {}
 
@@ -92,38 +121,44 @@ def get_user_leaderboard(
 
 def get_user_1s(
     userid: int, gamemode: Gamemode, pages=1, length=100
-) -> Tuple[int, List[Score]]:
+) -> Tuple[int, List[Score], List[Beatmap]]:
     res = list()
+    resmaps = list()
     total = 0
     for page in range(pages):
         req = requests.get_request(
             f"users/scores/first?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
         if req.status_code != 200:  # TODO:
-            return total, res
+            break
         apiscores = req.json()["scores"]
-        total = apiscores["total"]
+        total = req.json()["total"]
         if not apiscores:
-            return total, res
+            break
         for apiscore in apiscores:
-            res.append(_score_from_apiscore(apiscore))
-    return total, res
+            res.append(_score_from_apiscore(apiscore, gamemode))
+            resmaps.append(_beatmap_from_apimap(apiscore["beatmap"]))
+    return total, res, resmaps
 
 
-def get_user_best(userid: int, gamemode: Gamemode, pages=1, length=100) -> List[Score]:
+def get_user_best(
+    userid: int, gamemode: Gamemode, pages=1, length=100
+) -> Tuple[List[Score], List[Beatmap]]:
     res = list()
+    resmaps = list()
     for page in range(pages):
         req = requests.get_request(
             f"users/scores/best?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
         if req.status_code != 200:
-            return res
+            break
         apiscores = req.json()["scores"]
         if not apiscores:
-            return res
+            break
         for apiscore in apiscores:
             res.append(_score_from_apiscore(apiscore, gamemode))
-    return res
+            resmaps.append(_beatmap_from_apimap(apiscore["beatmap"]))
+    return res, resmaps
 
 
 def get_user_stats(
@@ -157,10 +192,10 @@ def get_clan_leaderboard(
                 f"clans/stats/first?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
             )
             if req.status_code != 200:  # TODO:
-                return res
+                break
             apiclans = req.json()["clans"]
             if not apiclans:
-                return res
+                break
             for apiclan in apiclans:
                 clan = Clan(
                     clan_id=apiclan["clan"],
@@ -178,10 +213,10 @@ def get_clan_leaderboard(
                 f"clans/stats/all?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
             )
             if req.status_code != 200:  # TODO:
-                return res
+                break
             apiclans = req.json()["clans"]
             if not apiclans:
-                return res
+                break
             for apiclan in apiclans:
                 clan = Clan(
                     clan_id=apiclan["id"],
