@@ -3,6 +3,7 @@ from api.utils import update_dicts, yesterday, find_unique
 from api.files import DataFile, exists
 from api import objects, akatsuki
 from config import config
+from typing import List
 
 
 class StoreUserLeaderboardsTask(Task):
@@ -59,3 +60,34 @@ class StoreUserLeaderboardsTask(Task):
 
     def _get_path(self) -> str:
         return f"{config['common']['data_directory']}/leaderboards/users/{yesterday()}.json.gz"
+
+
+class StorePlayerStats(Task):
+    def __init__(self) -> None:
+        super().__init__(asynchronous=False)
+
+    def can_run(self) -> bool:
+        return not exists(self._get_path()) and exists(self._get_path_users())
+
+    def run(self) -> TaskStatus:
+        usersfile = DataFile(filepath=self._get_path_users())
+        usersfile.load_data(default=list())
+        users: List[objects.LinkedPlayer] = usersfile.data
+        for user in users:
+            if not user["full_tracking"]:
+                continue
+            userfile = DataFile(
+                filepath=self._get_path() + f"{user['user_id']}.json.gz"
+            )
+            userfile.data = {}
+            player, stats = akatsuki.get_user_stats(user["user_id"])
+            userfile.data["player"] = player
+            userfile.data["statistics"] = stats
+            userfile.save_data()
+        return self._finish()
+
+    def _get_path(self) -> str:
+        return f"{config['common']['data_directory']}/users_statistics/{yesterday()}/"
+
+    def _get_path_users(self) -> str:
+        return f"{config['common']['data_directory']}/users_statistics/users.json.gz"
