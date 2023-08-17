@@ -78,3 +78,8 @@ gamemodes = {
     "ctb_rx": Gamemode(mode=2, relax=1),
     "mania": Gamemode(mode=3, relax=0),
 }
+
+
+class LinkedPlayer(TypedDict):
+    user_id: int
+    full_tracking: bool  # True: linked from discord
