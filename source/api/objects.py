@@ -38,6 +38,9 @@ class Beatmap(TypedDict):
     drain_time: int
     max_combo: int
     mode: int
+    ar: float
+    od: float
+    cs: float
 
 
 class Clan(TypedDict):
