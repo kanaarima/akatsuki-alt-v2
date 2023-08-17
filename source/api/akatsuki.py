@@ -173,6 +173,7 @@ def get_user_stats(
     for name, gamemode in objects.gamemodes.items():
         apistats = data["stats"][gamemode["relax"]][name.split("_")[0]]
         stats = _stats_from_chosen_mode(apistats)
+        stats["total_1s"] = get_user_1s(userid=userid, gamemode=gamemode, length=1)[0]
         ranking = Ranking(
             global_ranking=apistats["global_leaderboard_rank"],
             country_ranking=apistats["country_leaderboard_rank"],
