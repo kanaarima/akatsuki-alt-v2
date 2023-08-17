@@ -178,6 +178,8 @@ def get_user_stats(
             global_ranking=apistats["global_leaderboard_rank"],
             country_ranking=apistats["country_leaderboard_rank"],
         )
+        if not ranking["global_ranking"]:
+            ranking = Ranking(global_ranking=-1, country_ranking=-1)
         user_stats[name] = (stats, ranking)
     return (user, user_stats)
 
