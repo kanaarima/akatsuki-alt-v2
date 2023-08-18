@@ -2,7 +2,8 @@
     "common": {
         "data_directory": "../data/"
     },
-    "backend": {
-        "tasks": {}
+    "discord": {
+        "bot_token": "TOKEN",
+        "bot_prefix": "!"
     }
 }
