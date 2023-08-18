@@ -31,16 +31,27 @@ async def link(full: str, split: list[str], message: discord.Message):
         if not userid:
             await message.reply(f"No user matching found. Perhaps use UserID?")
             return
-    files = DataFile(
-        filepath=f"{config['common']['data_directory']}/user_statistics/users.json.gz"
+    file_tracking = DataFile(
+        filepath=f"{config['common']['data_directory']}/users_statistics/users.json.gz"
     )
-    files.load_data(default=list())
-    for user in files.data:
+    file_links = DataFile(
+        filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
+    )
+    file_tracking.load_data(default=list())
+    file_links.load_data(default={})
+    for user in file_tracking.data:
         if user["user_id"] == userid:
             user["full_tracking"] = True
         else:
-            files.data.append(LinkedPlayer(user_id=userid, full_tracking=True))
+            file_tracking.data.append(LinkedPlayer(user_id=userid, full_tracking=True))
+    file_links.data[message.author.id] = userid
+    file_tracking.save_data()
+    file_links.save_data()
     await message.reply(f"Linked successfully.")
+
+
+async def show_recent(full: str, split: list[str], message: discord.Message):
+    pass
 
 
 commands = {"ping": ping, "link": link}
