@@ -80,6 +80,23 @@ def _beatmap_from_apimap(apimap):
     )
 
 
+def search_users(username: str) -> List[Player]:
+    res = list()
+    req = requests.get_request(f"users/lookup?name={username}")
+    apiusers = req.json()["users"]
+    if not apiusers:
+        return res
+    for apiuser in apiusers:
+        res.append(Player(name=apiuser["username"], id=apiuser["id"]))
+    return res
+
+
+def lookup_user(username: str) -> int:
+    req = requests.get_request(f"users/whatid?name={username}")
+    if req.status_code != 200:
+        return None
+    return req.json()['id']
+
 def get_user_leaderboard(
     gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
 ) -> List[Tuple[Player, GamemodeStatistics, Ranking]]:
