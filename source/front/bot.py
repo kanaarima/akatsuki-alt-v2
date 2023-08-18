@@ -1,12 +1,18 @@
+from front import tasks, commands
 from config import config
-from front import tasks
 import discord
 
 
 class Bot(discord.Client):
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
-        tasks.init_tasks(self)
+        tasks.init_tasks()
+
+    async def on_message(self, message: discord.Message):
+        text = message.content
+        if not text.startswith(config["discord"]["bot_prefix"]):
+            return
+        await commands.handle_command(message)
 
 
 intents = discord.Intents.default()
