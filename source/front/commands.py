@@ -56,8 +56,9 @@ async def link(full: str, split: list[str], message: discord.Message):
     for user in file_tracking.data:
         if user["user_id"] == userid:
             user["full_tracking"] = True
-        else:
-            file_tracking.data.append(LinkedPlayer(user_id=userid, full_tracking=True))
+            break
+    else:
+        file_tracking.data.append(LinkedPlayer(user_id=userid, full_tracking=True))
     file_links.data[str(message.author.id)] = (info, "std")
     file_tracking.save_data()
     file_links.save_data()
@@ -139,27 +140,7 @@ async def show(full: str, split: list[str], message: discord.Message):
         f"{config['common']['data_directory']}/users_statistics/temp/{player['id']}.json.gz"
     )
     user_file.load_data(default=[])
-
-    for fetch in user_file.data:
-        date = datetime.datetime.strptime(fetch[0], "%d/%m/%Y %H:%M:%S")
-        if (datetime.datetime.now() - date) > datetime.timedelta(hours=24):
-            user_file.data.remove(fetch)
-
-    if not user_file.data:
-        user_file.data.append(
-            (
-                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                akatsuki.get_user_stats(player["id"])[1],
-            )
-        )
-    date = datetime.datetime.strptime(user_file.data[-1][0], "%d/%m/%Y %H:%M:%S")
-    if (datetime.datetime.now() - date) > datetime.timedelta(minutes=5):
-        user_file.data.append(
-            (
-                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                akatsuki.get_user_stats(player["id"])[1],
-            )
-        )
+    _update_fetch(player, user_file)
     user_file.save_data()
     recent: Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]] = user_file.data[-1][
         1
@@ -286,6 +267,20 @@ async def show(full: str, split: list[str], message: discord.Message):
     await message.reply(embed=embed)
 
 
+async def reset(full: str, split: list[str], message: discord.Message):
+    player, _ = await _get_linked_account(str(message.author.id))
+    if not player:
+        await _link_warning()
+        return
+    user_file = DataFile(
+        f"{config['common']['data_directory']}/users_statistics/temp/{player['id']}.json.gz"
+    )
+    user_file.load_data(default=[])
+    _update_fetch(player, user_file)
+    user_file.data = [user_file.data[-1]]
+    await message.reply("Data resetted.")
+
+
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     file_links = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
@@ -306,6 +301,29 @@ async def _wrong_gamemode_warning(message: discord.Message):
 
 def _get_download_link(beatmap_id: int):
     return f"[direct](https://towwyyyy.marinaa.nl/osu/osudl.html?beatmap={beatmap_id}) [bancho](https://osu.ppy.sh/b/{beatmap_id})"
+
+
+def _update_fetch(player: Player, user_file: DataFile):
+    for fetch in user_file.data:
+        date = datetime.datetime.strptime(fetch[0], "%d/%m/%Y %H:%M:%S")
+        if (datetime.datetime.now() - date) > datetime.timedelta(hours=24):
+            user_file.data.remove(fetch)
+
+    if not user_file.data:
+        user_file.data.append(
+            (
+                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                akatsuki.get_user_stats(player["id"])[1],
+            )
+        )
+    date = datetime.datetime.strptime(user_file.data[-1][0], "%d/%m/%Y %H:%M:%S")
+    if (datetime.datetime.now() - date) > datetime.timedelta(minutes=5):
+        user_file.data.append(
+            (
+                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                akatsuki.get_user_stats(player["id"])[1],
+            )
+        )
 
 
 def _format_gain_string(gain, fix=""):
@@ -330,4 +348,5 @@ commands = {
     "recent": show_recent,
     "setdefault": set_default_gamemode,
     "show": show,
+    "reset": reset,
 }
