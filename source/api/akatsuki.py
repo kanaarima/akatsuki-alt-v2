@@ -10,9 +10,12 @@ from api.objects import (
 from typing import List, Tuple, Dict
 from enum import Enum
 import api.objects as objects
+import datetime
 import utils.api
 
 requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/")
+lb_score_cache: Dict[str, List[Tuple[Player, GamemodeStatistics, Ranking]]] = dict()
+last_fetched = None
 
 
 class Sort_Method(Enum):
@@ -163,10 +166,11 @@ def get_user_best(
 
 def get_user_stats(
     userid: int,
-) -> Tuple[Player, Dict[str, Tuple[GamemodeStatistics, Ranking]]]:
+) -> Tuple[Player, Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]]]:
     req = requests.get_request(f"users/full?id={userid}&relax=-1")
     if req.status_code != 200:
         return
+    update_score_cache()
     data = req.json()
     user = Player(id=data["id"], name=data["username"], country=data["country"])
     user_stats = dict()
@@ -174,13 +178,18 @@ def get_user_stats(
         apistats = data["stats"][gamemode["relax"]][name.split("_")[0]]
         stats = _stats_from_chosen_mode(apistats)
         stats["total_1s"] = get_user_1s(userid=userid, gamemode=gamemode, length=1)[0]
-        ranking = Ranking(
+        ranking_pp = Ranking(
             global_ranking=apistats["global_leaderboard_rank"],
             country_ranking=apistats["country_leaderboard_rank"],
         )
-        if not ranking["global_ranking"]:
-            ranking = Ranking(global_ranking=-1, country_ranking=-1)
-        user_stats[name] = (stats, ranking)
+        if not ranking_pp["global_ranking"]:
+            ranking_pp = Ranking(global_ranking=-1, country_ranking=-1)
+        ranking_score = Ranking(global_ranking=-1, country_ranking=-1)
+        for player, stats, ranking in lb_score_cache[name]:
+            if player["id"] == user["id"]:
+                ranking_score = ranking
+                break
+        user_stats[name] = (stats, ranking_score, ranking_pp)
     return (user, user_stats)
 
 
@@ -253,3 +262,20 @@ def get_clan_stats(
         global_ranking=data["clan"]["chosen_mode"]["global_leaderboard_rank"]
     )
     return (clan, stats, ranking)
+
+
+def update_score_cache():
+    fetch = not last_fetched
+    if (datetime.datetime.now() - last_fetched) > datetime.timedelta(minutes=30):
+        fetch = True
+    if not fetch:
+        return
+    last_fetched = datetime.datetime.now()
+    for name, gamemode in objects.gamemodes.items():
+        pages = 2 if gamemode["mode"] == 0 else 1
+        lb_score_cache[name] = get_user_leaderboard(
+            gamemode=gamemode, sort=Sort_Method.SCORE, pages=pages
+        )
+
+
+update_score_cache()
