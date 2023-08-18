@@ -81,8 +81,16 @@ class StorePlayerStats(Task):
             )
             userfile.data = {}
             player, stats = akatsuki.get_user_stats(user["user_id"])
+            first_places = dict()
+            for name, gamemode in objects.gamemodes.items():
+                _, first_places[name], beatmaps = akatsuki.get_user_1s(
+                    userid=user["user_id"],
+                    gamemode=gamemode,
+                    pages=1000,
+                )
             userfile.data["player"] = player
             userfile.data["statistics"] = stats
+            userfile.data["first_places"] = first_places
             userfile.save_data()
         return self._finish()
 
