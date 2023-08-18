@@ -56,6 +56,27 @@ async def link(full: str, split: list[str], message: discord.Message):
     await message.reply(f"Linked successfully.")
 
 
+async def set_default_gamemode(full: str, split: list[str], message: discord.Message):
+    if len(split) < 2:
+        await message.reply("!setdefault gamemode")
+        return
+    discord_id = str(message.author.id)
+    file_links = DataFile(
+        filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
+    )
+    file_links.load_data(default={})
+    if discord_id not in file_links.data:
+        await _link_warning(message)
+        return
+    mode = split[1].lower()
+    if mode not in gamemodes:
+        await _wrong_gamemode_warning(message)
+        return
+    file_links.data[discord_id][1] = mode
+    file_links.save_data()
+    await message.reply(f"Default gamemode set to {gamemodes_full[mode]}")
+
+
 async def show_recent(full: str, split: list[str], message: discord.Message):
     player, mode = await _get_linked_account(str(message.author.id))
     if not player:
@@ -107,7 +128,7 @@ async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     )
     file_links.load_data(default={})
     if discord_id not in file_links.data:
-        return None, None, None
+        return None, None
     return file_links.data[discord_id]
 
 
@@ -123,4 +144,9 @@ def _get_download_link(beatmap_id: int):
     return f"[direct](https://towwyyyy.marinaa.nl/osu/osudl.html?beatmap={beatmap_id}) [bancho](https://osu.ppy.sh/b/{beatmap_id})"
 
 
-commands = {"ping": ping, "link": link, "recent": show_recent}
+commands = {
+    "ping": ping,
+    "link": link,
+    "recent": show_recent,
+    "setdefault": set_default_gamemode,
+}
