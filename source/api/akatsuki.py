@@ -277,6 +277,3 @@ def update_score_cache():
         lb_score_cache[name] = get_user_leaderboard(
             gamemode=gamemode, sort=Sort_Method.SCORE, pages=pages
         )
-
-
-update_score_cache()
