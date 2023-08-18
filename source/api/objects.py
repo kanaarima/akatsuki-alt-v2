@@ -82,6 +82,17 @@ gamemodes = {
     "mania": Gamemode(mode=3, relax=0),
 }
 
+gamemodes_full = {
+    "std": "Standard",
+    "std_rx": "Standard Relax",
+    "std_ap": "Standard Autopilot",
+    "taiko": "Taiko",
+    "taiko_rx": "Taiko Relax",
+    "ctb": "Catch the beat",
+    "ctb_rx": "Catch the beat Relax",
+    "mania": "Mania",
+}
+
 
 class LinkedPlayer(TypedDict):
     user_id: int
