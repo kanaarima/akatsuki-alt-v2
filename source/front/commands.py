@@ -1,6 +1,7 @@
 from api.objects import LinkedPlayer, Player, gamemodes, gamemodes_full
 import api.akatsuki as akatsuki
 from api.files import DataFile
+from api.utils import get_mods
 from config import config
 from typing import Tuple
 import front.bot as bot
@@ -94,7 +95,7 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     )
     embed.add_field(name="score", value=f"{score['score']:,}")
     embed.add_field(name="pp", value=f"{score['pp']:,}")
-    embed.add_field(name="mods", value=f"{score['mods']}")
+    embed.add_field(name="mods", value=f"{''.join(get_mods(score['mods']))}")
     embed.add_field(name="combo", value=score["combo"])
     embed.add_field(name="download", value=_get_download_link(map["beatmap_id"]))
     await message.reply(embed=embed)

@@ -55,26 +55,26 @@ def get_mods(magic_number):
     mods = list()
     if magic_number & SpunOut:
         mods.append("SO")
-    if magic_number & Flashlight:
-        mods.append("FL")
+    if magic_number & Easy:
+        mods.append("EZ")
     if magic_number & Nightcore:
         mods.append("NC")
     if magic_number & HalfTime:
         mods.append("HT")
-    if magic_number & Relax:
-        mods.append("RX")
-    if magic_number & DoubleTime:
-        mods.append("DT")
-    if magic_number & SuddenDeath:
-        mods.append("SD")
-    if magic_number & HardRock:
-        mods.append("HR")
     if magic_number & Hidden:
         mods.append("HD")
+    if magic_number & DoubleTime:
+        mods.append("DT")
+    if magic_number & HardRock:
+        mods.append("HR")
+    if magic_number & Flashlight:
+        mods.append("FL")
     if magic_number & TouchDevice:
         mods.append("TD")
-    if magic_number & Easy:
-        mods.append("EZ")
+    if magic_number & SuddenDeath:
+        mods.append("SD")
     if magic_number & NoFail:
         mods.append("NF")
+    if magic_number & Relax:
+        mods.append("RX")
     return mods
