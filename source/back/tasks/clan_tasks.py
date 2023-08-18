@@ -20,7 +20,7 @@ class StoreClanLeaderboardsTask(Task):
                 gamemode=gamemode, sort=akatsuki.Sort_Method.COUNT_1S, pages=2
             )
             leaderboard_pp = akatsuki.get_clan_leaderboard(
-                gamemode=gamemode, sort=akatsuki.Sort_Method.PP, pages=2
+                gamemode=gamemode, sort=akatsuki.Sort_Method.PP, pages=4
             )
             # Find clans who are in both leaderboards
             for clan_a, stats_a, ranking_1s in leaderboard_1s:
