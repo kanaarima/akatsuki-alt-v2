@@ -1,3 +1,3 @@
-import tests.tasks
+import tests.backend_tasks
 
-tests.tasks.test_manager()
+tests.backend_tasks.test_backend()
