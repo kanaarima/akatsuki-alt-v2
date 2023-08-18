@@ -33,7 +33,10 @@ def _stats_from_chosen_mode(chosen_mode) -> GamemodeStatistics:
         play_time=chosen_mode["playtime"],
         profile_accuracy=chosen_mode["accuracy"],
         total_hits=chosen_mode["total_hits"],
+        watched_replays=chosen_mode["replays_watched"],
+        level=chosen_mode["level"],
         total_pp=chosen_mode["pp"],
+        max_combo=chosen_mode["max_combo"],
     )
     return stats
 
@@ -220,7 +223,7 @@ def get_user_stats(
         if not ranking_pp["global_ranking"]:
             ranking_pp = Ranking(global_ranking=-1, country_ranking=-1)
         ranking_score = Ranking(global_ranking=-1, country_ranking=-1)
-        for player, stats, ranking in lb_score_cache[name]:
+        for player, _, ranking in lb_score_cache[name]:
             if player["id"] == user["id"]:
                 ranking_score = ranking
                 break

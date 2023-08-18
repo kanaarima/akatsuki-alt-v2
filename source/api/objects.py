@@ -56,6 +56,8 @@ class GamemodeStatistics(TypedDict):
     max_combo: int
     play_count: int
     play_time: int
+    level: int
+    watched_replays: int
     total_score: int
     ranked_score: int
     total_hits: int
