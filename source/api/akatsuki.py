@@ -15,7 +15,7 @@ import utils.api
 
 requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/")
 lb_score_cache: Dict[str, List[Tuple[Player, GamemodeStatistics, Ranking]]] = dict()
-last_fetched = None
+last_fetched = datetime.datetime(year=1984, month=1, day=1)
 
 
 class Sort_Method(Enum):
@@ -265,7 +265,8 @@ def get_clan_stats(
 
 
 def update_score_cache():
-    fetch = not last_fetched
+    global last_fetched
+    fetch = False
     if (datetime.datetime.now() - last_fetched) > datetime.timedelta(minutes=30):
         fetch = True
     if not fetch:
