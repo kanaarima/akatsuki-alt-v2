@@ -36,6 +36,10 @@ def yesterday() -> datetime.datetime:
     return (datetime.datetime.today() - datetime.timedelta(days=1)).date()
 
 
+def other_yesterday() -> datetime.datetime:
+    return (datetime.datetime.today() - datetime.timedelta(days=2)).date()
+
+
 NoMod = 0
 NoFail = 1
 Easy = 2

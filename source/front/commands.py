@@ -8,11 +8,11 @@ from api.objects import (
 )
 import api.akatsuki as akatsuki
 from api.files import DataFile, exists
-from api.utils import get_mods, yesterday
+from api.utils import get_mods, yesterday, other_yesterday
 from typing import List, Tuple, Dict
 from config import config
 import front.bot as bot
-from front.views import ScoresView
+from front.views import ScoresView, ScoreDiffView
 import datetime
 import discord
 
@@ -273,12 +273,18 @@ async def show_1s(full: str, split: list[str], message: discord.Message):
     if not player:
         await _link_warning()
         return
+    new = False
     args = _parse_args(split)
     if "default" in args:
-        gamemode = args["default"].lower()
-        if gamemode not in gamemodes:
-            await _wrong_gamemode_warning(message)
-            return
+        if args["default"].lower() == "new":
+            new = True
+        else:
+            gamemode = args["default"].lower()
+            if gamemode not in gamemodes:
+                await _wrong_gamemode_warning(message)
+                return
+    if "new" in args:
+        new = True
     path = f"{config['common']['data_directory']}/users_statistics/{yesterday()}/{player['id']}.json.gz"
     if not exists(path):
         await message.reply(f"Your statistics aren't fetched yet. Please wait!")
@@ -286,10 +292,24 @@ async def show_1s(full: str, split: list[str], message: discord.Message):
     file = DataFile(path)
     file.load_data()
     scores = file.data["first_places"][gamemode]
-    view = ScoresView(
-        f"{player['name']}'s {gamemodes_full[gamemode]} first places ({len(scores):,})",
-        scores,
-    )
+    if new:
+        path_old = f"{config['common']['data_directory']}/users_statistics/{other_yesterday()}/{player['id']}.json.gz"
+        if not exists(path_old):
+            await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+            return
+        file = DataFile(path_old)
+        file.load_data()
+        scores_old = file.data["first_places"][gamemode]
+        view = ScoreDiffView(
+            f"{player['name']}'s {gamemodes_full[gamemode]} first places changes",
+            scores_old=scores_old,
+            scores_new=scores,
+        )
+    else:
+        view = ScoresView(
+            f"{player['name']}'s {gamemodes_full[gamemode]} first places ({len(scores):,})",
+            scores,
+        )
     await view.reply(message)
 
 
