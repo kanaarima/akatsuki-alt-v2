@@ -200,13 +200,13 @@ async def show(full: str, split: list[str], message: discord.Message):
         recent[gamemode][0]["play_count"] - oldest[gamemode][0]["play_count"]
     )
     play_time_gain = _format_gain_string(
-        recent[gamemode][0]["play_time"] / 60 / 60
-        - oldest[gamemode][0]["play_time"] / 60 / 60
+        recent[gamemode][0]["play_time"] / 60 - oldest[gamemode][0]["play_time"] / 60,
+        fix="min",
     )
     replay_gain = _format_gain_string(
         recent[gamemode][0]["watched_replays"] - oldest[gamemode][0]["watched_replays"]
     )
-    level_gain = _format_gain_string(
+    level_gain = _format_notation(
         recent[gamemode][0]["level"] - oldest[gamemode][0]["level"]
     )
     acc_gain = _format_gain_string(
@@ -249,7 +249,7 @@ async def show(full: str, split: list[str], message: discord.Message):
     )
     embed.add_field(
         name="Level",
-        value=f"{recent[gamemode][0]['level']:.2f}\n{level_gain}",
+        value=f"{recent[gamemode][0]['level']:.4f}\n{level_gain}",
     )
     embed.add_field(
         name="Accuracy",
@@ -308,13 +308,20 @@ def _get_download_link(beatmap_id: int):
     return f"[direct](https://towwyyyy.marinaa.nl/osu/osudl.html?beatmap={beatmap_id}) [bancho](https://osu.ppy.sh/b/{beatmap_id})"
 
 
-def _format_gain_string(gain):
+def _format_gain_string(gain, fix=""):
+    is_float = type(gain) == float
     if gain == 0:
         return ""
     if gain > 1:
-        return f"(+{gain:,.2f})"
+        return f"(+{gain:,.2f}{fix})" if is_float else f"(+{gain:,}{fix})"
     else:
-        return f"({gain:,.2f})"
+        return f"({gain:,.2f}{fix})" if is_float else f"({gain:,}{fix})"
+
+
+def _format_notation(gain):
+    if gain == 0:
+        return ""
+    return f"({gain:.2e})"
 
 
 commands = {
