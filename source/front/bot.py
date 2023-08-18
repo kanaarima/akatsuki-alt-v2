@@ -1,10 +1,12 @@
 from config import config
+from front import tasks
 import discord
 
 
 class Bot(discord.Client):
     async def on_ready(self):
         print(f"Logged on as {self.user}!")
+        tasks.init_tasks(self)
 
 
 intents = discord.Intents.default()
