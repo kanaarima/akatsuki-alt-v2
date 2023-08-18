@@ -1,6 +1,7 @@
 from api.tasks import Task, TaskStatus
 from api.utils import update_dicts, yesterday, find_unique
 from api.files import DataFile, exists
+from api.beatmaps import save_beatmaps
 from api import objects, akatsuki
 from config import config
 from typing import List
@@ -88,6 +89,7 @@ class StorePlayerStats(Task):
                     gamemode=gamemode,
                     pages=1000,
                 )
+                save_beatmaps(beatmaps)
             userfile.data["player"] = player
             userfile.data["statistics"] = stats
             userfile.data["first_places"] = first_places
