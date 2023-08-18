@@ -13,7 +13,7 @@ import api.objects as objects
 import datetime
 import utils.api
 
-requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/")
+requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/", delay=0.8)
 lb_score_cache: Dict[str, List[Tuple[Player, GamemodeStatistics, Ranking]]] = dict()
 last_fetched = datetime.datetime(year=1984, month=1, day=1)
 
@@ -31,7 +31,7 @@ def _stats_from_chosen_mode(chosen_mode) -> GamemodeStatistics:
         total_score=chosen_mode["total_score"],
         play_count=chosen_mode["playcount"],
         play_time=chosen_mode["playtime"],
-        accuracy=chosen_mode["accuracy"],
+        profile_accuracy=chosen_mode["accuracy"],
         total_hits=chosen_mode["total_hits"],
         total_pp=chosen_mode["pp"],
     )
