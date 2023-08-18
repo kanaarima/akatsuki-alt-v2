@@ -25,9 +25,6 @@ class Sort_Method(Enum):
     COUNT_1S = "1s"
 
 
-Sort_Method.PP
-
-
 def _stats_from_chosen_mode(chosen_mode) -> GamemodeStatistics:
     stats = GamemodeStatistics(
         ranked_score=chosen_mode["ranked_score"],
@@ -95,7 +92,8 @@ def lookup_user(username: str) -> int:
     req = requests.get_request(f"users/whatid?name={username}")
     if req.status_code != 200:
         return None
-    return req.json()['id']
+    return req.json()["id"]
+
 
 def get_user_leaderboard(
     gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
@@ -161,6 +159,26 @@ def get_user_1s(
     return total, res, resmaps
 
 
+def get_user_recent(
+    userid: int, gamemode: Gamemode, pages=1, length=1
+) -> Tuple[List[Score], List[Beatmap]]:
+    res = list()
+    resmaps = list()
+    for page in range(pages):
+        req = requests.get_request(
+            f"users/scores/recent?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
+        )
+        if req.status_code != 200:
+            break
+        apiscores = req.json()["scores"]
+        if not apiscores:
+            break
+        for apiscore in apiscores:
+            res.append(_score_from_apiscore(apiscore, gamemode))
+            resmaps.append(_beatmap_from_apimap(apiscore["beatmap"]))
+    return res, resmaps
+
+
 def get_user_best(
     userid: int, gamemode: Gamemode, pages=1, length=100
 ) -> Tuple[List[Score], List[Beatmap]]:
@@ -208,6 +226,18 @@ def get_user_stats(
                 break
         user_stats[name] = (stats, ranking_score, ranking_pp)
     return (user, user_stats)
+
+
+def get_user_info(userid: int) -> Player:
+    req = requests.get_request(f"users?id={userid}")
+    if req.status_code != 200:
+        return None
+    data = req.json()
+    return Player(
+        name=data["username"],
+        country=data["country"],
+        id=data["id"],
+    )
 
 
 def get_clan_leaderboard(
