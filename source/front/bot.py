@@ -9,6 +9,8 @@ class Bot(discord.Client):
         tasks.init_tasks()
 
     async def on_message(self, message: discord.Message):
+        if message.author.id == self.user.id:
+            return
         text = message.content
         if not text.startswith(config["discord"]["bot_prefix"]):
             return
