@@ -1,10 +1,18 @@
-from api.objects import LinkedPlayer, Player, gamemodes, gamemodes_full
+from api.objects import (
+    LinkedPlayer,
+    Player,
+    GamemodeStatistics,
+    Ranking,
+    gamemodes,
+    gamemodes_full,
+)
 import api.akatsuki as akatsuki
 from api.files import DataFile
 from api.utils import get_mods
+from typing import Tuple, Dict
 from config import config
-from typing import Tuple
 import front.bot as bot
+import datetime
 import discord
 
 
@@ -122,6 +130,162 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     await message.reply(embed=embed)
 
 
+async def show(full: str, split: list[str], message: discord.Message):
+    player, gamemode = await _get_linked_account(str(message.author.id))
+    if not player:
+        await _link_warning()
+        return
+    user_file = DataFile(
+        f"{config['common']['data_directory']}/users_statistics/temp/{player['id']}.json.gz"
+    )
+    user_file.load_data(default=[])
+
+    for fetch in user_file.data:
+        date = datetime.datetime.strptime(fetch[0], "%d/%m/%Y %H:%M:%S")
+        if (datetime.datetime.now() - date) > datetime.timedelta(hours=24):
+            user_file.data.remove(fetch)
+
+    if not user_file.data:
+        user_file.data.append(
+            (
+                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                akatsuki.get_user_stats(player["id"])[1],
+            )
+        )
+    date = datetime.datetime.strptime(user_file.data[-1][0], "%d/%m/%Y %H:%M:%S")
+    if (datetime.datetime.now() - date) > datetime.timedelta(minutes=5):
+        user_file.data.append(
+            (
+                datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                akatsuki.get_user_stats(player["id"])[1],
+            )
+        )
+    user_file.save_data()
+    recent: Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]] = user_file.data[-1][
+        1
+    ]
+    oldest: Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]] = user_file.data[0][
+        1
+    ]
+    embed = discord.Embed(
+        colour=discord.Color.og_blurple(),
+        title=f"Stats for {player['name']}",
+    )
+    embed.set_thumbnail(
+        url=f"https://a.akatsuki.gg/{player['id']}",
+    )
+    global_rank_gain = _format_gain_string(
+        oldest[gamemode][2]["global_ranking"] - recent[gamemode][2]["global_ranking"]
+    )
+    global_score_rank_gain = _format_gain_string(
+        oldest[gamemode][1]["global_ranking"] - recent[gamemode][1]["global_ranking"]
+    )
+    country_rank_gain = _format_gain_string(
+        oldest[gamemode][2]["country_ranking"] - recent[gamemode][2]["country_ranking"]
+    )
+    country_score_rank_gain = _format_gain_string(
+        oldest[gamemode][1]["country_ranking"] - recent[gamemode][1]["country_ranking"]
+    )
+
+    ranked_score_gain = _format_gain_string(
+        recent[gamemode][0]["ranked_score"] - oldest[gamemode][0]["ranked_score"]
+    )
+    total_score_gain = _format_gain_string(
+        recent[gamemode][0]["total_score"] - oldest[gamemode][0]["total_score"]
+    )
+    total_hits_gain = _format_gain_string(
+        recent[gamemode][0]["total_hits"] - oldest[gamemode][0]["total_hits"]
+    )
+    play_count_gain = _format_gain_string(
+        recent[gamemode][0]["play_count"] - oldest[gamemode][0]["play_count"]
+    )
+    play_time_gain = _format_gain_string(
+        recent[gamemode][0]["play_time"] / 60 / 60
+        - oldest[gamemode][0]["play_time"] / 60 / 60
+    )
+    replay_gain = _format_gain_string(
+        recent[gamemode][0]["watched_replays"] - oldest[gamemode][0]["watched_replays"]
+    )
+    level_gain = _format_gain_string(
+        recent[gamemode][0]["level"] - oldest[gamemode][0]["level"]
+    )
+    acc_gain = _format_gain_string(
+        recent[gamemode][0]["profile_accuracy"]
+        - oldest[gamemode][0]["profile_accuracy"]
+    )
+    max_combo_gain = _format_gain_string(
+        recent[gamemode][0]["max_combo"] - oldest[gamemode][0]["max_combo"]
+    )
+    pp_gain = _format_gain_string(
+        recent[gamemode][0]["total_pp"] - oldest[gamemode][0]["total_pp"]
+    )
+    fp_gain = _format_gain_string(
+        recent[gamemode][0]["total_1s"] - oldest[gamemode][0]["total_1s"]
+    )
+
+    embed.add_field(
+        name="Ranked score",
+        value=f"{recent[gamemode][0]['ranked_score']:,}\n{ranked_score_gain}",
+    )
+    embed.add_field(
+        name="Total score",
+        value=f"{recent[gamemode][0]['total_score']:,}\n{total_score_gain}",
+    )
+    embed.add_field(
+        name="Total hits",
+        value=f"{recent[gamemode][0]['total_hits']:,}\n{total_hits_gain}",
+    )
+    embed.add_field(
+        name="Play count",
+        value=f"{recent[gamemode][0]['play_count']:,}\n{play_count_gain}",
+    )
+    embed.add_field(
+        name="Play time",
+        value=f"{recent[gamemode][0]['play_time']/60/60:,.2f}h\n{play_time_gain}",
+    )
+    embed.add_field(
+        name="Replays watched",
+        value=f"{recent[gamemode][0]['watched_replays']}\n{replay_gain}",
+    )
+    embed.add_field(
+        name="Level",
+        value=f"{recent[gamemode][0]['level']:.2f}\n{level_gain}",
+    )
+    embed.add_field(
+        name="Accuracy",
+        value=f"{recent[gamemode][0]['profile_accuracy']:,.2f}%\n{acc_gain}",
+    )
+
+    embed.add_field(
+        name="Max combo",
+        value=f"{recent[gamemode][0]['max_combo']:,}x\n{max_combo_gain}",
+    )
+    embed.add_field(
+        name="Global rank",
+        value=f"#{recent[gamemode][2]['global_ranking']:,}\n{global_rank_gain}",
+    )
+    embed.add_field(
+        name="Country rank",
+        value=f"#{recent[gamemode][2]['country_ranking']:,}\n{country_rank_gain}",
+    )
+    embed.add_field(
+        name="Performance points",
+        value=f"{recent[gamemode][0]['total_pp']:,}pp\n{pp_gain}",
+    )
+    embed.add_field(
+        name="Global score rank",
+        value=f"#{recent[gamemode][1]['global_ranking']:,}\n{global_score_rank_gain}",
+    )
+    embed.add_field(
+        name="Country score rank",
+        value=f"#{recent[gamemode][1]['country_ranking']:,}\n{country_score_rank_gain}",
+    )
+    embed.add_field(
+        name="#1 count", value=f"{recent[gamemode][0]['total_1s']:,}\n{fp_gain}"
+    )
+    await message.reply(embed=embed)
+
+
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     file_links = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
@@ -144,9 +308,19 @@ def _get_download_link(beatmap_id: int):
     return f"[direct](https://towwyyyy.marinaa.nl/osu/osudl.html?beatmap={beatmap_id}) [bancho](https://osu.ppy.sh/b/{beatmap_id})"
 
 
+def _format_gain_string(gain):
+    if gain == 0:
+        return ""
+    if gain > 1:
+        return f"(+{gain:,.2f})"
+    else:
+        return f"({gain:,.2f})"
+
+
 commands = {
     "ping": ping,
     "link": link,
     "recent": show_recent,
     "setdefault": set_default_gamemode,
+    "show": show,
 }
