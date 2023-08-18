@@ -78,3 +78,12 @@ def get_mods(magic_number):
     if magic_number & Relax:
         mods.append("RX")
     return mods
+
+
+def get_mods_simple(magic_number):
+    mods = get_mods(magic_number)
+    if "NC" in mods:
+        mods.remove("DT")
+    if "RX" in mods:
+        mods.remove("RX")
+    return mods

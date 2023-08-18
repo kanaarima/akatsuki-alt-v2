@@ -7,11 +7,12 @@ from api.objects import (
     gamemodes_full,
 )
 import api.akatsuki as akatsuki
-from api.files import DataFile
-from api.utils import get_mods
-from typing import Tuple, Dict
+from api.files import DataFile, exists
+from api.utils import get_mods, yesterday
+from typing import List, Tuple, Dict
 from config import config
 import front.bot as bot
+from front.views import ScoresView
 import datetime
 import discord
 
@@ -20,7 +21,7 @@ async def handle_command(message: discord.Message):
     full = message.content[len(config["discord"]["bot_prefix"]) :]
     split = full.split(" ")
     if split[0] in commands:
-        await commands[split[0]](full, split, message)
+        await commands[split[0]](full, split[1:], message)
     else:
         await message.reply(content="Unknown command!")
 
@@ -267,6 +268,31 @@ async def show(full: str, split: list[str], message: discord.Message):
     await message.reply(embed=embed)
 
 
+async def show_1s(full: str, split: list[str], message: discord.Message):
+    player, gamemode = await _get_linked_account(str(message.author.id))
+    if not player:
+        await _link_warning()
+        return
+    args = _parse_args(split)
+    if "default" in args:
+        gamemode = args["default"].lower()
+        if gamemode not in gamemodes:
+            await _wrong_gamemode_warning(message)
+            return
+    path = f"{config['common']['data_directory']}/users_statistics/{yesterday()}/{player['id']}.json.gz"
+    if not exists(path):
+        await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+        return
+    file = DataFile(path)
+    file.load_data()
+    scores = file.data["first_places"][gamemode]
+    view = ScoresView(
+        f"{player['name']}'s {gamemodes_full[gamemode]} first places ({len(scores):,})",
+        scores,
+    )
+    await view.reply(message)
+
+
 async def reset(full: str, split: list[str], message: discord.Message):
     player, _ = await _get_linked_account(str(message.author.id))
     if not player:
@@ -342,6 +368,20 @@ def _format_notation(gain):
     return f"({gain:.2e})"
 
 
+def _parse_args(args: List[str]) -> dict:
+    parsed = {}
+    for arg in args:
+        s = arg.split("=")
+        if len(s) == 1:
+            if "default" in parsed:
+                parsed[arg] = ""
+            else:
+                parsed["default"] = arg
+        else:
+            parsed[s[0]] = s[1]
+    return parsed
+
+
 commands = {
     "ping": ping,
     "link": link,
@@ -349,4 +389,5 @@ commands = {
     "setdefault": set_default_gamemode,
     "show": show,
     "reset": reset,
+    "show1s": show_1s,
 }
