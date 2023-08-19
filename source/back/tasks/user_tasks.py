@@ -218,7 +218,7 @@ class TrackUserPlaytime(Task):
                     for score in scores:
                         divisor = 1.5 if (score["mods"] & 64) else 1
                         beatmap = load_beatmap(score["beatmap_id"])
-                        pt["submitted_plays"] += int(beatmap["length"] / divisor)
+                        pt["submitted_plays"] += beatmap["length"] / divisor
                     userpt.data[name] = pt
             for name, gamemode in objects.gamemodes.items():
                 skip = 0
@@ -237,10 +237,11 @@ class TrackUserPlaytime(Task):
                         map = load_beatmap(score["beatmap_id"])
                         if map["length"] == 0:  # blame akatsuki api
                             continue
+                        divisor = 1.5 if (score["mods"] & 64) else 1
                         if score["completed"] == 3:  # personal best
                             scoredata.data[name][str(score["beatmap_id"])] = score
                             userpt.data[name]["unsubmitted_plays"] += (
-                                map["length"] * multiplier
+                                (map["length"]/divisor)
                             )
                         else:
                             total_hits = (
@@ -251,7 +252,7 @@ class TrackUserPlaytime(Task):
                             )
                             multiplier = total_hits / map["max_combo"]
                             userpt.data[name]["unsubmitted_plays"] += (
-                                map["length"] * multiplier
+                                (map["length"]/divisor) * multiplier
                             )
                     else:
                         skip += 1
