@@ -40,6 +40,14 @@ def other_yesterday() -> datetime.datetime:
     return (datetime.datetime.today() - datetime.timedelta(days=2)).date()
 
 
+def datetime_to_str(dt: datetime.datetime) -> str:
+    return dt.strftime("%d/%m/%Y %H:%M:%S")
+
+
+def str_to_datetime(str) -> datetime.datetime:
+    return datetime.datetime.strptime(str, "%d/%m/%Y %H:%M:%S")
+
+
 NoMod = 0
 NoFail = 1
 Easy = 2

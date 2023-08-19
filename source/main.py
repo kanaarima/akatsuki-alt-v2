@@ -20,8 +20,9 @@ def main():
         manager = TaskManager(
             [
                 clan_tasks.StoreClanLeaderboardsTask(),
-                user_tasks.StorePlayerStats(),
                 user_tasks.StoreUserLeaderboardsTask(),
+                user_tasks.StorePlayerStats(),
+                user_tasks.StorePlayerScores(),
             ]
         )
         manager.loop()
