@@ -23,6 +23,7 @@ def main():
                 user_tasks.StoreUserLeaderboardsTask(),
                 user_tasks.StorePlayerStats(),
                 user_tasks.StorePlayerScores(),
+                user_tasks.TrackUserPlaytime(),
             ]
         )
         manager.loop()

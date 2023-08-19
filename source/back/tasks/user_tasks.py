@@ -7,7 +7,7 @@ from api.utils import (
 )
 from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
-from api.beatmaps import save_beatmaps
+from api.beatmaps import save_beatmaps, load_beatmap
 from api import objects, akatsuki
 from config import config
 from typing import List
@@ -160,11 +160,106 @@ class StorePlayerScores(Task):
                 )
                 scorefile.data[name] = dict()
                 for score in scores:
-                    scorefile.data[name][score['beatmap_id']] = score
+                    scorefile.data[name][score["beatmap_id"]] = score
                 save_beatmaps(maps)
             infofile.data[user["user_id"]] = datetime_to_str(datetime.datetime.now())
             scorefile.save_data()
             infofile.save_data()
+        return self._finish()
+
+    def _get_path(self):
+        return f"{config['common']['data_directory']}/users_statistics/"
+
+    def _get_path_users(self) -> str:
+        return f"{config['common']['data_directory']}/users_statistics/users.json.gz"
+
+
+class TrackUserPlaytime(Task):
+    def __init__(self) -> None:
+        super().__init__()
+        self.last_fetch = datetime.datetime(year=2000, month=1, day=1)
+
+    def can_run(self) -> bool:
+        return (datetime.datetime.now() - self.last_fetch) > datetime.timedelta(
+            minutes=30
+        )
+
+    def run(self) -> TaskStatus:
+        self.last_fetch = datetime.datetime.now()
+        userfile = DataFile(self._get_path_users())
+        userfile.load_data(default=list())
+        scorefile = DataFile(f"{self._get_path()}/scores.json.gz")
+        scorefile.load_data(default={})
+
+        users: List[objects.LinkedPlayer] = userfile.data
+
+        for user in users:
+            if self.suspended:
+                return TaskStatus.SUSPENDED
+            if not user["full_tracking"]:
+                continue
+            if str(user["user_id"]) not in scorefile.data:
+                continue
+            path = f"{self._get_path()}/scores/{user['user_id']}.json.gz"
+            if not exists(path):
+                continue
+            scoredata = DataFile(path)
+            scoredata.load_data(default={})
+            userpt = DataFile(f"{self._get_path()}/playtime/{user['user_id']}.json.gz")
+            userpt.load_data(default={})
+            if not userpt.data:
+                for name, gamemode in objects.gamemodes.items():
+                    pt = {
+                        "submitted_plays": 0,
+                        "unsubmitted_plays": 0,
+                        "last_play_id": 0,
+                    }
+                    scores: List[objects.Score] = scoredata.data[name].values()
+                    for score in scores:
+                        divisor = 1.5 if (score["mods"] & 64) else 1
+                        beatmap = load_beatmap(score["beatmap_id"])
+                        pt["submitted_plays"] += int(beatmap["length"] / divisor)
+                    userpt.data[name] = pt
+            for name, gamemode in objects.gamemodes.items():
+                skip = 0
+                while True:
+                    _scores, beatmaps = akatsuki.get_user_recent(
+                        user["user_id"], gamemode, skip=skip, length=50
+                    )
+                    if not _scores:
+                        break
+                    if skip == 0:
+                        userpt.data[name]["last_play_id"] = _scores[0]["id"]
+                    save_beatmaps(beatmaps)
+                    for score in _scores:
+                        if score["id"] == userpt.data[name]["last_play_id"]:
+                            break
+                        map = load_beatmap(score["beatmap_id"])
+                        if map["length"] == 0:  # blame akatsuki api
+                            continue
+                        if score["completed"] == 3:  # personal best
+                            scoredata.data[name][str(score["beatmap_id"])] = score
+                            userpt.data[name]["unsubmitted_plays"] += (
+                                map["length"] * multiplier
+                            )
+                        else:
+                            total_hits = (
+                                score["count_300"]
+                                + score["count_100"]
+                                + score["count_50"]
+                                + score["count_miss"]
+                            )
+                            multiplier = total_hits / map["max_combo"]
+                            userpt.data[name]["unsubmitted_plays"] += (
+                                map["length"] * multiplier
+                            )
+                    else:
+                        skip += 1
+                        continue
+                    break
+
+            userpt.save_data()
+            scoredata.save_data()
         return self._finish()
 
     def _get_path(self):

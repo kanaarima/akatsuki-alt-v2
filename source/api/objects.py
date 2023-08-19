@@ -22,6 +22,7 @@ class Score(TypedDict):
     mods: int
     mode: int
     rank: str
+    completed: int
 
 
 class Beatmap(TypedDict):

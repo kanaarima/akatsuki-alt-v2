@@ -56,6 +56,7 @@ def _score_from_apiscore(apiscore, gamemode: Gamemode) -> Score:
         combo=apiscore["max_combo"],
         score=apiscore["score"],
         rank=apiscore["rank"],
+        completed=apiscore["completed"],
     )
 
 
@@ -163,13 +164,13 @@ def get_user_1s(
 
 
 def get_user_recent(
-    userid: int, gamemode: Gamemode, pages=1, length=1
+    userid: int, gamemode: Gamemode, skip=0, pages=1, length=1
 ) -> Tuple[List[Score], List[Beatmap]]:
     res = list()
     resmaps = list()
     for page in range(pages):
         req = requests.get_request(
-            f"users/scores/recent?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
+            f"users/scores/recent?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1+skip}&l={length}&id={userid}"
         )
         if req.status_code != 200:
             break
