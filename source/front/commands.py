@@ -31,14 +31,14 @@ async def ping(full: str, split: list[str], message: discord.Message):
 
 
 async def link(full: str, split: list[str], message: discord.Message):
-    if len(split) < 2:
+    if len(split) < 1:
         await message.reply(f"!link username/userID")
         return
     userid = -1
-    if split[1].isnumeric():
-        userid = int(split[1])
+    if split[0].isnumeric():
+        userid = int(split[0])
     else:
-        userid = akatsuki.lookup_user(" ".join(split[1:]))
+        userid = akatsuki.lookup_user(" ".join(split))
         if not userid:
             await message.reply(f"No user matching found. Perhaps use UserID?")
             return
@@ -67,7 +67,7 @@ async def link(full: str, split: list[str], message: discord.Message):
 
 
 async def set_default_gamemode(full: str, split: list[str], message: discord.Message):
-    if len(split) < 2:
+    if len(split) < 1:
         await message.reply("!setdefault gamemode")
         return
     discord_id = str(message.author.id)
@@ -78,7 +78,7 @@ async def set_default_gamemode(full: str, split: list[str], message: discord.Mes
     if discord_id not in file_links.data:
         await _link_warning(message)
         return
-    mode = split[1].lower()
+    mode = split[0].lower()
     if mode not in gamemodes:
         await _wrong_gamemode_warning(message)
         return
@@ -92,9 +92,9 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     if not player:
         await _link_warning(message)
         return
-    if len(split) > 1:
-        if split[1].lower() in gamemodes:
-            mode = split[1].lower()
+    if len(split) > 0:
+        if split[0].lower() in gamemodes:
+            mode = split[0].lower()
         else:
             await _wrong_gamemode_warning(message)
             return
@@ -135,7 +135,7 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
 async def show(full: str, split: list[str], message: discord.Message):
     player, gamemode = await _get_linked_account(str(message.author.id))
     if not player:
-        await _link_warning()
+        await _link_warning(message)
         return
     user_file = DataFile(
         f"{config['common']['data_directory']}/users_statistics/temp/{player['id']}.json.gz"
@@ -271,7 +271,7 @@ async def show(full: str, split: list[str], message: discord.Message):
 async def show_1s(full: str, split: list[str], message: discord.Message):
     player, gamemode = await _get_linked_account(str(message.author.id))
     if not player:
-        await _link_warning()
+        await _link_warning(message)
         return
     new = False
     args = _parse_args(split)
@@ -316,7 +316,7 @@ async def show_1s(full: str, split: list[str], message: discord.Message):
 async def reset(full: str, split: list[str], message: discord.Message):
     player, _ = await _get_linked_account(str(message.author.id))
     if not player:
-        await _link_warning()
+        await _link_warning(message)
         return
     user_file = DataFile(
         f"{config['common']['data_directory']}/users_statistics/temp/{player['id']}.json.gz"
