@@ -71,9 +71,6 @@ class ScoreDiffView(discord.ui.View):
                     break
             if not found:
                 self.scores_lost.append(score)
-        print(self.scores_gained)
-        print(self.scores_overwritten)
-        print(self.scores_lost)
         self.scores = self.scores_gained
         super().__init__(timeout=180)
 

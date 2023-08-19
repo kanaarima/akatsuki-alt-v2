@@ -385,7 +385,7 @@ def _format_gain_string(gain, fix=""):
 def _format_notation(gain):
     if gain == 0:
         return ""
-    return f"({gain:.2e})"
+    return f"(+{gain:.2e})"
 
 
 def _parse_args(args: List[str]) -> dict:
