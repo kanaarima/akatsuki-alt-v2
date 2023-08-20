@@ -327,6 +327,31 @@ async def reset(full: str, split: list[str], message: discord.Message):
     await message.reply("Data resetted.")
 
 
+async def show_scores(full: str, split: list[str], message: discord.Message):
+    player, gamemode = await _get_linked_account(str(message.author.id))
+    if not player:
+        await _link_warning(message)
+        return
+    args = _parse_args(split)
+    if "default" in args:
+        gamemode = args["default"].lower()
+        if gamemode not in gamemodes:
+            await _wrong_gamemode_warning(message)
+            return
+    path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
+    if not exists(path):
+        await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+        return
+    file = DataFile(path)
+    file.load_data()
+    scores = file.data[gamemode]
+    view = ScoresView(
+        f"{player['name']}'s {gamemodes_full[gamemode]} scores ({len(scores):,})",
+        list(scores.values()),
+    )
+    await view.reply(message)
+
+
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     file_links = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
@@ -410,4 +435,5 @@ commands = {
     "show": show,
     "reset": reset,
     "show1s": show_1s,
+    "showclears": show_scores,
 }

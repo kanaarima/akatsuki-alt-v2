@@ -212,6 +212,8 @@ def get_user_stats(
     update_score_cache()
     data = req.json()
     user = Player(id=data["id"], name=data["username"], country=data["country"])
+    if data["clan"]:
+        user["clan_id"] = data["clan"]["id"]
     user_stats = dict()
     for name, gamemode in objects.gamemodes.items():
         apistats = data["stats"][gamemode["relax"]][name.split("_")[0]]
