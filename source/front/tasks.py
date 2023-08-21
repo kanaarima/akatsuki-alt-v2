@@ -1,5 +1,5 @@
 from api.utils import str_to_datetime, datetime_to_str, yesterday, other_yesterday
-from front.leaderboards import clan_leaderboards
+from front.leaderboards import clan_leaderboards, user_leaderboards
 from api.files import DataFile
 from datetime import datetime
 from discord.ext import tasks
@@ -43,11 +43,30 @@ async def post_clan_updates():
         if key not in config["discord"]["channels"]:
             print(f"{key} not found!")
             continue
-        await post_list(config["discord"]["channels"][key], lists[key])
+        await post_list(config["discord"]["channels"][key], lists[key][:100])
 
 
 async def post_user_updates():
-    pass
+    player_file = DataFile(
+        f"{config['common']['data_directory']}/leaderboards/users/{yesterday()}.json.gz"
+    )
+    player_old_file = DataFile(
+        f"{config['common']['data_directory']}/leaderboards/users/{other_yesterday()}.json.gz"
+    )
+    if not await player_file.wait_till_exist(timeout=180):
+        return
+    if not player_old_file.exists():
+        player_old_file = player_file
+    player_file.load_data()
+    player_old_file.load_data()
+    lists = user_leaderboards.generate_user_leaderboards(
+        player_new=player_file.data, player_old=player_file.data
+    )
+    for key in lists.keys():
+        if key not in config["discord"]["channels"]:
+            print(f"{key} not found!")
+            continue
+        await post_list(config["discord"]["channels"][key], lists[key])
 
 
 @tasks.loop(minutes=10)
