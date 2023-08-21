@@ -1,4 +1,6 @@
+from datetime import datetime, timedelta
 from pathlib import Path
+import asyncio
 import json
 import gzip
 import time
@@ -44,6 +46,18 @@ class DataFile:
 
     def unlock(self):
         Path(self.filepath + ".lock").unlink(missing_ok=True)
+
+    def exists(self):
+        return exists(self.filepath)
+
+    async def wait_till_exist(self, timeout=60):
+        time = datetime.now()
+        while True:
+            if exists(self.filepath):
+                return True
+            if (datetime.now() - time) > timedelta(seconds=timeout):
+                return False
+            await asyncio.sleep(delay=1)
 
 
 def exists(filepath):
