@@ -59,6 +59,7 @@ HalfTime = 256
 Nightcore = 512
 Flashlight = 1024
 SpunOut = 4096
+Perfect = 16384
 
 
 def get_mods(magic_number):
@@ -85,6 +86,8 @@ def get_mods(magic_number):
         mods.append("SD")
     if magic_number & NoFail:
         mods.append("NF")
+    if magic_number & Perfect:
+        mods.append("PF")
     if magic_number & Relax:
         mods.append("RX")
     return mods
@@ -94,6 +97,23 @@ def get_mods_simple(magic_number):
     mods = get_mods(magic_number)
     if "NC" in mods:
         mods.remove("DT")
-    if "RX" in mods:
-        mods.remove("RX")
+    if "PF" in mods:
+        mods.remove("SD")
     return mods
+
+
+def convert_mods(magic_number):
+    new = magic_number
+    if magic_number & Nightcore:
+        new -= Nightcore
+    if magic_number & SpunOut:
+        new -= SpunOut
+    if magic_number & SuddenDeath:
+        new -= SuddenDeath
+    if magic_number & NoFail:
+        new -= NoFail
+    if magic_number & TouchDevice:
+        new -= TouchDevice
+    if magic_number & Perfect:
+        new -= Perfect
+    return new
