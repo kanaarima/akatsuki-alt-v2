@@ -57,6 +57,9 @@ def _score_from_apiscore(apiscore, gamemode: Gamemode) -> Score:
         score=apiscore["score"],
         rank=apiscore["rank"],
         completed=apiscore["completed"],
+        date=datetime.datetime.fromisoformat(
+            apiscore["time"][:-1] + "+00:00"
+        ).timestamp(),
     )
 
 
