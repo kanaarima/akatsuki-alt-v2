@@ -52,17 +52,17 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
     if not exists(path):
         if not download_beatmap(beatmap["beatmap_id"]):  # Mirror has no map
             return beatmap
-    else:
-        try:
-            file = BinaryFile(path)
-            file.load_data()
-            calc_map = calc_beatmap(bytes=file.data)
-            fix_metadata(beatmap)
-            if beatmap["attributes"]["mode"] == 0:
-                beatmap["difficulty"] = get_difficulties(calc_map)
-            file.delete()  # We don't need to store it
-        except Exception as e:
-            print(e)  # TODO
+    try:
+        file = BinaryFile(path)
+        file.load_data()
+        calc_map = calc_beatmap(bytes=file.data)
+        fix_metadata(beatmap)
+        if beatmap["attributes"]["mode"] == 0:
+            beatmap["difficulty"] = get_difficulties(calc_map)
+        file.delete()  # We don't need to store it
+    except Exception as e:
+        raise e
+        print(e)  # TODO
     return beatmap
 
 

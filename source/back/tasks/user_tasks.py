@@ -1,5 +1,4 @@
 from api.utils import (
-    update_dicts,
     yesterday,
     find_unique,
     datetime_to_str,
@@ -243,10 +242,10 @@ class TrackUserPlaytime(Task):
                         divisor = 1.5 if (score["mods"] & 64) else 1
                         if score["completed"] == 3:  # personal best
                             scoredata.data[name][str(score["beatmap_id"])] = score
-                            if 'attributes' in map:
+                            if "attributes" in map:
                                 userpt.data[name]["submitted_plays"] += (
-                                map['attributes']["length"] / divisor
-                            )
+                                    map["attributes"]["length"] / divisor
+                                )
                         else:
                             total_hits = (
                                 score["count_300"]
@@ -254,11 +253,11 @@ class TrackUserPlaytime(Task):
                                 + score["count_50"]
                                 + score["count_miss"]
                             )
-                            if 'attributes' in map:
-                                multiplier = total_hits / map['attributes']["max_combo"]
+                            if "attributes" in map:
+                                multiplier = total_hits / map["attributes"]["max_combo"]
                                 userpt.data[name]["unsubmitted_plays"] += (
-                                map['attributes']["length"] / divisor
-                            ) * multiplier
+                                    map["attributes"]["length"] / divisor
+                                ) * multiplier
                     else:
                         skip += 1
                         continue
