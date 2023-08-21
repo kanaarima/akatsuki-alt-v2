@@ -103,6 +103,17 @@ def get_user_leaderboard(
     gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
 ) -> List[Tuple[Player, GamemodeStatistics, Ranking]]:
     res = list()
+    rank = 0
+    country_rank = {}
+
+    def get(country):
+        if country in country_rank:
+            country_rank[country] += 1
+            return country_rank[country]
+        else:
+            country_rank[country] = 1
+            return 1
+
     for page in range(pages):
         req = requests.get_request(
             f"leaderboard?mode={gamemode['mode']}&p={page+1}&l={length}&rx={gamemode['relax']}&sort={sort.value}"
@@ -112,16 +123,6 @@ def get_user_leaderboard(
         apiusers = req.json()["users"]
         if not apiusers:
             break
-        rank = 0
-        country_rank = {}
-
-        def get(country):
-            if country in country_rank:
-                country_rank[country] += 1
-                return country_rank[country]
-            else:
-                country_rank[country] = 1
-                return 1
 
         for apiuser in apiusers:
             rank += 1

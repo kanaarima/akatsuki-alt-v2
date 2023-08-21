@@ -20,15 +20,13 @@ def find_unique(check_func, iterA, iterB):
             if check_func(x, y):
                 break
         else:
-            continue
-        a.append(x)
+            a.append(x)
     for x in iterB:
         for y in iterA:
             if check_func(x, y):
                 break
         else:
-            continue
-        b.append(x)
+            b.append(x)
     return (a, b)
 
 
