@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional
+from typing import TypedDict, Optional, Dict
 
 
 class Player(TypedDict):
@@ -71,7 +71,7 @@ class Beatmap(TypedDict):
     mapper: str
     status: Optional[RankedStatus]
     attributes: Optional[BeatmapAttributes]
-    difficulty: Optional[BeatmapDifficulty]
+    difficulty: Optional[Dict[int, BeatmapDifficulty]]
 
 
 class Clan(TypedDict):
