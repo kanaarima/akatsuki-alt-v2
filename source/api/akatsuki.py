@@ -71,13 +71,7 @@ def _beatmap_from_apimap(apimap):
         beatmap_set_id=apimap["beatmapset_id"],
         artist=artist,
         title=title,
-        difficulty=difficulty,
-        star_rating=apimap["difficulty"],
-        length=apimap["hit_length"],
-        drain_time=apimap["hit_length"],
-        max_combo=apimap["max_combo"],
-        ar=apimap["ar"],
-        od=apimap["od"],
+        difficulty_name=difficulty,
     )
 
 

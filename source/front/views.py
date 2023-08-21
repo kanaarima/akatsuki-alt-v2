@@ -34,7 +34,7 @@ class ScoresView(discord.ui.View):
             if not beatmap_info:
                 text += "Unknown Beatmap?\n"
                 continue
-            text_beatmap = f"{beatmap_info['artist']} - {beatmap_info['title']} [{beatmap_info['difficulty']}]"
+            text_beatmap = f"{beatmap_info['artist']} - {beatmap_info['title']} [{beatmap_info['difficulty_name']}]"
             text_score = f"mods: {''.join(get_mods_simple(score['mods']))} "
             text_score += f"300/100/50/X: {score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']} "
             text_score += f"Accuracy: {score['accuracy']:.2f}%\n "
@@ -113,7 +113,7 @@ class ScoreDiffView(discord.ui.View):
             if not beatmap_info:
                 text += "Unknown Beatmap?\n"
                 continue
-            text_beatmap = f"{beatmap_info['artist']} - {beatmap_info['title']} [{beatmap_info['difficulty']}]"
+            text_beatmap = f"{beatmap_info['artist']} - {beatmap_info['title']} [{beatmap_info['difficulty_name']}]"
             text_score = f"mods: {''.join(get_mods_simple(score['mods']))} "
             text_score += f"300/100/50/X: {score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']} "
             text_score += f"Accuracy: {score['accuracy']:.2f}%\n "

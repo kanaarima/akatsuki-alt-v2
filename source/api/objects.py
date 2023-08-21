@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 
 class Player(TypedDict):
@@ -22,7 +22,44 @@ class Score(TypedDict):
     mods: int
     mode: int
     rank: str
+    date: int
     completed: int
+
+
+class BeatmapAttributes(TypedDict):
+    ar: float
+    od: float
+    cs: float
+    length: int
+    bpm: float
+    max_combo: int
+    circles: int
+    sliders: int
+    spinners: int
+    mode: int
+
+
+class BeatmapDifficulty(TypedDict):
+    speed_note_count: int
+    flashlight_rating: float
+    speed_rating: float
+    star_rating: float
+    aim_rating: float
+    flashlight_pp: float
+    speed_pp: float
+    aim_pp: float
+    acc_pp: float
+    pp_100: float
+    pp_99: float
+    pp_98: float
+    pp_97: float
+    pp_95: float
+    pp_90: float
+
+
+class RankedStatus(TypedDict):
+    bancho: int
+    akatsuki: int
 
 
 class Beatmap(TypedDict):
@@ -30,18 +67,11 @@ class Beatmap(TypedDict):
     beatmap_set_id: int
     artist: str
     title: str
-    difficulty: str
-    bpm: float
-    star_rating: float
-    aim_rating: float
-    speed_rating: float
-    length: int
-    drain_time: int
-    max_combo: int
-    mode: int
-    ar: float
-    od: float
-    cs: float
+    difficulty_name: str
+    mapper: str
+    status: Optional[RankedStatus]
+    attributes: Optional[BeatmapAttributes]
+    difficulty: Optional[BeatmapDifficulty]
 
 
 class Clan(TypedDict):

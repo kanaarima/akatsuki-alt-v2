@@ -60,5 +60,26 @@ class DataFile:
             await asyncio.sleep(delay=1)
 
 
+class BinaryFile(DataFile):
+    def load_data(self):
+        self.wait_lock()
+        self.lock()
+        try:
+            with gzip.open(self.filepath, "r") as fin:
+                self.data = fin.read()
+        except:
+            self.data = None
+        self.unlock()
+
+    def save_data(self):
+        self.wait_lock()
+        if not self.data:
+            self.load_data()
+        self.lock()
+        with gzip.open(self.filepath, "w") as fout:
+            fout.write(self.data)
+        self.unlock()
+
+
 def exists(filepath):
     return Path(filepath).exists()
