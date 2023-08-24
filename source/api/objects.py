@@ -130,3 +130,4 @@ gamemodes_full = {
 class LinkedPlayer(TypedDict):
     user_id: int
     full_tracking: bool  # True: linked from discord
+    render_permission: bool
