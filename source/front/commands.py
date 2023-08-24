@@ -7,8 +7,9 @@ from api.objects import (
     gamemodes_full,
 )
 import api.akatsuki as akatsuki
+import api.beatmaps as beatmaps
 from api.files import DataFile, exists
-from api.utils import get_mods, yesterday, other_yesterday
+from api.utils import get_mods_simple, yesterday, other_yesterday, convert_mods
 from typing import List, Tuple, Dict
 from config import config
 import front.bot as bot
@@ -104,6 +105,9 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
         return
     score = score[0]
     map = map[0]
+    # Process map
+    beatmaps.save_beatmap(map)
+    map = beatmaps.load_beatmap(map["beatmap_id"])
     embed = discord.Embed()
     embed.set_author(
         name=f"{player['name']} on {gamemodes_full[mode]}",
@@ -114,20 +118,35 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     )
     embed.add_field(name="Artist", value=map["artist"])
     embed.add_field(name="Title", value=map["title"])
-    embed.add_field(name="Difficulty", value=map["difficulty"])
-    embed.add_field(
-        name="Star Rating", value=f"{map['star_rating']}"
-    )  # TODO: include other types
-    embed.add_field(name="OD", value=map["od"])
-    embed.add_field(name="AR", value=map["ar"])
+    embed.add_field(name="Difficulty", value=map["difficulty_name"])
+    max_combo = score["combo"]
+    # TODO: include other types
+    if "attributes" in map:
+        attrs = map["attributes"]
+        max_combo = attrs["max_combo"]
+        embed.add_field(
+            name="CS/AR/OD",
+            value=f"{attrs['cs']:.1f}/{attrs['ar']:.1f}/{attrs['od']:.1f}",
+        )
+    if "difficulty" in map:
+        diff = map["difficulty"][str(convert_mods(score["mods"]))]
+        embed.add_field(
+            name="SR/Aim/Speed",
+            value=f"{diff['star_rating']:.1f}/{diff['aim_rating']:.1f}/{diff['speed_rating']:.1f}",
+        )
+        embed.add_field(
+            name="95/100% FC",
+            value=f"{diff['pp_95']:.0f}/{diff['pp_100']:.0f}",
+        )
     embed.add_field(
         name="300/100/50/X",
         value=f"{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}",
     )
     embed.add_field(name="score", value=f"{score['score']:,}")
     embed.add_field(name="pp", value=f"{score['pp']:,}")
-    embed.add_field(name="mods", value=f"{''.join(get_mods(score['mods']))}")
-    embed.add_field(name="combo", value=score["combo"])
+    embed.add_field(name="mods", value=f"{''.join(get_mods_simple(score['mods']))}")
+    embed.add_field(name="combo", value=f"{score['combo']}/{max_combo}x")
+    embed.add_field(name="accuracy", value=f"{score['accuracy']:.2f}%")
     embed.add_field(name="download", value=_get_download_link(map["beatmap_id"]))
     await message.reply(embed=embed)
 

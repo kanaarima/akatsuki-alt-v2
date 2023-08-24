@@ -57,9 +57,8 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
         file.load_data()
         calc_map = calc_beatmap(bytes=file.data)
         fix_metadata(beatmap)
-        if beatmap["attributes"]["mode"] == 0:
+        if "attributes" in beatmap and beatmap["attributes"]["mode"] == 0:
             beatmap["difficulty"] = get_difficulties(calc_map)
-        file.delete()  # We don't need to store it
     except Exception as e:
         raise e
         print(e)  # TODO
@@ -67,7 +66,7 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
 
 
 def download_beatmap(beatmap_id) -> True:
-    sleep(2)
+    sleep(1.5)
     return _osudirect_download(beatmap_id)
 
 
@@ -85,7 +84,12 @@ def _osudirect_download(beatmap_id) -> True:
 
 
 def fix_metadata(beatmap: Beatmap):
-    b = client.beatmap(beatmap_id=beatmap["beatmap_id"])
+    b = None
+    try:
+        b = client.beatmap(beatmap_id=beatmap["beatmap_id"])
+    except:
+        print(f"Couldn't find {beatmap}")
+        return
     beatmap["artist"] = b._beatmapset.artist
     beatmap["title"] = b._beatmapset.title
     beatmap["beatmap_set_id"] = b._beatmapset.id
@@ -113,7 +117,7 @@ def fix_metadata(beatmap: Beatmap):
         beatmap["status"] = RankedStatus(
             bancho=b._beatmapset.ranked.value, akatsuki=b._beatmapset.ranked.value
         )
-    sleep(0.5)
+    sleep(0.3)
 
 
 # def get_attributes(beatmap: calc_beatmap) -> BeatmapAttributes:
