@@ -147,14 +147,21 @@ async def show(full: str, split: list[str], message: discord.Message):
         if gamemode not in gamemodes:
             await _wrong_gamemode_warning(message)
             return
-    if "compareto" in args:
-        pass
+
     recent: Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]] = user_file.data[-1][
         1
     ]
     oldest: Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]] = user_file.data[0][
         1
     ]
+    if "compareto" in args:
+        path = f"{config['common']['data_directory']}/users_statistics/{args['compareto']}/{player['id']}.json.gz"
+        if not exists(path):
+            await message.reply(f"You don't have stats recorded for that day!")
+            return
+        oldfile = DataFile(path)
+        oldfile.load_data()
+        oldest = oldfile.data["statistics"]
     embed = discord.Embed(
         colour=discord.Color.og_blurple(),
         title=f"Stats for {player['name']}",
