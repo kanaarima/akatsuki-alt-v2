@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from api.metrics import log_request
 import requests
 import time
 
@@ -17,6 +18,7 @@ class ApiHandler:
         self._wait()
         self._lock()
         req = requests.get(f"{self.base_url}{URL}", headers=self.headers, data=data)
+        log_request(req)
         self.lock = False
         return req
 
@@ -24,6 +26,7 @@ class ApiHandler:
         self._wait()
         self._lock()
         req = requests.post(f"{self.base_url}{URL}", headers=self.headers, data=data)
+        log_request(req)
         self.lock = False
         return req
 

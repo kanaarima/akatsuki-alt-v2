@@ -8,10 +8,10 @@ from api.objects import (
     Beatmap,
 )
 from typing import List, Tuple, Dict
-from enum import Enum
 import api.objects as objects
-import datetime
+from enum import Enum
 import utils.api
+import datetime
 
 requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/", delay=0.8)
 lb_score_cache: Dict[str, List[Tuple[Player, GamemodeStatistics, Ranking]]] = dict()
@@ -115,7 +115,7 @@ def get_user_leaderboard(
         req = requests.get_request(
             f"leaderboard?mode={gamemode['mode']}&p={page+1}&l={length}&rx={gamemode['relax']}&sort={sort.value}"
         )
-        if req.status_code != 200:  # TODO:
+        if req.status_code != 200:
             break
         apiusers = req.json()["users"]
         if not apiusers:
@@ -152,7 +152,7 @@ def get_user_1s(
         req = requests.get_request(
             f"users/scores/first?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
-        if req.status_code != 200:  # TODO:
+        if req.status_code != 200: 
             break
         apiscores = req.json()["scores"]
         total = req.json()["total"]
@@ -257,7 +257,7 @@ def get_clan_leaderboard(
             req = requests.get_request(
                 f"clans/stats/first?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
             )
-            if req.status_code != 200:  # TODO:
+            if req.status_code != 200: 
                 break
             apiclans = req.json()["clans"]
             if not apiclans:
@@ -278,7 +278,7 @@ def get_clan_leaderboard(
             req = requests.get_request(
                 f"clans/stats/all?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
             )
-            if req.status_code != 200:  # TODO:
+            if req.status_code != 200:
                 break
             apiclans = req.json()["clans"]
             if not apiclans:
