@@ -3,7 +3,9 @@ from api.files import DataFile, BinaryFile, exists
 from akatsuki_pp_py import Beatmap as calc_beatmap
 from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
+from api.logging import logger
 from typing import List, Dict
+from datetime import datetime
 from config import config
 import api.utils as utils
 from time import sleep
@@ -16,21 +18,34 @@ client = ossapi.Ossapi(
     client_id=config["osuapi"]["client_id"],
     client_secret=config["osuapi"]["client_secret"],
 )
+cache = dict()
+cache_last_refresh = datetime.now()
 
 
 def load_beatmap(beatmap_id) -> Beatmap:
+    global cache, cache_last_refresh
+    if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
+        "cache"
+    ]:
+        cache = dict()
+        cache_last_refresh = datetime.now()
+    if beatmap_id in cache:
+        return cache[beatmap_id]
     path = f"{base_path}/{beatmap_id}.json.gz"
     if not exists(path):
         new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
         if len(new.keys()) == 1:
             return
+        cache[beatmap_id] = new
         return new
     file = DataFile(path)
     file.load_data()
+    cache[beatmap_id] = file.data
     return file.data
 
 
 def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
+    global cache, cache_last_refresh
     path = f"{base_path}/{beatmap['beatmap_id']}.json.gz"
     if exists(path) and not overwrite:
         return
@@ -40,6 +55,12 @@ def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
     file.load_data()
     file.data = beatmap
     file.save_data()
+    if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
+        "cache"
+    ]:
+        cache = dict()
+        cache_last_refresh = datetime.now()
+    cache[beatmap["beatmap_id"]] = beatmap
 
 
 def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
@@ -50,7 +71,8 @@ def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
 def process_beatmap(beatmap: Beatmap) -> Beatmap:
     path = f"{base_path}/{beatmap['beatmap_id']}.osu.gz"
     if not exists(path):
-        if not download_beatmap(beatmap["beatmap_id"]):  # Mirror has no map
+        if not download_beatmap(beatmap["beatmap_id"]):
+            logger.warn(f"Map {beatmap['beatmap_id']} can't be downloaded!")
             return beatmap
     try:
         file = BinaryFile(path)
@@ -60,8 +82,7 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
         if "attributes" in beatmap and beatmap["attributes"]["mode"] == 0:
             beatmap["difficulty"] = get_difficulties(calc_map)
     except Exception as e:
-        raise e
-        print(e)  # TODO
+        logger.error("Error occurred while processing map! %s", exc_info=True)
     return beatmap
 
 
@@ -76,7 +97,10 @@ def _osudirect_download(beatmap_id) -> True:
         headers=DEFAULT_HEADERS,
     )
     if req.status_code != 200:
+        logger.warning(f"GET {req.url} {req.status_code}")
+        logger.warning(f"{req.text}")
         return False
+    logger.info(f"GET {req.url} {req.status_code}")
     file = BinaryFile(f"{base_path}/{beatmap_id}.osu.gz")
     file.data = req.content
     file.save_data()
@@ -88,7 +112,7 @@ def fix_metadata(beatmap: Beatmap):
     try:
         b = client.beatmap(beatmap_id=beatmap["beatmap_id"])
     except:
-        print(f"Couldn't find {beatmap}")
+        logger.warn(f"Map {beatmap['beatmap_id']} not found on bancho!")
         return
     beatmap["artist"] = b._beatmapset.artist
     beatmap["title"] = b._beatmapset.title
