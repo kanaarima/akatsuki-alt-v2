@@ -157,7 +157,8 @@ class StorePlayerScores(Task):
                 scores, maps = akatsuki.get_user_best(
                     user["user_id"], gamemode, pages=1000
                 )
-                scorefile.data[name] = dict()
+                if not scorefile.data[name]:
+                    scorefile.data[name] = dict()
                 for score in scores:
                     scorefile.data[name][score["beatmap_id"]] = score
                 save_beatmaps(maps)
@@ -211,7 +212,6 @@ class TrackUserPlaytime(Task):
                     pt = {
                         "submitted_plays": 0,
                         "unsubmitted_plays": 0,
-                        "last_play_id": 0,
                     }
                     scores: List[objects.Score] = scoredata.data[name].values()
                     for score in scores:
@@ -230,12 +230,14 @@ class TrackUserPlaytime(Task):
                     )
                     if not _scores:
                         break
-                    if skip == 0:
-                        userpt.data[name]["last_play_id"] = _scores[0]["id"]
                     save_beatmaps(beatmaps)
                     for score in _scores:
-                        if score["id"] == userpt.data[name]["last_play_id"]:
-                            break
+                        if str(score["beatmap_id"]) in scoredata.data[name]:
+                            if (
+                                score["id"]
+                                == scoredata.data[name][str(score["beatmap_id"])]["id"]
+                            ):
+                                break
                         map = load_beatmap(score["beatmap_id"])
                         # if map["length"] == 0:  # blame akatsuki api
                         #    continue
