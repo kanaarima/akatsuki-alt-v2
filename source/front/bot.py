@@ -1,4 +1,4 @@
-from front import tasks, commands
+from front import tasks, cmd
 from config import config
 import discord
 
@@ -14,7 +14,7 @@ class Bot(discord.Client):
         text = message.content
         if not text.startswith(config["discord"]["bot_prefix"]):
             return
-        await commands.handle_command(message)
+        await cmd.handle_command(message)
 
 
 intents = discord.Intents.default()

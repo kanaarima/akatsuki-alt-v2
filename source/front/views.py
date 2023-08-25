@@ -1,17 +1,24 @@
+from api.utils import get_mods_simple, datetime_to_str
 from api.objects import Player, Score
 from api.beatmaps import load_beatmap
-from api.utils import get_mods_simple
+from datetime import datetime
 from typing import List
 import discord
 
 
 class ScoresView(discord.ui.View):
-    def __init__(self, title: str, scores: List[Score], message=None):
+    def __init__(self, title: str, scores: List[Score], size=7):
         self.title = title
         self.scores = scores
-        self.message = message
         self.index = 0
+        self.desc = True
+        self.sort_type = 0
+        self.last = True
+        self.size = size
+        self.sort()
         super().__init__(timeout=180)
+
+    sort_types = ["pp", "date", "score", "accuracy", "mods"]
 
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.gray)
     async def prev(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -20,28 +27,81 @@ class ScoresView(discord.ui.View):
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.gray)
     async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.index = min(int(len(self.scores) / 10), self.index + 1)
+        self.index = min(int(len(self.scores) / self.size), self.index + 1)
         await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label="Last", style=discord.ButtonStyle.gray)
+    async def last(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.last:
+            self.index = int(len(self.scores) / self.size)
+            self.last = False
+            button.label = "First"
+        else:
+            self.index = 0
+            self.last = True
+            button.label = "Last"
+        button._row = 0
+
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label=f"Sort: {sort_types[0]}", style=discord.ButtonStyle.gray)
+    async def sort_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.index = 0
+        self.sort_type += 1
+        if self.sort_type > len(self.sort_types) - 1:
+            self.sort_type = 0
+        self.sort()
+        button.label = f"Sort: {self.sort_types[self.sort_type]}"
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label=f"↓", style=discord.ButtonStyle.gray)
+    async def sort_dir_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.desc = not self.desc
+        button.label = "↓" if self.desc else "↑"
+        button.row = 0
+        self.sort()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    def sort(self):
+        if self.sort_type == 0:
+            self.scores.sort(key=lambda x: x["pp"], reverse=self.desc)
+        elif self.sort_type == 1:
+            self.scores.sort(key=lambda x: x["date"], reverse=self.desc)
+        elif self.sort_type == 2:
+            self.scores.sort(key=lambda x: x["score"], reverse=self.desc)
+        elif self.sort_type == 3:
+            self.scores.sort(key=lambda x: x["accuracy"], reverse=self.desc)
+        elif self.sort_type == 4:
+            self.scores.sort(key=lambda x: x["mods"], reverse=self.desc)
 
     async def reply(self, message: discord.Message):
         self.message = await message.reply(embed=self.get_embed(), view=self)
 
     def get_embed(self):
-        embed = discord.Embed(title=self.title)
-        i = self.index * 10
-        for score in self.scores[i : i + 10]:
+        embed = discord.Embed(
+            title=self.title + f" ({self.index}/{int(len(self.scores) / self.size)})"
+        )
+        i = self.index * self.size
+        for score in self.scores[i : i + self.size]:
             beatmap_info = load_beatmap(score["beatmap_id"])
             if not beatmap_info:
                 text += "Unknown Beatmap?\n"
                 continue
             text_beatmap = f"{beatmap_info['artist']} - {beatmap_info['title']} [{beatmap_info['difficulty_name']}]"
-            text_score = f"mods: {''.join(get_mods_simple(score['mods']))} "
-            text_score += f"300/100/50/X: {score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']} "
-            text_score += f"Accuracy: {score['accuracy']:.2f}%\n "
-            text_score += f"Rank: {score['rank']} "
-            text_score += f"Combo: {score['combo']}x "
+            text_score = f"+{''.join(get_mods_simple(score['mods']))} "
+            text_score += f"{score['rank']} "
+            text_score += f"{score['combo']}x "
+            text_score += f"{score['accuracy']:.2f}% "
+            text_score += f"[{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}]\n"
             text_score += f"Score: {score['score']:,} "
-            text_score += f"PP: {score['pp']}pp\n"
+            text_score += f"PP: {score['pp']}pp "
+            text_score += (
+                f"Date: {datetime_to_str(datetime.fromtimestamp(score['date']))}"
+            )
             embed.add_field(name=text_beatmap, value=text_score, inline=False)
         return embed
 

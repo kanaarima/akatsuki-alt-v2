@@ -1,36 +1,16 @@
-from api.objects import (
-    LinkedPlayer,
-    Player,
-    GamemodeStatistics,
-    Ranking,
-    gamemodes,
-    gamemodes_full,
-)
-import api.akatsuki as akatsuki
-import api.beatmaps as beatmaps
-from api.files import DataFile, exists
 from api.utils import get_mods_simple, yesterday, other_yesterday, convert_mods
-from typing import List, Tuple, Dict
-from config import config
-import front.bot as bot
 from front.views import ScoresView, ScoreDiffView
+from api.files import DataFile, exists
+from typing import List, Tuple, Dict
+import api.beatmaps as beatmaps
+import api.akatsuki as akatsuki
+from config import config
+from api.objects import *
 import datetime
 import discord
 
 
-async def handle_command(message: discord.Message):
-    full = message.content[len(config["discord"]["bot_prefix"]) :]
-    split = full.split(" ")
-    if split[0] in commands:
-        await commands[split[0]](full, split[1:], message)
-    else:
-        await message.reply(content="Unknown command!")
-
-
-async def ping(full: str, split: list[str], message: discord.Message):
-    await message.reply(content="pong!")
-
-
+# TODO: add showclan command
 async def link(full: str, split: list[str], message: discord.Message):
     if len(split) < 1:
         await message.reply(f"!link username/userID")
@@ -107,47 +87,46 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     map = map[0]
     # Process map
     beatmaps.save_beatmap(map)
-    map = beatmaps.load_beatmap(map["beatmap_id"])
+    map = beatmaps.load_beatmap(
+        map["beatmap_id"]
+    )  # TODO maybe add update_beatmap call?
     embed = discord.Embed()
-    embed.set_author(
-        name=f"{player['name']} on {gamemodes_full[mode]}",
-        icon_url=f"https://a.akatsuki.gg/{player['id']}",
-    )
-    embed.set_image(
+    embed.set_thumbnail(
         url=f"https://assets.ppy.sh/beatmaps/{map['beatmap_set_id']}/covers/cover@2x.jpg"
     )
-    embed.add_field(name="Artist", value=map["artist"])
-    embed.add_field(name="Title", value=map["title"])
-    embed.add_field(name="Difficulty", value=map["difficulty_name"])
-    max_combo = score["combo"]
-    # TODO: include other types
-    if "attributes" in map:
-        attrs = map["attributes"]
-        max_combo = attrs["max_combo"]
-        embed.add_field(
-            name="CS/AR/OD",
-            value=f"{attrs['cs']:.1f}/{attrs['ar']:.1f}/{attrs['od']:.1f}",
-        )
-    if "difficulty" in map:
-        diff = map["difficulty"][str(convert_mods(score["mods"]))]
-        embed.add_field(
-            name="SR/Aim/Speed",
-            value=f"{diff['star_rating']:.1f}/{diff['aim_rating']:.1f}/{diff['speed_rating']:.1f}",
-        )
-        embed.add_field(
-            name="95/100% FC",
-            value=f"{diff['pp_95']:.0f}/{diff['pp_100']:.0f}",
-        )
-    embed.add_field(
-        name="300/100/50/X",
-        value=f"{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}",
+    artist = map["artist"]
+    title = map["title"]
+    difficulty = map["difficulty_name"]
+    mods = "".join(get_mods_simple(score["mods"]))
+    sr = (
+        ""
+        if "difficulty" not in map
+        else f"[{map['difficulty'][str(convert_mods(score['mods']))]['star_rating']:.1f}*] "
     )
-    embed.add_field(name="score", value=f"{score['score']:,}")
-    embed.add_field(name="pp", value=f"{score['pp']:,}")
-    embed.add_field(name="mods", value=f"{''.join(get_mods_simple(score['mods']))}")
-    embed.add_field(name="combo", value=f"{score['combo']}/{max_combo}x")
-    embed.add_field(name="accuracy", value=f"{score['accuracy']:.2f}%")
-    embed.add_field(name="download", value=_get_download_link(map["beatmap_id"]))
+    embed.set_author(
+        name=f"{sr}{artist} - {title[:180]} [{difficulty}] +{mods}\n",
+        icon_url=f"https://a.akatsuki.gg/{player['id']}",
+    )
+    combo = "x" if "attributes" not in map else f"/{map['attributes']['max_combo']}x"
+    rank = score["rank"]
+    if score["completed"] < 2:
+        run = ""
+        if "attributes" in map:
+            total = (
+                score["count_300"]
+                + score["count_100"]
+                + score["count_50"]
+                + score["count_miss"]
+            )
+            total_map = (
+                map["attributes"]["circles"]
+                + map["attributes"]["sliders"]
+                + map["attributes"]["spinners"]
+            )
+            run = f" ({int((total/total_map)*100)}%)"
+        rank = f"F{run}"
+    text = f"➤**{rank} {score['combo']}{combo} {score['accuracy']:.2f}% [{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}] {score['pp']}pp {score['score']:,}**"
+    embed.description = text
     await message.reply(embed=embed)
 
 
@@ -162,6 +141,14 @@ async def show(full: str, split: list[str], message: discord.Message):
     user_file.load_data(default=[])
     _update_fetch(player, user_file)
     user_file.save_data()
+    args = _parse_args(split)
+    if "default" in args:
+        gamemode = args["default"].lower()
+        if gamemode not in gamemodes:
+            await _wrong_gamemode_warning(message)
+            return
+    if "compareto" in args:
+        pass
     recent: Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]] = user_file.data[-1][
         1
     ]
@@ -390,7 +377,7 @@ async def _wrong_gamemode_warning(message: discord.Message):
 
 
 def _get_download_link(beatmap_id: int):
-    return f"[direct](https://towwyyyy.marinaa.nl/osu/osudl.html?beatmap={beatmap_id}) [bancho](https://osu.ppy.sh/b/{beatmap_id})"
+    return f"[direct](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap_id}) [bancho](https://osu.ppy.sh/b/{beatmap_id})"
 
 
 def _update_fetch(player: Player, user_file: DataFile):
@@ -444,15 +431,3 @@ def _parse_args(args: List[str]) -> dict:
         else:
             parsed[s[0]] = s[1]
     return parsed
-
-
-commands = {
-    "ping": ping,
-    "link": link,
-    "recent": show_recent,
-    "setdefault": set_default_gamemode,
-    "show": show,
-    "reset": reset,
-    "show1s": show_1s,
-    "showclears": show_scores,
-}

@@ -1,6 +1,6 @@
 from api.objects import Ranking, Player, GamemodeStatistics, gamemodes
 from typing import Dict, Tuple, List, Optional
-from front.commands import _format_gain_string
+from front.commands.user_commands import _format_gain_string
 from config import config
 import front.bot as bot
 import discord
