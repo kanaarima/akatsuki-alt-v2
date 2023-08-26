@@ -1,3 +1,4 @@
+import back.tasks.maintenance_tasks as maintenance_tasks
 from back.taskmanager import TaskManager
 import back.tasks.clan_tasks as clan_tasks
 import back.tasks.user_tasks as user_tasks
@@ -24,6 +25,7 @@ def main():
                 user_tasks.StorePlayerStats(),
                 user_tasks.StorePlayerScores(),
                 user_tasks.TrackUserPlaytime(),
+                maintenance_tasks.CheckNewRankedBeatmaps(),
             ]
         )
         manager.loop()

@@ -109,11 +109,15 @@ def _osudirect_download(beatmap_id) -> True:
 
 def fix_metadata(beatmap: Beatmap):
     b = None
-    try:
-        b = client.beatmap(beatmap_id=beatmap["beatmap_id"])
-    except:
-        logger.warn(f"Map {beatmap['beatmap_id']} not found on bancho!")
-        return
+    if "raw_beatmap" in beatmap:
+        b = beatmap["raw_beatmap"]
+        del beatmap["raw_beatmap"]
+    else:
+        try:
+            b = client.beatmap(beatmap_id=beatmap["beatmap_id"])
+        except:
+            logger.warn(f"Map {beatmap['beatmap_id']} not found on bancho!")
+            return
     beatmap["artist"] = b._beatmapset.artist
     beatmap["title"] = b._beatmapset.title
     beatmap["beatmap_set_id"] = b._beatmapset.id
