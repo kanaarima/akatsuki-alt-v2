@@ -26,7 +26,7 @@ class ApiHandler:
         self._wait()
         self._lock()
         req = requests.post(f"{self.base_url}{URL}", headers=self.headers, data=data)
-        log_request(req)
+        log_request(req, post=True)
         self.lock = False
         return req
 

@@ -7,12 +7,13 @@ commands_used = {}
 wrong_commands_used = {}
 
 
-def log_request(request):
+def log_request(request, post=False):
+    type = "POST" if post else "GET"
     load_metrics()
     if request.status_code > 299:
-        logger.warn(f"POST {request.url} {request.status_code}")
+        logger.warn(f"{type} {request.url} {request.status_code}")
     else:
-        logger.info(f"POST {request.url} {request.status_code}")
+        logger.info(f"{type} {request.url} {request.status_code}")
     method = request.url.split("?")[0]
     if method in requests_sent:
         requests_sent[method] += 1
@@ -33,6 +34,7 @@ def log_command(command, full, message, wrong=False):
 
 
 def load_metrics():
+    global requests_sent, commands_used, wrong_commands_used
     file = DataFile(f"{config['common']['data_directory']}/metrics.json.gz")
     file.load_data(
         default={"requests_sent": {}, "commands_used": {}, "wrong_commands_used": {}}
