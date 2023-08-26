@@ -10,7 +10,7 @@ import asyncio
 
 async def post_list(channel_id, strings):
     str = "```"
-    for string in strings:
+    for string in strings[:100]:
         str += f"{string}\n"
         if len(str) > 1900:
             str += "```"
