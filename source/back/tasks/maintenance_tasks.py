@@ -15,6 +15,7 @@ class CheckNewRankedBeatmaps(Task):
         return (datetime.now() - self.last) > timedelta(days=1)
 
     def run(self) -> TaskStatus:
+        self.last = datetime.now()
         sets = beatmaps.client.search_beatmapsets(
             mode=0,
             sort=BeatmapsetSearchSort.RANKED_DESCENDING,

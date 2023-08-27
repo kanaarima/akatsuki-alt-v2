@@ -19,7 +19,7 @@ async def handle_command(message: discord.Message):
 
 
 async def ping(full: str, split: list[str], message: discord.Message):
-    await message.reply(content="pong!")
+    await message.channel.send(content="pong!")
 
 
 commands = {

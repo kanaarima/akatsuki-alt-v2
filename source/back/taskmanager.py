@@ -1,6 +1,9 @@
 from api.tasks import Task, TaskStatus
 from threading import Thread
 from typing import List, Dict
+from api.logging import logger
+from api.files import DataFile
+from config import config
 import signal
 import time
 
@@ -16,18 +19,41 @@ class SignalHandler:
         self.exit = True
 
 
+def name(task: Task):
+    return task.__class__.__name__
+
+
 class TaskManager:
     def __init__(self, tasks: List[Task]):
         self.tasks = tasks
+        self.tasks_status = DataFile(
+            f"{config['common']['log_directory']}/status.json.gz"
+        )
+        self.tasks_status.data = {}
+        self.tasks_status.save_data()
 
     def start_async(self, task: Task) -> Thread:
+        self.tasks_status.data[name(task)] = "running (async)"
+        self.tasks_status.save_data()
+        logger.info(f"Task {name(task)} is starting (async)")
         thread = Thread(target=task.run)
         thread.start()
         return thread
 
     def run_sync(self, tasks: List[Task]):
+        print("Started")
         for task in tasks:
+            self.tasks_status.data[name(task)] = "waiting"
+        for task in tasks:
+            self.tasks_status.data[name(task)] = "running"
+            self.tasks_status.save_data()
+            logger.info(f"Task {name(task)} is starting (sync)")
             task.run()
+            self.tasks_status.data[name(task)] = "completed"
+            self.tasks_status.save_data()
+            logger.info(f"Task {name(task)} is done (sync)")
+        self.tasks_status.save_data()
+        print("stopped")
 
     def loop(self):
         sighandler = SignalHandler()
@@ -36,6 +62,15 @@ class TaskManager:
         while True:
             sync_tasks: List[Task] = list()
             for task in self.tasks:
+                if (
+                    task.asynchronous
+                    and name(task) in self.tasks_status.data
+                    and task in threads
+                ):
+                    if not threads[task].is_alive():
+                        logger.info(f"Task {name(task)} is done (async)")
+                        self.tasks_status.data.pop(name(task), None)
+                        self.tasks_status.save_data()
                 if not task.can_run():
                     continue
                 if task in threads and threads[task].is_alive():
@@ -44,7 +79,7 @@ class TaskManager:
                     threads[task] = self.start_async(task)
                 else:
                     sync_tasks.append(task)
-            if not sync_thread or not sync_thread.is_alive():
+            if not sync_thread or not sync_thread.is_alive() and sync_tasks:
                 sync_thread = Thread(target=self.run_sync, args=[sync_tasks])
                 sync_thread.start()
             if sighandler.exit:
