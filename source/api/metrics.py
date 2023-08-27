@@ -1,4 +1,4 @@
-from api.logging import logger
+from api.logging import logger, type
 from api.files import DataFile
 from config import config
 
@@ -45,7 +45,7 @@ def load_metrics():
 
 
 def save_metrics():
-    file = DataFile(f"{config['common']['log_directory']}/metrics.json.gz")
+    file = DataFile(f"{config['common']['log_directory']}/metrics_{type}.json.gz")
     file.data = {
         "requests_sent": requests_sent,
         "commands_used": commands_used,
