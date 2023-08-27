@@ -1,5 +1,5 @@
 from api.utils import get_mods_simple, yesterday, other_yesterday, convert_mods
-from front.views import ScoresView, ScoreDiffView
+from front.views import ScoresView, ScoreDiffView, StringListView
 from api.files import DataFile, exists
 from typing import List, Tuple, Dict
 import api.beatmaps as beatmaps
@@ -10,7 +10,6 @@ import datetime
 import discord
 
 
-# TODO: add showclan command
 async def link(full: str, split: list[str], message: discord.Message):
     if len(split) < 1:
         await message.reply(f"!link username/userID")
@@ -362,6 +361,49 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
         f"{player['name']}'s {gamemodes_full[gamemode]} scores ({len(scores):,})",
         list(scores.values()),
     )
+    await view.reply(message)
+
+
+async def show_scores_completion(full: str, split: list[str], message: discord.Message):
+    player, gamemode = await _get_linked_account(str(message.author.id))
+    gamemode = "std_rx"
+    if not player:
+        await _link_warning(message)
+        return
+    args = _parse_args(split)
+    include_all = False
+    if "default" in args:
+        if args["default"] == "all":
+            include_all = True
+    path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
+    path_cache = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
+    if not exists(path):
+        await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+        return
+    if not exists(path_cache):
+        await message.reply(f"Beatmaps cache is still being built. Please wait!")
+        return
+    cache = DataFile(path_cache)
+    cache.load_data()
+    file = DataFile(path)
+    file.load_data()
+    lists = dict()
+    scores = file.data[gamemode]
+    for key in cache.data.keys():
+        lists[key] = list()
+        for list_key in cache.data[key].keys():
+            found = 0
+            all = len(cache.data[key][list_key])
+            for id in cache.data[key][list_key]:
+                if str(id) in scores:
+                    found += 1
+            if include_all:
+                lists[key].append(f"{list_key}: {found}/{all}")
+            elif found == all:
+                lists[key].append(f"{list_key}: {found}/{all}")
+        if not lists[key]:
+            lists[key].append("No completion for this category :(")
+    view = StringListView("Statistics", lists, size=15)
     await view.reply(message)
 
 

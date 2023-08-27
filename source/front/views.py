@@ -2,7 +2,7 @@ from api.utils import get_mods_simple, datetime_to_str
 from api.objects import Player, Score
 from api.beatmaps import load_beatmap
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 import discord
 
 
@@ -182,4 +182,70 @@ class ScoreDiffView(discord.ui.View):
             text_score += f"Score: {score['score']:,} "
             text_score += f"PP: {score['pp']}pp\n"
             embed.add_field(name=text_beatmap, value=text_score, inline=False)
+        return embed
+
+
+class StringListView(discord.ui.View):
+    def __init__(self, title: str, lists: Dict[str, List[str]], size=7):
+        self.title = title
+        self.lists = lists
+        self.index = 0
+        self.list_index = 0
+        self.last = True
+        self.size = size
+        super().__init__(timeout=180)
+
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.gray)
+    async def prev(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.index = max(0, self.index - 1)
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.gray)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.index = min(
+            int(len(self.lists[list(self.lists.keys())[self.list_index]]) / self.size),
+            self.index + 1,
+        )
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label="Last", style=discord.ButtonStyle.gray)
+    async def last(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.last:
+            self.index = int(
+                len(self.lists[list(self.lists.keys())[self.list_index]]) / self.size
+            )
+            self.last = False
+            button.label = "First"
+        else:
+            self.index = 0
+            self.last = True
+            button.label = "Last"
+        button._row = 0
+
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label=f"Change", style=discord.ButtonStyle.gray)
+    async def list_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        self.index = 0
+        self.list_index += 1
+        if self.list_index > len(self.lists) - 1:
+            self.list_index = 0
+        button.label = f"Current: {list(self.lists.keys())[self.list_index]}"
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    async def reply(self, message: discord.Message):
+        self.message = await message.reply(embed=self.get_embed(), view=self)
+
+    def get_embed(self):
+        current_list = self.lists[list(self.lists.keys())[self.list_index]]
+        embed = discord.Embed(
+            title=self.title + f" ({self.index}/{int(len(current_list) / self.size)})"
+        )
+        i = self.index * self.size
+        str = ""
+        for string in current_list[i : i + self.size]:
+            str += f"{string}\n"
+        embed.add_field(name=list(self.lists.keys())[self.list_index], value=str)
         return embed

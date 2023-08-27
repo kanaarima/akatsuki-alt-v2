@@ -26,6 +26,7 @@ def main():
                 user_tasks.StorePlayerScores(),
                 user_tasks.TrackUserPlaytime(),
                 maintenance_tasks.CheckNewRankedBeatmaps(),
+                maintenance_tasks.BuildBeatmapCache(),
             ]
         )
         manager.loop()

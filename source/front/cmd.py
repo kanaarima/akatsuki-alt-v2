@@ -31,4 +31,5 @@ commands = {
     "reset": user_commands.reset,
     "show1s": user_commands.show_1s,
     "showclears": user_commands.show_scores,
+    "showcompletion": user_commands.show_scores_completion,
 }
