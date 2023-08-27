@@ -62,7 +62,8 @@ class BuildBeatmapCache(Task):
                 return
             beatmap_id = int(file.replace(path, "").replace(".osu.gz", ""))
             if not exists(file.replace(".osu.gz", ".json.gz")):
-                beatmaps.download_beatmap(beatmap_id)
+                if not beatmaps.download_beatmap(beatmap_id):
+                    continue
             beatmap = beatmaps.load_beatmap(beatmap_id)
             beatmaps.cache = {}
             if "attributes" not in beatmap or beatmap["attributes"]["mode"] != 0:
