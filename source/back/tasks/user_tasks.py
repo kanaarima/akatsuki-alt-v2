@@ -159,7 +159,7 @@ class StorePlayerScores(Task):
                 scores, maps = akatsuki.get_user_best(
                     user["user_id"], gamemode, pages=1000
                 )
-                if not scorefile.data[name]:
+                if name not in scorefile.data or not scorefile.data[name]:
                     scorefile.data[name] = dict()
                 for score in scores:
                     scorefile.data[name][score["beatmap_id"]] = score
@@ -283,7 +283,9 @@ class TrackUserPlaytime(Task):
     ):
         if "render_permission" not in user or not user["render_permission"]:
             return
-        sorted_by_pp = sorted(scores, key=lambda x: x["pp"], reverse=True)[:100] # TODO: remove loved submissions
+        sorted_by_pp = sorted(scores, key=lambda x: x["pp"], reverse=True)[
+            :100
+        ]  # TODO: remove loved submissions
         for score_pp in sorted_by_pp:
             if score_pp["id"] == score["id"]:  # Renderable
                 logger.info(f"User {user['user_id']} set a new top 100 play!")
