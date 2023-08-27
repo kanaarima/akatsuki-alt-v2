@@ -47,8 +47,13 @@ class TaskManager:
             self.tasks_status.data[name(task)] = "running"
             self.tasks_status.save_data()
             logger.info(f"Task {name(task)} is starting (sync)")
-            task.run()
-            self.tasks_status.data[name(task)] = "completed"
+            try:
+                task.run()
+            except:
+                logger.error(f"Task {name(task)} errored out.", exc_info=True)
+                self.tasks_status.data[name(task)] = "error"
+            else:
+                self.tasks_status.data[name(task)] = "completed"
             self.tasks_status.save_data()
             logger.info(f"Task {name(task)} is done (sync)")
         self.tasks_status.save_data()
