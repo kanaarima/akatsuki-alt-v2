@@ -183,7 +183,7 @@ class TrackUserPlaytime(Task):
 
     def can_run(self) -> bool:
         return (datetime.datetime.now() - self.last_fetch) > datetime.timedelta(
-            minutes=30
+            minutes=10
         )
 
     def run(self) -> TaskStatus:
@@ -283,7 +283,7 @@ class TrackUserPlaytime(Task):
     ):
         if "render_permission" not in user or not user["render_permission"]:
             return
-        sorted_by_pp = sorted(scores, key=lambda x: x["pp"], reverse=True)[:100]
+        sorted_by_pp = sorted(scores, key=lambda x: x["pp"], reverse=True)[:100] # TODO: remove loved submissions
         for score_pp in sorted_by_pp:
             if score_pp["id"] == score["id"]:  # Renderable
                 logger.info(f"User {user['user_id']} set a new top 100 play!")

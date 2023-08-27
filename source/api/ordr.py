@@ -20,15 +20,16 @@ default = RenderConfig(
     musicVolume=90,
     hitsoundVolume=100,
     showSliderBreaks=True,
-    skin="WhiteCat (CK 1.0)",
+    skin="whitecatCK1.0",
 )
 
 
-def send_render(replayURL, username, config=default):
-    payload = config.copy()
+def send_render(replayURL, username, render_config=default):
+    return
+    payload = render_config.copy()
     payload["replayURL"] = replayURL
     payload["username"] = username
-    payload["verificationKey"] = "devmode_success"
+    payload["verificationKey"] = config["ordr"]["key"]
     req = requests.post_request("renders", data=payload)
     if req.status_code != 201:
         print(req.status_code)
@@ -40,8 +41,9 @@ def send_render(replayURL, username, config=default):
         print(req.status_code)
         print(req.content)
         return None
-    time.sleep(5)
+    time.sleep(5)  # TODO: fix this before re enabling
     for render in finalreq.json()["renders"]:
         if render["renderID"] == data["renderID"]:
+            print(render["videoUrl"])
             return render["videoUrl"]
     return None

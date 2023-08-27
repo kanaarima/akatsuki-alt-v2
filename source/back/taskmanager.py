@@ -41,7 +41,6 @@ class TaskManager:
         return thread
 
     def run_sync(self, tasks: List[Task]):
-        print("Started")
         for task in tasks:
             self.tasks_status.data[name(task)] = "waiting"
         for task in tasks:
@@ -53,7 +52,6 @@ class TaskManager:
             self.tasks_status.save_data()
             logger.info(f"Task {name(task)} is done (sync)")
         self.tasks_status.save_data()
-        print("stopped")
 
     def loop(self):
         sighandler = SignalHandler()
@@ -88,5 +86,7 @@ class TaskManager:
                 for thread in threads.values():
                     thread.join()
                 sync_thread.join()
+                self.tasks_status.data = {"backend restart": "running"}
+                self.tasks_status.save_data()
                 break
             time.sleep(1)
