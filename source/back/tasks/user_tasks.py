@@ -4,10 +4,12 @@ from api.utils import (
     datetime_to_str,
     str_to_datetime,
 )
+from api.beatmaps import save_beatmaps, load_beatmap
 from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
-from api.beatmaps import save_beatmaps, load_beatmap
 from api import objects, akatsuki
+from api.ordr import send_render
+from api.logging import logger
 from config import config
 from typing import List
 import datetime
@@ -248,6 +250,10 @@ class TrackUserPlaytime(Task):
                                 userpt.data[name]["submitted_plays"] += (
                                     map["attributes"]["length"] / divisor
                                 )
+                            if name == "std_rx":
+                                self._check_renderable(
+                                    user, list(scoredata.data[name].values()), score
+                                )
                         else:
                             total_hits = (
                                 score["count_300"]
@@ -268,6 +274,25 @@ class TrackUserPlaytime(Task):
             userpt.save_data()
             scoredata.save_data()
         return self._finish()
+
+    def _check_renderable(
+        self,
+        user: objects.LinkedPlayer,
+        scores: List[objects.Score],
+        score: objects.Score,
+    ):
+        if "render_permission" not in user or not user["render_permission"]:
+            return
+        sorted_by_pp = sorted(scores, key=lambda x: x["pp"], reverse=True)[:100]
+        for score_pp in sorted_by_pp:
+            if score_pp["id"] == score["id"]:  # Renderable
+                logger.info(f"User {user['user_id']} set a new top 100 play!")
+                player = akatsuki.get_user_info(user["user_id"])
+                send_render(
+                    replayURL=f"https://akatsuki.gg/web/replays/{score['id']}",
+                    username=player["name"],
+                )
+                break
 
     def _get_path(self):
         return f"{config['common']['data_directory']}/users_statistics/"
