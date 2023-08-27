@@ -82,7 +82,7 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
         if "attributes" in beatmap and beatmap["attributes"]["mode"] == 0:
             beatmap["difficulty"] = get_difficulties(calc_map)
     except Exception as e:
-        logger.error("Error occurred while processing map! %s", exc_info=True)
+        logger.error("Error occurred while processing map!", exc_info=True)
     return beatmap
 
 

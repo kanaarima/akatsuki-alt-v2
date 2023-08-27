@@ -414,7 +414,7 @@ def _format_gain_string(gain, fix=""):
     is_float = type(gain) == float
     if gain == 0:
         return ""
-    if gain > 1:
+    if gain > 0:
         return f"(+{gain:,.2f}{fix})" if is_float else f"(+{gain:,}{fix})"
     else:
         return f"({gain:,.2f}{fix})" if is_float else f"({gain:,}{fix})"

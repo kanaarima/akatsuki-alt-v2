@@ -87,7 +87,7 @@ async def post_lb_updates():
     await post_user_updates()
 
 
-@tasks.loop(seconds=30)
+@tasks.loop(minutes=2)
 async def refresh_status():
     msg = await bot.client.get_channel(
         config["discord"]["status_update"]["channel_id"]
