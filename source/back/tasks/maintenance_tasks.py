@@ -1,11 +1,15 @@
 from ossapi.enums import BeatmapsetSearchSort, BeatmapsetSearchCategory
+from api.utils import datetime_to_str, str_to_datetime
 from api.files import DataFile, BinaryFile, exists
 from datetime import datetime, timedelta
 from api.tasks import Task, TaskStatus
 import api.beatmaps as beatmaps
 from api.logging import logger
 from config import config
+import utils.api
 import glob
+
+ask_peppy = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/", delay=4)
 
 
 class CheckNewRankedBeatmaps(Task):
@@ -59,7 +63,7 @@ class BuildBeatmapCache(Task):
         }
         for file in glob.glob(f"{path}*.json.gz"):
             if self.suspended:
-                return
+                return TaskStatus.SUSPENDED
             beatmap_id = int(file.replace(path, "").replace(".json.gz", ""))
             if not exists(file.replace(".json.gz", ".osu.gz")):
                 if not beatmaps.download_beatmap(beatmap_id):
@@ -147,4 +151,42 @@ class BuildBeatmapCache(Task):
         file = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
         file.data = cache
         file.save_data()
+        return self._finish()
+
+
+class FixAkatsukiBeatmapRankings(Task):
+    def __init__(self) -> None:
+        super().__init__(asynchronous=True)
+        self.last = datetime(year=1984, month=1, day=1)
+
+    def can_run(self) -> bool:
+        return (datetime.now() - self.last) > timedelta(days=1)
+
+    def run(self) -> TaskStatus:
+        self.last = datetime.now()
+        path = f"{config['common']['data_directory']}/beatmaps/"
+        for file in glob.glob(f"{path}*.json.gz"):
+            if self.suspended:
+                return TaskStatus.SUSPENDED
+            beatmap_id = int(file.replace(path, "").replace(".json.gz", ""))
+            beatmap = beatmaps.load_beatmap(beatmap_id)
+            if "status" not in beatmap:
+                continue  # Scuffed map?
+            bancho_status = beatmap["status"]["bancho"]
+            if bancho_status == 1 or bancho_status == 2:
+                continue
+            if "checked" in beatmap["status"]:
+                if (
+                    datetime.now() - str_to_datetime(beatmap["status"]["checked"])
+                ) < timedelta(weeks=2):
+                    continue
+            info = ask_peppy.get_request(f"get_beatmaps?limit=1&b={beatmap_id}")
+            if info.status_code != 200:
+                continue
+            beatmap["status"]["akatsuki"] = int(info.json()[0]["approved"])
+            beatmap["status"]["checked"] = datetime_to_str(datetime.now())
+            beatmaps.save_beatmap(beatmap, overwrite=True, trustable=True)
+            logger.info(
+                f"Changed beatmap {beatmap_id} status from {bancho_status} to {beatmap['status']['akatsuki']}"
+            )
         return self._finish()

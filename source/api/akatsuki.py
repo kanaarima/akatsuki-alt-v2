@@ -152,7 +152,7 @@ def get_user_1s(
         req = requests.get_request(
             f"users/scores/first?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
-        if req.status_code != 200: 
+        if req.status_code != 200:
             break
         apiscores = req.json()["scores"]
         total = req.json()["total"]
@@ -257,7 +257,7 @@ def get_clan_leaderboard(
             req = requests.get_request(
                 f"clans/stats/first?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
             )
-            if req.status_code != 200: 
+            if req.status_code != 200:
                 break
             apiclans = req.json()["clans"]
             if not apiclans:
