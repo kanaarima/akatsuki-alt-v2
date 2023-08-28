@@ -89,31 +89,38 @@ async def post_lb_updates():
 
 @tasks.loop(minutes=2)
 async def refresh_status():
-    msg = await bot.client.get_channel(
-        config["discord"]["status_update"]["channel_id"]
-    ).fetch_message(config["discord"]["status_update"]["message_id"])
-    if msg:
-        status_data = DataFile(f"{config['common']['log_directory']}/status.json.gz")
-        status_data.load_data()
-        maps_path = f"{config['common']['data_directory']}/beatmaps"
-        update_embed = discord.Embed(title="Service status")
-        tasks_status = ""
-        for task, status in status_data.data.items():
-            tasks_status += f"{task}: {status}\n"
-        if not tasks_status:
-            tasks_status = "No tasks currently running."
-        update_embed.add_field(name="Backend operations", value=tasks_status)
-        size = (
-            subprocess.check_output(["du", "-sh", maps_path]).split()[0].decode("utf-8")
-        )
-        maps_processed = len(glob.glob(f"{maps_path}/*.json.gz"))
-        maps_downloaded = len(glob.glob(f"{maps_path}/*.osu.gz"))
-        update_embed.add_field(
-            name="Maps info",
-            value=f"Processed: {maps_processed}\nDownloaded: {maps_downloaded}\nSize: {size}",
-        )
-        update_embed.set_footer(text=f"Last updated: {datetime.now()}")
-        await msg.edit(content="", embed=update_embed)
+    try:
+        msg = await bot.client.get_channel(
+            config["discord"]["status_update"]["channel_id"]
+        ).fetch_message(config["discord"]["status_update"]["message_id"])
+        if msg:
+            status_data = DataFile(
+                f"{config['common']['log_directory']}/status.json.gz"
+            )
+            status_data.load_data()
+            maps_path = f"{config['common']['data_directory']}/beatmaps"
+            update_embed = discord.Embed(title="Service status")
+            tasks_status = ""
+            for task, status in status_data.data.items():
+                tasks_status += f"{task}: {status}\n"
+            if not tasks_status:
+                tasks_status = "No tasks currently running."
+            update_embed.add_field(name="Backend operations", value=tasks_status)
+            size = (
+                subprocess.check_output(["du", "-sh", maps_path])
+                .split()[0]
+                .decode("utf-8")
+            )
+            maps_processed = len(glob.glob(f"{maps_path}/*.json.gz"))
+            maps_downloaded = len(glob.glob(f"{maps_path}/*.osu.gz"))
+            update_embed.add_field(
+                name="Maps info",
+                value=f"Processed: {maps_processed}\nDownloaded: {maps_downloaded}\nSize: {size}",
+            )
+            update_embed.set_footer(text=f"Last updated: {datetime.now()}")
+            await msg.edit(content="", embed=update_embed)
+    except:
+        pass
 
 
 def init_tasks():
