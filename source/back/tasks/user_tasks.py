@@ -283,9 +283,17 @@ class TrackUserPlaytime(Task):
     ):
         if "render_permission" not in user or not user["render_permission"]:
             return
-        sorted_by_pp = sorted(scores, key=lambda x: x["pp"], reverse=True)[
-            :100
-        ]  # TODO: remove loved submissions
+        sorted_by_pp = list()
+        for score_pp in sorted(scores, key=lambda x: x["pp"], reverse=True):
+            beatmap = load_beatmap(score["beatmap_id"])
+            if "status" in beatmap:
+                status = beatmap["status"]["akatsuki"]
+                # https://circleguard.github.io/ossapi/appendix.html#ossapi.enums.RankStatus
+                if status != 2 or status != 1:
+                    continue
+                sorted_by_pp.append(score_pp)
+            if len(sorted_by_pp) == 100:
+                break
         for score_pp in sorted_by_pp:
             if score_pp["id"] == score["id"]:  # Renderable
                 logger.info(f"User {user['user_id']} set a new top 100 play!")
