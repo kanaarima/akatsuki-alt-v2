@@ -57,11 +57,11 @@ class BuildBeatmapCache(Task):
             "mappers": dict(),
             "artists": dict(),
         }
-        for file in glob.glob(f"{path}*.osu.gz"):
+        for file in glob.glob(f"{path}*.json.gz"):
             if self.suspended:
                 return
-            beatmap_id = int(file.replace(path, "").replace(".osu.gz", ""))
-            if not exists(file.replace(".osu.gz", ".json.gz")):
+            beatmap_id = int(file.replace(path, "").replace(".json.gz", ""))
+            if not exists(file.replace(".json.gz", ".osu.gz")):
                 if not beatmaps.download_beatmap(beatmap_id):
                     continue
             beatmap = beatmaps.load_beatmap(beatmap_id)
