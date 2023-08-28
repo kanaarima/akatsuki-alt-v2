@@ -51,15 +51,25 @@ class BuildBeatmapCache(Task):
     def run(self) -> TaskStatus:
         self.last = datetime.now()
         path = f"{config['common']['data_directory']}/beatmaps/"
+
+        def cache_value():
+            return {
+                "star_rating": dict(),
+                "length": dict(),
+                "ar": dict(),
+                "od": dict(),
+                "cs": dict(),
+                "tags": dict(),
+                "mappers": dict(),
+                "artists": dict(),
+                "total": list(),
+            }
+
         cache = {
-            "star_rating": dict(),
-            "length": dict(),
-            "ar": dict(),
-            "od": dict(),
-            "cs": dict(),
-            "tags": dict(),
-            "mappers": dict(),
-            "artists": dict(),
+            "ranked": cache_value(),
+            "loved": cache_value(),
+            "ranked_akatsuki": cache_value(),
+            "loved_akatsuki": cache_value(),
         }
         for file in glob.glob(f"{path}*.json.gz"):
             if self.suspended:
@@ -70,83 +80,109 @@ class BuildBeatmapCache(Task):
                     continue
             beatmap = beatmaps.load_beatmap(beatmap_id)
             beatmaps.cache = {}
+            key = ""
+            if "status" not in beatmap:
+                continue
+            else:
+                if beatmap["status"]["bancho"] < 1:
+                    akatstatus = beatmap["status"]["akatsuki"]
+                    if akatstatus < 3:
+                        key = "ranked_akatsuki"
+                    elif akatstatus == 4:
+                        key = "loved_akatsuki"
+                else:
+                    banchostatus = beatmap["status"]["bancho"]
+                    if banchostatus < 3:
+                        key = "ranked"
+                    elif banchostatus == 4:
+                        key = "loved"
+            cache[key]["total"].append(beatmap_id)
             if "attributes" not in beatmap or beatmap["attributes"]["mode"] != 0:
                 continue
             else:
                 ar = str(int(beatmap["attributes"]["ar"]))
-                if ar in cache["ar"]:
-                    cache["ar"][ar].append(beatmap_id)
+                if ar in cache[key]["ar"]:
+                    cache[key]["ar"][ar].append(beatmap_id)
                 else:
-                    cache["ar"][ar] = [beatmap_id]
+                    cache[key]["ar"][ar] = [beatmap_id]
                 od = str(int(beatmap["attributes"]["od"]))
-                if od in cache["od"]:
-                    cache["od"][od].append(beatmap_id)
+                if od in cache[key]["od"]:
+                    cache[key]["od"][od].append(beatmap_id)
                 else:
-                    cache["od"][od] = [beatmap_id]
+                    cache[key]["od"][od] = [beatmap_id]
                 cs = str(int(beatmap["attributes"]["cs"]))
-                if cs in cache["cs"]:
-                    cache["cs"][cs].append(beatmap_id)
+                if cs in cache[key]["cs"]:
+                    cache[key]["cs"][cs].append(beatmap_id)
                 else:
-                    cache["cs"][cs] = [beatmap_id]
+                    cache[key]["cs"][cs] = [beatmap_id]
                 length = int(beatmap["attributes"]["length"] / 60)
                 if length == 0:
-                    if "<1" in cache["length"]:
-                        cache["length"]["<1"].append(beatmap_id)
+                    if "<1" in cache[key]["length"]:
+                        cache[key]["length"]["<1"].append(beatmap_id)
                     else:
-                        cache["length"]["<1"] = [beatmap_id]
+                        cache[key]["length"]["<1"] = [beatmap_id]
                 else:
                     length = str(length)
-                    if length in cache["length"]:
-                        cache["length"][length].append(beatmap_id)
+                    if length in cache[key]["length"]:
+                        cache[key]["length"][length].append(beatmap_id)
                     else:
-                        cache["length"][length] = [beatmap_id]
+                        cache[key]["length"][length] = [beatmap_id]
             if "difficulty" in beatmap:
                 sr = str(int(beatmap["difficulty"]["0"]["star_rating"]))
-                if sr in cache["star_rating"]:
-                    cache["star_rating"][sr].append(beatmap_id)
+                if sr in cache[key]["star_rating"]:
+                    cache[key]["star_rating"][sr].append(beatmap_id)
                 else:
-                    cache["star_rating"][sr] = [beatmap_id]
-            if beatmap["mapper"] in cache["mappers"]:
-                cache["mappers"][beatmap["mapper"]].append(beatmap_id)
+                    cache[key]["star_rating"][sr] = [beatmap_id]
+            if beatmap["mapper"] in cache[key]["mappers"]:
+                cache[key]["mappers"][beatmap["mapper"]].append(beatmap_id)
             else:
-                cache["mappers"][beatmap["mapper"]] = [beatmap_id]
-            if beatmap["artist"].title() in cache["artists"]:
-                cache["artists"][beatmap["artist"].title()].append(beatmap_id)
+                cache[key]["mappers"][beatmap["mapper"]] = [beatmap_id]
+            if beatmap["artist"].title() in cache[key]["artists"]:
+                cache[key]["artists"][beatmap["artist"].title()].append(beatmap_id)
             else:
-                cache["artists"][beatmap["artist"].title()] = [beatmap_id]
-            beatmap_raw = BinaryFile(file)
+                cache[key]["artists"][beatmap["artist"].title()] = [beatmap_id]
+            beatmap_raw = BinaryFile(file.replace(".json.gz", ".osu.gz"))
             beatmap_raw.load_data()
             beatmap_raw = beatmap_raw.data.decode("utf-8")
             for line in beatmap_raw.split("\n"):
                 if line.startswith("Tags:"):
                     for tag in line[5:].split():
                         tag = tag.title()
-                        if tag in cache["tags"]:
-                            cache["tags"][tag].append(beatmap_id)
+                        if tag in cache[key]["tags"]:
+                            cache[key]["tags"][tag].append(beatmap_id)
                         else:
-                            cache["tags"][tag] = [beatmap_id]
+                            cache[key]["tags"][tag] = [beatmap_id]
 
         def sort_dict(dikt, key, reverse):
             return dict(sorted(dikt.items(), key=key, reverse=reverse))
 
-        cache["star_rating"] = sort_dict(
-            cache["star_rating"], key=lambda x: int(x[0]), reverse=False
-        )
-        cache["ar"] = sort_dict(cache["ar"], key=lambda x: int(x[0]), reverse=False)
-        cache["od"] = sort_dict(cache["od"], key=lambda x: int(x[0]), reverse=False)
-        cache["cs"] = sort_dict(cache["cs"], key=lambda x: int(x[0]), reverse=False)
-        cache["length"] = sort_dict(
-            cache["length"],
-            key=lambda x: int(x[0]) if x[0] != "<1" else 0,
-            reverse=False,
-        )
-        cache["tags"] = sort_dict(cache["tags"], key=lambda x: len(x[1]), reverse=True)
-        cache["artists"] = sort_dict(
-            cache["artists"], key=lambda x: len(x[1]), reverse=True
-        )
-        cache["mappers"] = sort_dict(
-            cache["mappers"], key=lambda x: len(x[1]), reverse=True
-        )
+        for key in cache.keys():
+            cache[key]["star_rating"] = sort_dict(
+                cache[key]["star_rating"], key=lambda x: int(x[0]), reverse=False
+            )
+            cache[key]["ar"] = sort_dict(
+                cache[key]["ar"], key=lambda x: int(x[0]), reverse=False
+            )
+            cache[key]["od"] = sort_dict(
+                cache[key]["od"], key=lambda x: int(x[0]), reverse=False
+            )
+            cache[key]["cs"] = sort_dict(
+                cache[key]["cs"], key=lambda x: int(x[0]), reverse=False
+            )
+            cache[key]["length"] = sort_dict(
+                cache[key]["length"],
+                key=lambda x: int(x[0]) if x[0] != "<1" else 0,
+                reverse=False,
+            )
+            cache[key]["tags"] = sort_dict(
+                cache[key]["tags"], key=lambda x: len(x[1]), reverse=True
+            )
+            cache[key]["artists"] = sort_dict(
+                cache[key]["artists"], key=lambda x: len(x[1]), reverse=True
+            )
+            cache[key]["mappers"] = sort_dict(
+                cache[key]["mappers"], key=lambda x: len(x[1]), reverse=True
+            )
 
         file = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
         file.data = cache

@@ -371,10 +371,17 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         await _link_warning(message)
         return
     args = _parse_args(split)
+    type = "ranked"
     include_all = False
+    valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki"]
     if "default" in args:
         if args["default"] == "all":
             include_all = True
+    if "type" in args:
+        if args["type"].lower() not in valid_types:
+            await message.reply(f"Invalid type! {','.join(valid_types)}")
+            return
+        type = args["type"].lower()
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     path_cache = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
     if not exists(path):
@@ -389,20 +396,31 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     file.load_data()
     lists = dict()
     scores = file.data[gamemode]
-    for key in cache.data.keys():
+    lists["Completion"] = list()
+    for key in valid_types:
+        total = len(cache.data[key]["total"])
+        found = 0
+        for id in cache.data[key]["total"]:
+            if str(id) in scores:
+                found += 1
+        lists["Completion"].append(f"{key}: {found}/{total}")
+    for key in cache.data[type].keys():
         lists[key] = list()
-        for list_key in cache.data[key].keys():
-            found = 0
-            all = len(cache.data[key][list_key])
-            for id in cache.data[key][list_key]:
-                if str(id) in scores:
-                    found += 1
-            if include_all:
-                lists[key].append(f"{list_key}: {found}/{all}")
-            elif found == all:
-                lists[key].append(f"{list_key}: {found}/{all}")
-        if not lists[key]:
-            lists[key].append("No completion for this category :(")
+        if key == "total":
+            continue
+        else:
+            for list_key in cache.data[type][key].keys():
+                found = 0
+                all = len(cache.data[type][key][list_key])
+                for id in cache.data[type][key][list_key]:
+                    if str(id) in scores:
+                        found += 1
+                if include_all:
+                    lists[key].append(f"{list_key}: {found}/{all}")
+                elif found == all:
+                    lists[key].append(f"{list_key}: {found}/{all}")
+            if not lists[key]:
+                lists[key].append("No completion for this category :(")
     view = StringListView("Statistics", lists, size=15)
     await view.reply(message)
 
