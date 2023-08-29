@@ -72,6 +72,8 @@ class BuildBeatmapCache(Task):
             "loved_akatsuki": cache_value(),
             "unranked": cache_value(),
         }
+        prev_state = beatmaps.cache_enabled
+        beatmaps.cache_enabled = False
         for file in glob.glob(f"{path}*.json.gz"):
             if self.suspended:
                 return TaskStatus.SUSPENDED
@@ -80,7 +82,6 @@ class BuildBeatmapCache(Task):
                 if not beatmaps.download_beatmap(beatmap_id):
                     continue
             beatmap = beatmaps.load_beatmap(beatmap_id)
-            beatmaps.cache = {}
             key = "unranked"
             if "status" not in beatmap:
                 continue
@@ -188,6 +189,7 @@ class BuildBeatmapCache(Task):
         file = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
         file.data = cache
         file.save_data()
+        beatmaps.cache_enabled = prev_state
         return self._finish()
 
 

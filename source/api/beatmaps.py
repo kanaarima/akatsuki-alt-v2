@@ -20,6 +20,7 @@ client = ossapi.Ossapi(
 )
 cache = dict()
 cache_last_refresh = datetime.now()
+cache_enabled = True
 
 
 def load_beatmap(beatmap_id) -> Beatmap:
@@ -29,18 +30,20 @@ def load_beatmap(beatmap_id) -> Beatmap:
     ]:
         cache = dict()
         cache_last_refresh = datetime.now()
-    if beatmap_id in cache:
+    if beatmap_id in cache and cache_enabled:
         return cache[beatmap_id]
     path = f"{base_path}/{beatmap_id}.json.gz"
     if not exists(path):
         new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
         if len(new.keys()) == 1:
             return
-        cache[beatmap_id] = new
+        if cache_enabled:
+            cache[beatmap_id] = new
         return new
     file = DataFile(path)
     file.load_data()
-    cache[beatmap_id] = file.data
+    if cache_enabled:
+        cache[beatmap_id] = file.data
     return file.data
 
 
@@ -51,8 +54,8 @@ def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
         return
     if not trustable:
         process_beatmap(beatmap)
-    if 'raw_beatmap' in beatmap:
-        del beatmap['raw_beatmap']
+    if "raw_beatmap" in beatmap:
+        del beatmap["raw_beatmap"]
     file = DataFile(path)
     file.load_data()
     file.data = beatmap
@@ -62,7 +65,8 @@ def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
     ]:
         cache = dict()
         cache_last_refresh = datetime.now()
-    cache[beatmap["beatmap_id"]] = beatmap
+    if cache_enabled:
+        cache[beatmap["beatmap_id"]] = beatmap
 
 
 def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
