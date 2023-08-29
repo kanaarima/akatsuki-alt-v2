@@ -20,7 +20,7 @@ client = ossapi.Ossapi(
 )
 cache = dict()
 cache_last_refresh = datetime.now()
-cache_enabled = True
+cache_enabled = False
 
 
 def load_beatmap(beatmap_id) -> Beatmap:

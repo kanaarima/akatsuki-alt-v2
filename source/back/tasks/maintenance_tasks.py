@@ -71,6 +71,7 @@ class BuildBeatmapCache(Task):
             "ranked_akatsuki": cache_value(),
             "loved_akatsuki": cache_value(),
             "unranked": cache_value(),
+            "metadata": {},
         }
         prev_state = beatmaps.cache_enabled
         beatmaps.cache_enabled = False
@@ -79,8 +80,7 @@ class BuildBeatmapCache(Task):
                 return TaskStatus.SUSPENDED
             beatmap_id = int(file.replace(path, "").replace(".json.gz", ""))
             if not exists(file.replace(".json.gz", ".osu.gz")):
-                if not beatmaps.download_beatmap(beatmap_id):
-                    continue
+                continue
             beatmap = beatmaps.load_beatmap(beatmap_id)
             key = "unranked"
             if "status" not in beatmap:
@@ -101,6 +101,11 @@ class BuildBeatmapCache(Task):
             if "attributes" not in beatmap or beatmap["attributes"]["mode"] != 0:
                 continue
             else:
+                cache["metadata"][beatmap_id] = {
+                    "artist": beatmap["artist"],
+                    "title": beatmap["title"],
+                    "difficulty_name": beatmap["difficulty_name"],
+                }
                 ar = str(int(beatmap["attributes"]["ar"]))
                 if ar in cache[key]["ar"]:
                     cache[key]["ar"][ar].append(beatmap_id)
@@ -159,6 +164,8 @@ class BuildBeatmapCache(Task):
             return dict(sorted(dikt.items(), key=key, reverse=reverse))
 
         for key in cache.keys():
+            if key == "metadata":
+                continue
             cache[key]["star_rating"] = sort_dict(
                 cache[key]["star_rating"], key=lambda x: int(x[0]), reverse=False
             )

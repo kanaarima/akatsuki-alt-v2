@@ -371,24 +371,25 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     if not player:
         await _link_warning(message)
         return
-    args = _parse_args(split)
+    args = _parse_args(split, nodefault=True)
     type = "ranked"
+    viewtype = "info"
     include_all = False
-    valid_types = [
-        "ranked",
-        "ranked_akatsuki",
-        "loved",
-        "loved_akatsuki",
-        "unranked",
-    ]
-    if "default" in args:
-        if args["default"] == "all":
-            include_all = True
+
+    valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki", "unranked"]
+    valid_views = ["info", "maps", "maps_missing"]
+    if "all" in args:
+        include_all = True
     if "type" in args:
         if args["type"].lower() not in valid_types:
             await message.reply(f"Invalid type! {','.join(valid_types)}")
             return
         type = args["type"].lower()
+    if "view" in args:
+        if args["view"].lower() not in valid_views:
+            await message.reply(f"Invalid view! {','.join(valid_views)}")
+            return
+        viewtype = args["view"].lower()
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     path_cache = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
     if not exists(path):
@@ -403,32 +404,48 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     file.load_data()
     lists = dict()
     scores = file.data[gamemode]
-    lists["Completion"] = list()
-    for key in valid_types:
-        total = len(cache.data[key]["total"])
-        found = 0
-        for id in cache.data[key]["total"]:
-            if str(id) in scores:
-                found += 1
-        lists["Completion"].append(f"{key}: {found}/{total}")
-    for key in cache.data[type].keys():
-        lists[key] = list()
-        if key == "total":
-            continue
-        else:
-            for list_key in cache.data[type][key].keys():
-                found = 0
-                all = len(cache.data[type][key][list_key])
-                for id in cache.data[type][key][list_key]:
-                    if str(id) in scores:
-                        found += 1
-                if include_all:
-                    lists[key].append(f"{list_key}: {found}/{all}")
-                elif found == all:
-                    lists[key].append(f"{list_key}: {found}/{all}")
-            if not lists[key]:
-                lists[key].append("No completion for this category :(")
-    view = StringListView("Statistics", lists, size=15)
+    title = "Statistics"
+    if viewtype == "info":
+        lists["Completion"] = list()
+        for key in valid_types:
+            total = len(cache.data[key]["total"])
+            found = 0
+            for id in cache.data[key]["total"]:
+                if str(id) in scores:
+                    found += 1
+            lists["Completion"].append(f"{key}: {found}/{total}")
+        for key in cache.data[type].keys():
+            if key == "total":
+                continue
+            else:
+                lists[key] = list()
+                for list_key in cache.data[type][key].keys():
+                    found = 0
+                    all = len(cache.data[type][key][list_key])
+                    for id in cache.data[type][key][list_key]:
+                        if str(id) in scores:
+                            found += 1
+                    if include_all:
+                        lists[key].append(f"{list_key}: {found}/{all}")
+                    elif found == all:
+                        lists[key].append(f"{list_key}: {found}/{all}")
+                if not lists[key]:
+                    lists[key].append("No completion for this category :(")
+    elif viewtype == "maps" or viewtype == "maps_missing":
+        missing = viewtype == "maps_missing"
+        title = f"Clears {'missing' if missing else ''}"
+        for key in valid_types:
+            lists[key] = list()
+            for id in cache.data[key]["total"]:
+                if (str(id) not in scores and missing) or (
+                    str(id) in scores and not missing
+                ):
+                    beatmap = cache.data["metadata"][str(id)]
+                    lists[key].append(
+                        f"{id} | {beatmap['artist']} - {beatmap['title']} [{beatmap['difficulty_name']}]"
+                    )
+
+    view = StringListView(title, lists, size=15)
     await view.reply(message)
 
 
@@ -493,12 +510,12 @@ def _format_notation(gain):
     return f"(+{gain:.2e})"
 
 
-def _parse_args(args: List[str]) -> dict:
+def _parse_args(args: List[str], nodefault=False) -> dict:
     parsed = {}
     for arg in args:
         s = arg.split("=")
         if len(s) == 1:
-            if "default" in parsed:
+            if "default" in parsed or nodefault:
                 parsed[arg] = ""
             else:
                 parsed["default"] = arg
