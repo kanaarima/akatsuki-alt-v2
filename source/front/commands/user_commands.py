@@ -336,6 +336,7 @@ async def reset(full: str, split: list[str], message: discord.Message):
     user_file.load_data(default=[])
     _update_fetch(player, user_file)
     user_file.data = [user_file.data[-1]]
+    user_file.save_data()
     await message.reply("Data resetted.")
 
 
