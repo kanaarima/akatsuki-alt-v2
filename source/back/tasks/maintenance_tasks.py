@@ -70,6 +70,7 @@ class BuildBeatmapCache(Task):
             "loved": cache_value(),
             "ranked_akatsuki": cache_value(),
             "loved_akatsuki": cache_value(),
+            "unranked": cache_value(),
         }
         for file in glob.glob(f"{path}*.json.gz"):
             if self.suspended:
@@ -80,7 +81,7 @@ class BuildBeatmapCache(Task):
                     continue
             beatmap = beatmaps.load_beatmap(beatmap_id)
             beatmaps.cache = {}
-            key = ""
+            key = "unranked"
             if "status" not in beatmap:
                 continue
             else:
