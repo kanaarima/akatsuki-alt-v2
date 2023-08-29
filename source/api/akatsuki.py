@@ -204,6 +204,24 @@ def get_user_best(
     return res, resmaps
 
 
+def get_user_most_played(
+    userid: int, gamemode: Gamemode, pages=1, length=100
+) -> List[Tuple[int, Beatmap]]:
+    res = list()
+    for page in range(pages):
+        req = requests.get_request(
+            f"users/most_played?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
+        )
+        if req.status_code != 200:
+            break
+        most_played = req.json()["most_played_beatmaps"]
+        if not most_played:
+            break
+        for object in most_played:
+            res.append((object["playcount"], _beatmap_from_apimap(object["beatmap"])))
+    return res
+
+
 def get_user_stats(
     userid: int,
 ) -> Tuple[Player, Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]]]:
