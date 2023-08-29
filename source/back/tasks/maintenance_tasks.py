@@ -97,7 +97,6 @@ class BuildBeatmapCache(Task):
                         key = "ranked"
                     elif banchostatus == 4:
                         key = "loved"
-            cache[key]["total"].append(beatmap_id)
             if "attributes" not in beatmap or beatmap["attributes"]["mode"] != 0:
                 continue
             else:
@@ -184,7 +183,8 @@ class BuildBeatmapCache(Task):
             cache[key]["mappers"] = sort_dict(
                 cache[key]["mappers"], key=lambda x: len(x[1]), reverse=True
             )
-
+            cache[key]["total"].append(beatmap_id)
+            
         file = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
         file.data = cache
         file.save_data()
