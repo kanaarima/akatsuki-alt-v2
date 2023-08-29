@@ -35,13 +35,14 @@ def log_command(command, full, message, wrong=False):
 
 def load_metrics():
     global requests_sent, commands_used, wrong_commands_used
-    file = DataFile(f"{config['common']['data_directory']}/metrics.json.gz")
+    file = DataFile(f"{config['common']['data_directory']}/metrics_{type}.json.gz")
     file.load_data(
         default={"requests_sent": {}, "commands_used": {}, "wrong_commands_used": {}}
     )
     requests_sent = file.data["requests_sent"]
     commands_used = file.data["commands_used"]
     wrong_commands_used = file.data["wrong_commands_used"]
+    file.save_data()
 
 
 def save_metrics():
