@@ -217,7 +217,7 @@ class FixAkatsukiBeatmapRankings(Task):
                 ) < timedelta(weeks=2):
                     continue
             info = ask_peppy.get_request(f"get_beatmaps?limit=1&b={beatmap_id}")
-            if info.status_code != 200:
+            if info.status_code != 200 or not info.json():
                 continue
             beatmap["status"]["akatsuki"] = int(info.json()[0]["approved"])
             beatmap["status"]["checked"] = datetime_to_str(datetime.now())
