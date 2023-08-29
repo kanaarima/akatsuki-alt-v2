@@ -472,6 +472,11 @@ def _get_download_link(beatmap_id: int):
 
 
 def _update_fetch(player: Player, user_file: DataFile):
+    playtime = DataFile(
+        f"{config['common']['data_directory']}/users_statistics/playtime/{player['id']}.json.gz"
+    )
+    playtime.load_data(default=None)
+    playtime = playtime.data
     for fetch in user_file.data:
         date = datetime.datetime.strptime(fetch[0], "%d/%m/%Y %H:%M:%S")
         if (datetime.datetime.now() - date) > datetime.timedelta(hours=24):
@@ -481,7 +486,7 @@ def _update_fetch(player: Player, user_file: DataFile):
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                akatsuki.get_user_stats(player["id"])[1],
+                _add_playtime(playtime, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
     date = datetime.datetime.strptime(user_file.data[-1][0], "%d/%m/%Y %H:%M:%S")
@@ -489,9 +494,25 @@ def _update_fetch(player: Player, user_file: DataFile):
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                akatsuki.get_user_stats(player["id"])[1],
+                _add_playtime(playtime, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
+
+
+def _add_playtime(pt, fetch):
+    if not pt:
+        return fetch
+    for name in gamemodes.keys():
+        if "rx" not in name:
+            continue
+        stats = fetch[name][0]
+        if "most_played" in pt[name]:
+            stats["play_time"] = (
+                pt[name]["most_played"]
+                + pt[name]["unsubmitted_plays"]
+                + pt[name]["submitted_plays"]
+            )
+    return fetch
 
 
 def _format_gain_string(gain, fix=""):

@@ -4,7 +4,7 @@ from api.utils import (
     datetime_to_str,
     str_to_datetime,
 )
-from api.beatmaps import save_beatmaps, load_beatmap
+from api.beatmaps import save_beatmaps, save_beatmap, load_beatmap
 from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
 from api import objects, akatsuki
@@ -89,9 +89,18 @@ class StorePlayerStats(Task):
                 filepath=self._get_path() + f"{user['user_id']}.json.gz"
             )
             userfile.data = {}
+            playtime = DataFile(
+                f"{config['common']['data_directory']}/users_statistics/playtime/{user['user_id']}.json.gz"
+            )
+            playtime.load_data(default=None)
+            playtime = playtime.data
             player, stats = akatsuki.get_user_stats(user["user_id"])
             first_places = dict()
             for name, gamemode in objects.gamemodes.items():
+                if playtime and "most_played" in playtime:
+                    stats[name][0]["play_time"] = playtime[name]["most_played"]
+                +playtime[name]["unsubmitted_plays"]
+                +playtime[name]["submitted_plays"]
                 _, first_places[name], beatmaps = akatsuki.get_user_1s(
                     userid=user["user_id"],
                     gamemode=gamemode,
@@ -214,6 +223,7 @@ class TrackUserPlaytime(Task):
                     pt = {
                         "submitted_plays": 0,
                         "unsubmitted_plays": 0,
+                        "most_played": 0,
                     }
                     scores: List[objects.Score] = scoredata.data[name].values()
                     for score in scores:
@@ -223,8 +233,13 @@ class TrackUserPlaytime(Task):
                             pt["submitted_plays"] += (
                                 beatmap["attributes"]["length"] / divisor
                             )
+                    self._add_most_played(user["user_id"], pt, name, gamemode)
                     userpt.data[name] = pt
             for name, gamemode in objects.gamemodes.items():
+                if "most_played" not in userpt.data[name]:
+                    self._add_most_played(
+                        user["user_id"], userpt.data[name], name, gamemode
+                    )
                 skip = 0
                 while True:
                     _scores, beatmaps = akatsuki.get_user_recent(
@@ -274,6 +289,27 @@ class TrackUserPlaytime(Task):
             userpt.save_data()
             scoredata.save_data()
         return self._finish()
+
+    def _add_most_played(self, userid: int, pt, name, gamemode):
+        pt["most_played"] = 0
+        for playcount, apibeatmap in akatsuki.get_user_most_played(
+            userid=userid, gamemode=gamemode, pages=10000
+        ):
+            save_beatmap(apibeatmap)
+            beatmap = load_beatmap(apibeatmap["beatmap_id"])
+            if (
+                not beatmap
+                or "attributes" not in beatmap
+                or beatmap["attributes"]["max_combo"] == 0
+            ):
+                logger.warning(
+                    f"Skipping {apibeatmap['beatmap_id']} for user {userid}!"
+                )
+                continue
+            multiplier = 100 / beatmap["attributes"]["max_combo"]
+            pt["most_played"] += (
+                beatmap["attributes"]["length"] * multiplier
+            ) * playcount
 
     def _check_renderable(
         self,
