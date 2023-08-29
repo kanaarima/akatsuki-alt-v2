@@ -374,7 +374,13 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     args = _parse_args(split)
     type = "ranked"
     include_all = False
-    valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki"]
+    valid_types = [
+        "ranked",
+        "ranked_akatsuki",
+        "loved",
+        "loved_akatsuki",
+        "unranked",
+    ]
     if "default" in args:
         if args["default"] == "all":
             include_all = True
