@@ -224,7 +224,7 @@ class StringListView(discord.ui.View):
 
         await interaction.response.edit_message(embed=self.get_embed(), view=self)
 
-    @discord.ui.button(label=f"Change", style=discord.ButtonStyle.gray)
+    @discord.ui.button(label="Change", style=discord.ButtonStyle.gray)
     async def list_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -246,6 +246,6 @@ class StringListView(discord.ui.View):
         i = self.index * self.size
         str = ""
         for string in current_list[i : i + self.size]:
-            str += f"{string}\n"
+            str += f"{string[:int(1025/self.size)]}\n"
         embed.add_field(name=list(self.lists.keys())[self.list_index], value=str)
         return embed
