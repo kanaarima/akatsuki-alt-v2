@@ -51,6 +51,8 @@ def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
         return
     if not trustable:
         process_beatmap(beatmap)
+    if 'raw_beatmap' in beatmap:
+        del beatmap['raw_beatmap']
     file = DataFile(path)
     file.load_data()
     file.data = beatmap
