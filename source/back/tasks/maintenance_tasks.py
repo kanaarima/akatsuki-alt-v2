@@ -141,6 +141,7 @@ class BuildBeatmapCache(Task):
                 cache[key]["artists"][beatmap["artist"].title()].append(beatmap_id)
             else:
                 cache[key]["artists"][beatmap["artist"].title()] = [beatmap_id]
+            cache[key]["total"].append(beatmap_id)
             beatmap_raw = BinaryFile(file.replace(".json.gz", ".osu.gz"))
             beatmap_raw.load_data()
             beatmap_raw = beatmap_raw.data.decode("utf-8")
@@ -183,8 +184,7 @@ class BuildBeatmapCache(Task):
             cache[key]["mappers"] = sort_dict(
                 cache[key]["mappers"], key=lambda x: len(x[1]), reverse=True
             )
-            cache[key]["total"].append(beatmap_id)
-            
+
         file = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
         file.data = cache
         file.save_data()
