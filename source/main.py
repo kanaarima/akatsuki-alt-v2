@@ -28,6 +28,7 @@ def main():
                 maintenance_tasks.FixAkatsukiBeatmapRankings(),
                 maintenance_tasks.CheckNewRankedBeatmaps(),
                 maintenance_tasks.BuildBeatmapCache(),
+                maintenance_tasks.StoreTopPlays(),
             ]
         )
         manager.loop()

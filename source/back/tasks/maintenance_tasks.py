@@ -3,7 +3,9 @@ from api.utils import datetime_to_str, str_to_datetime
 from api.files import DataFile, BinaryFile, exists
 from datetime import datetime, timedelta
 from api.tasks import Task, TaskStatus
+from api.objects import gamemodes
 import api.beatmaps as beatmaps
+import api.akatsuki as akatsuki
 from api.logging import logger
 from config import config
 import utils.api
@@ -235,4 +237,27 @@ class FixAkatsukiBeatmapRankings(Task):
             logger.info(
                 f"Changed beatmap {beatmap_id} status from {bancho_status} to {beatmap['status']['akatsuki']}"
             )
+        return self._finish()
+
+
+class StoreTopPlays(Task):
+    def __init__(self) -> None:
+        super().__init__(asynchronous=False)
+
+    def can_run(self) -> bool:
+        return not exists(f"{config['common']['data_directory']}/scores.json.gz")
+
+    def run(self) -> TaskStatus:
+        scores_all = list()
+        for player, _, _ in akatsuki.get_user_leaderboard(
+            gamemode=gamemodes["std_rx"], sort=akatsuki.Sort_Method.PP_ALL, pages=10
+        ):
+            scores, apimaps = akatsuki.get_user_best(
+                player["id"], gamemodes["std_rx"], pages=4
+            )
+            scores_all.extend(scores)
+            beatmaps.save_beatmaps(apimaps)
+        file = DataFile(f"{config['common']['data_directory']}/scores.json.gz")
+        file.data = scores_all
+        file.save_data()
         return self._finish()
