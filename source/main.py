@@ -3,12 +3,13 @@ from back.taskmanager import TaskManager
 import back.tasks.clan_tasks as clan_tasks
 import back.tasks.user_tasks as user_tasks
 import front.bot as bot
+import front.ingamebot.bot as igbot
 import config
 import sys
 
 
 def wrong_args():
-    print(f"Usage: {sys.argv[0]} backend/frontend")
+    print(f"Usage: {sys.argv[0]} backend/frontend/gamefrontend")
     sys.exit(-1)
 
 
@@ -32,6 +33,8 @@ def main():
             ]
         )
         manager.loop()
+    elif sys.argv[1] == "gamefrontend":
+        igbot.main()
     else:
         wrong_args()
 

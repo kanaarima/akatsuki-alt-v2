@@ -1,11 +1,13 @@
 from api.utils import str_to_datetime, datetime_to_str, yesterday, other_yesterday
 from front.leaderboards import clan_leaderboards, user_leaderboards
 from api.files import DataFile
+from api.logging import logger
 from datetime import datetime
 from discord.ext import tasks
 from config import config
 from front import bot
 import subprocess
+import api.events
 import discord
 import asyncio
 import glob
@@ -123,6 +125,21 @@ async def refresh_status():
         pass
 
 
+@tasks.loop(seconds=10)
+async def handle_events():
+    try:
+        events = api.events.read_events("frontend")
+        for event in events:
+            if event["name"] == "ChannelMessageEvent":
+                if event["channel"] in config["discord"]["forward_channels"]:
+                    await bot.client.get_channel(
+                        config["discord"]["forward_channels"][event["channel"]]
+                    ).send(content=event["message"], suppress_embeds=True)
+    except:
+        logger.error("Could not handle events!", exc_info=True)
+
+
 def init_tasks():
     post_lb_updates.start()
     refresh_status.start()
+    handle_events.start()

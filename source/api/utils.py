@@ -117,3 +117,4 @@ def convert_mods(magic_number):
     if magic_number & Perfect:
         new -= Perfect
     return new
+
