@@ -224,6 +224,7 @@ def get_user_most_played(
 
 def get_user_stats(
     userid: int,
+    no_1s=False,
 ) -> Tuple[Player, Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]]]:
     req = requests.get_request(f"users/full?id={userid}&relax=-1")
     if req.status_code != 200:
@@ -237,7 +238,10 @@ def get_user_stats(
     for name, gamemode in objects.gamemodes.items():
         apistats = data["stats"][gamemode["relax"]][name.split("_")[0]]
         stats = _stats_from_chosen_mode(apistats)
-        stats["total_1s"] = get_user_1s(userid=userid, gamemode=gamemode, length=1)[0]
+        if not no_1s:
+            stats["total_1s"] = get_user_1s(userid=userid, gamemode=gamemode, length=1)[
+                0
+            ]
         ranking_pp = Ranking(
             global_ranking=apistats["global_leaderboard_rank"],
             country_ranking=apistats["country_leaderboard_rank"],
