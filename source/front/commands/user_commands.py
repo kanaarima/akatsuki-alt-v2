@@ -310,6 +310,18 @@ async def show_1s(full: str, split: list[str], message: discord.Message):
     file = DataFile(path)
     file.load_data()
     scores = file.data["first_places"][gamemode]
+    _, new_1s, new_maps = akatsuki.get_user_1s(player["id"], gamemodes[gamemode])
+    beatmaps.save_beatmaps(new_maps)
+    broke = False
+    for newscore in new_1s:
+        for oldscore in scores:
+            if oldscore["id"] == newscore["id"]:
+                broke = True
+                break
+        else:
+            scores.append(newscore)
+        if broke:
+            break
     if new:
         path_old = f"{config['common']['data_directory']}/users_statistics/{other_yesterday()}/{player['id']}.json.gz"
         if not exists(path_old):

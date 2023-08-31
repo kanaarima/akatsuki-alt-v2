@@ -22,6 +22,7 @@ commands = {
     "help": cmd.help,
     "recommend_score": cmd.recommend_score,
     "rs": cmd.recommend_score,
+    "cook": cmd.recommend,
 }
 
 
