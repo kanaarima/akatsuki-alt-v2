@@ -66,6 +66,8 @@ def process_scores():
 
 
 def process_score_farm():
+    if not exists(f"{config['common']['data_directory']}/beatmap_cache.json.gz"):
+        return
     cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
     cache.load_data()
     beatmaps = list()
