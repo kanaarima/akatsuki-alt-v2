@@ -15,7 +15,12 @@ game = Game(
     server="akatsuki.gg",
 )
 
-commands = {"ping": cmd.ping, "cook": cmd.recommend}
+commands = {
+    "ping": cmd.ping,
+    "recommend": cmd.recommend,
+    "r": cmd.recommend,
+    "help": cmd.help,
+}
 
 
 @game.events.register(ServerPackets.SEND_MESSAGE)
@@ -23,10 +28,10 @@ def on_message(sender, message, target):
     if type(target) == Channel:
         if target.name == "#announce":
             handle_announce(message)
-    else:  # DM
-        split = message.split()
+    elif message[0] == "!":  # command
+        split = message[1:].split()
         if split[0] in commands:
-            commands[split[0]](sender, message, split[1:])
+            commands[split[0]](sender, message[1:], split[1:])
         else:
             sender.send_message("Unknown command!")
 

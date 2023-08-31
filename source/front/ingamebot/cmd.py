@@ -31,3 +31,9 @@ def recommend(player: Player, message, args):
     link = f"osu://b/{beatmap['beatmap_id']}"
     title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])} (confidence: {recommend[0]['weight']*100:.2f}%)"
     player.send_message(f"[{link} {title}]")
+
+
+def help(player: Player, message, args):
+    player.send_message(
+        f"KompirBot made by [https://akatsuki.gg/u/91076?mode=0&rx=1 Adachi].\nCommands:\n!recommend (min_pp=pp) (max_pp=pp) | recommends a std rx farm map"
+    )
