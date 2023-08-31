@@ -65,7 +65,15 @@ def process_scores():
     result_file.save_data()
 
 
-def recommend(pp_min, pp_max, samples=1, skip_id=[]):
+def recommend(
+    pp_min,
+    pp_max,
+    samples=1,
+    mods=None,
+    mods_include=[],
+    mods_exclude=[],
+    skip_id=[],
+):
     scores = DataFile(f"{config['common']['data_directory']}/scores_processed.json.gz")
     scores.load_data()
     freq_all_cap = 300
@@ -80,6 +88,21 @@ def recommend(pp_min, pp_max, samples=1, skip_id=[]):
     weights = list()
     for score in scores.data:
         if score["beatmap_id"] in skip_id:
+            continue
+        score_mods = [score["mods"][i : i + 2] for i in range(0, len(score["mods"]), 2)]
+        failed = False
+        for mod in mods_include:
+            if mod not in score_mods:
+                failed = True
+        for mod in mods_exclude:
+            if mod in score_mods:
+                failed = True
+        if mods:
+            if "RX" not in mods:
+                mods = mods + "RX"
+            if mods != score["mods"]:
+                failed = True
+        if failed:
             continue
         pp = score["average_pp"]
         if pp < pp_min or pp > pp_max:
