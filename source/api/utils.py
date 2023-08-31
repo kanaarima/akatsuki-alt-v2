@@ -1,3 +1,4 @@
+import api.objects as objects
 import datetime
 
 
@@ -118,3 +119,10 @@ def convert_mods(magic_number):
         new -= Perfect
     return new
 
+
+def calculate_max_score(attributes: objects.BeatmapAttributes):
+    return (
+        (attributes["circles"] * 300)
+        + (attributes["sliders"] * 350)
+        + (attributes["spinners"] * 1000)
+    )

@@ -20,6 +20,8 @@ commands = {
     "recommend": cmd.recommend,
     "r": cmd.recommend,
     "help": cmd.help,
+    "recommend_score": cmd.recommend_score,
+    "rs": cmd.recommend_score,
 }
 
 
@@ -29,6 +31,7 @@ def on_message(sender, message, target):
         if target.name == "#announce":
             handle_announce(message)
     elif message[0] == "!":  # command
+        logger.info(f"CMD {message} ({sender})")
         split = message[1:].split()
         if split[0] in commands:
             commands[split[0]](sender, message[1:], split[1:])

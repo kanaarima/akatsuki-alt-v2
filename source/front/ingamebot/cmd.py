@@ -51,11 +51,18 @@ def recommend(player: Player, message, args):
     )
     beatmap = beatmaps.load_beatmap(recommend[0]["beatmap_id"])
     link = f"osu://b/{beatmap['beatmap_id']}"
-    title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])} (confidence: {recommend[0]['weight']*100:.2f}%)"
+    title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
+    player.send_message(f"[{link} {title}]")
+
+
+def recommend_score(player: Player, message, args):
+    beatmap = farmer.recommend_score()[0]
+    link = f"osu://b/{beatmap['beatmap_id']}"
+    title = f"{beatmap['title']} [{beatmap['difficulty_name']}] {int(beatmap['max_score']):,} (score/minute: {int(beatmap['score_minute']):,})"
     player.send_message(f"[{link} {title}]")
 
 
 def help(player: Player, message, args):
     player.send_message(
-        f"KompirBot made by [https://akatsuki.gg/u/91076?mode=0&rx=1 Adachi].\nCommands:\n!recommend (min_pp=pp) (max_pp=pp) (mods=mods) (include_mods=mods) (exclude_mods=mods) | recommends a farm map"
+        f"KompirBot made by [https://akatsuki.gg/u/91076?mode=0&rx=1 Adachi].\nCommands:\n!recommend (min_pp=pp) (max_pp=pp) (mods=mods) (include_mods=mods) (exclude_mods=mods) | recommends a farm map\n!recommend_score | recommends a score farm map"
     )

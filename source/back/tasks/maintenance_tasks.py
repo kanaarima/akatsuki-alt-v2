@@ -1,5 +1,5 @@
 from ossapi.enums import BeatmapsetSearchSort, BeatmapsetSearchCategory
-from api.utils import datetime_to_str, str_to_datetime
+from api.utils import datetime_to_str, str_to_datetime, calculate_max_score
 from api.files import DataFile, BinaryFile, exists
 from datetime import datetime, timedelta
 from api.tasks import Task, TaskStatus
@@ -107,6 +107,8 @@ class BuildBeatmapCache(Task):
                     "artist": beatmap["artist"],
                     "title": beatmap["title"],
                     "difficulty_name": beatmap["difficulty_name"],
+                    "length": beatmap["attributes"]["length"],
+                    "max_score": calculate_max_score(beatmap['attributes'])
                 }
                 ar = str(int(beatmap["attributes"]["ar"]))
                 if ar in cache[key]["ar"]:

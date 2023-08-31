@@ -65,6 +65,29 @@ def process_scores():
     result_file.save_data()
 
 
+def process_score_farm():
+    cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
+    cache.load_data()
+    beatmaps = list()
+    result = list()
+    max_score = 0
+    for id in cache.data["metadata"].keys():
+        if (
+            int(id) not in cache.data["ranked"]["total"]
+            and int(id) not in cache.data["ranked_akatsuki"]["total"]
+        ):
+            continue
+        beatmap = cache.data["metadata"][id]
+        beatmap["beatmap_id"] = id
+        beatmap["score_minute"] = beatmap["max_score"] / (beatmap["length"] / 60)
+        max_score = max(beatmap["score_minute"], max_score)
+        beatmaps.append(beatmap)
+    beatmaps.sort(key=lambda x: x["score_minute"], reverse=True)
+    for beatmap in beatmaps:
+        result.append((beatmap, beatmap["score_minute"] / max_score))
+    return result
+
+
 def recommend(
     pp_min,
     pp_max,
@@ -114,6 +137,17 @@ def recommend(
     return random_choices(found, weights, samples)
 
 
+def recommend_score(skip_id=[], samples=1):
+    beatmaps = list()
+    weights = list()
+    for beatmap, weight in scorefarm:
+        if beatmap["beatmap_id"] in skip_id:
+            continue
+        beatmaps.append(beatmap)
+        weights.append(weight)
+    return random_choices(beatmaps, weights, samples)
+
+
 def random_choices(data, weights, samples):
     normalised = numpy.asarray(weights)
     normalised /= normalised.sum()
@@ -121,3 +155,6 @@ def random_choices(data, weights, samples):
     result = list()
     [result.append(x) for x in choices if x not in result]
     return result[:samples]
+
+
+scorefarm = process_score_farm()
