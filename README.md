@@ -13,5 +13,7 @@ Akatsuki! Alt provides users and clans statistics tracking as well as custom lea
 
 # Credits
 [Lekuruu](https://github.com/Lekuruu): [osu.py](https://github.com/Lekuruu/osu.py) library for in-game bot support
+
 [osu! alternative discord](https://discord.gg/VZWRZZXcW4): various help and inspiration
+
 [akatsuki! discord devs](https://discord.com/invite/5cBtMPW): initial help with API interactions
