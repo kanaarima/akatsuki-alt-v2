@@ -30,6 +30,9 @@ def find_unique(check_func, iterA, iterB):
             b.append(x)
     return (a, b)
 
+def today() -> datetime.datetime:
+    return (datetime.datetime.today() - datetime.timedelta(days=1)).date()
+
 
 def yesterday() -> datetime.datetime:
     return (datetime.datetime.today() - datetime.timedelta(days=1)).date()

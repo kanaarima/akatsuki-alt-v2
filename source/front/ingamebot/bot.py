@@ -1,11 +1,11 @@
 from api.events import send_event, channel_message_event
 from osu.bancho.constants import ServerPackets
 from osu.objects.channel import Channel
-from api.utils import datetime_to_str
 from front.ingamebot import cmd
 from api.files import DataFile
 from api.logging import logger
 from datetime import datetime
+from api.utils import today
 from config import config
 from osu import Game
 
@@ -23,6 +23,7 @@ commands = {
     "recommend_score": cmd.recommend_score,
     "rs": cmd.recommend_score,
     "cook": cmd.recommend,
+    "scoer": cmd.recommend_score,
 }
 
 
@@ -55,7 +56,7 @@ def handle_announce(message):
                 beatmap_id = int(string[len(url_beatmap) :])
         print(f"{userid} set a #1 on {beatmap_id} ({gamemode_type})")
         file = DataFile(
-            f"{config['common']['data_directory']}/leaderboards/users/{datetime_to_str(datetime.now())}_1s.json.gz"
+            f"{config['common']['data_directory']}/leaderboards/users/{today()}_1s.json.gz"
         )
         file.load_data()
         if str(userid) not in file.data:
