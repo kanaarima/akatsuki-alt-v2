@@ -159,4 +159,4 @@ def random_choices(data, weights, samples):
     return result[:samples]
 
 
-scorefarm = process_score_farm()
+# scorefarm = process_score_farm()
