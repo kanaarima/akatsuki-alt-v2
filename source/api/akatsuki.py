@@ -8,6 +8,7 @@ from api.objects import (
     Beatmap,
 )
 from typing import List, Tuple, Dict
+import api.beatmaps as beatmaps
 import api.objects as objects
 from enum import Enum
 import utils.api
@@ -338,6 +339,38 @@ def get_clan_stats(
         global_ranking=data["clan"]["chosen_mode"]["global_leaderboard_rank"]
     )
     return (clan, stats, ranking)
+
+
+def get_map_leaderboard(
+    beatmap_id, gamemode: Gamemode, pages=1
+) -> List[Tuple[Player, Score]]:
+    beatmap = beatmaps.load_beatmap(beatmap_id)
+    if not beatmap:
+        return
+    if "attributes" not in beatmap:
+        return
+    if gamemode["mode"] != beatmap["attributes"]["mode"]:
+        if beatmap["attributes"]["mode"] != 0:  # Allow converts
+            return
+    res = list()
+    for page in range(pages):
+        req = requests.get_request(
+            f"scores?b={beatmap_id}&l=100&p={page+1}&relax={gamemode['relax']}"
+        )
+        if req.status_code != 200:
+            break
+        scores = req.json()["scores"]
+        if not scores:
+            break
+        for score in scores:
+            player = Player(
+                id=score["user"]["id"],
+                name=score["user"]["username"],
+                country=score["user"]["country"],
+            )
+            score["beatmap"] = {"beatmap_id": beatmap_id}
+            res.append((player, _score_from_apiscore(score, gamemode)))
+    return res
 
 
 def update_score_cache():
