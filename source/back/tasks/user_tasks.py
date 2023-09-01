@@ -13,6 +13,7 @@ from api.logging import logger
 from config import config
 from typing import List
 import datetime
+import glob
 
 
 class StoreUserLeaderboardsTask(Task):
@@ -345,3 +346,40 @@ class TrackUserPlaytime(Task):
 
     def _get_path_users(self) -> str:
         return f"{config['common']['data_directory']}/users_statistics/users.json.gz"
+
+
+class CrawlLovedMaps(Task):
+    def __init__(self) -> None:
+        super().__init__()
+        self.last_fetch = datetime.datetime(year=2000, month=1, day=1)
+
+    def can_run(self) -> bool:
+        return (datetime.datetime.now() - self.last_fetch) > datetime.timedelta(
+            minutes=10
+        )
+
+    def run(self):
+        cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
+        cache.load_data()
+        loved_maps = (
+            cache.data["loved"]["total"] + cache.data["loved_akatsuki"]["total"]
+        )
+        logger.info(f"Crawling {len(loved_maps)} maps")
+        path = f"{config['common']['data_directory']}/users_statistics/scores/"
+        userid = {}
+        for file in glob.glob(f"{path}*.json.gz"):
+            userid[int(file.replace(path, "").replace(".json.gz", ""))] = file
+        for loved_map in loved_maps:
+            scores = akatsuki.get_map_leaderboard(
+                loved_map, objects.gamemodes["std_rx"], pages=10000
+            )
+            for player, score in scores:
+                if player["id"] in userid:
+                    scorefile = DataFile(userid[player["id"]])
+                    scorefile.load_data()
+                    if str(score["beatmap_id"]) in scorefile.data["std_rx"]:
+                        continue
+                    logger.info(f"Found score on {loved_map} by {player['id']}")
+                    scorefile.data["std_rx"][str(score["beatmap_id"])] = score
+                    scorefile.save_data()
+        return self._finish()

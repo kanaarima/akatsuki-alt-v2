@@ -25,6 +25,7 @@ def main():
                 user_tasks.StoreUserLeaderboardsTask(),
                 user_tasks.StorePlayerStats(),
                 user_tasks.StorePlayerScores(),
+                user_tasks.CrawlLovedMaps(),
                 user_tasks.TrackUserPlaytime(),
                 maintenance_tasks.FixAkatsukiBeatmapRankings(),
                 maintenance_tasks.CheckNewRankedBeatmaps(),
