@@ -369,16 +369,33 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
         if gamemode not in gamemodes:
             await _wrong_gamemode_warning(message)
             return
+    view = "all"
+    if "view" in args:
+        valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki", "unranked"]
+        if args['view'].lower() not in valid_types:
+            await message.reply(f"Invalid view! {','.join(valid_types)}")
+            return
+        view = args["view"]
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     if not exists(path):
         await message.reply(f"Your statistics aren't fetched yet. Please wait!")
         return
     file = DataFile(path)
     file.load_data()
-    scores = file.data[gamemode]
+    scores = list(file.data[gamemode].values())
+    if view != "all":
+        cachepath = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
+        if not exists(cachepath):
+            await message.reply(f"Beatmaps cache is still being built. Please wait!")
+            return
+        cache = DataFile(cachepath)
+        cache.load_data()
+        for score in scores:
+            if score["beatmap_id"] not in cache.data[view]["total"]:
+                scores.remove(score)
     view = ScoresView(
         f"{player['name']}'s {gamemodes_full[gamemode]} scores ({len(scores):,})",
-        list(scores.values()),
+        list(scores),
     )
     await view.reply(message)
 
