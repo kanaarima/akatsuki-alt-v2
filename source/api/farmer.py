@@ -65,9 +65,18 @@ def process_scores():
     result_file.save_data()
 
 
+scorefarm = None
+
+
 def process_score_farm():
+    global scorefarm
     if not exists(f"{config['common']['data_directory']}/beatmap_cache.json.gz"):
         return
+    scorefarmfile = DataFile(f"{config['common']['data_directory']}/score_farm.json.gz")
+    if exists(f"{config['common']['data_directory']}/score_farm.json.gz"):
+        scorefarmfile.load_data()
+        return scorefarmfile.data
+
     cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
     cache.load_data()
     beatmaps = list()
@@ -87,7 +96,9 @@ def process_score_farm():
     beatmaps.sort(key=lambda x: x["score_minute"], reverse=True)
     for beatmap in beatmaps:
         result.append((beatmap, beatmap["score_minute"] / max_score))
-    return result
+    scorefarmfile.data = result
+    scorefarmfile.save_data()
+    scorefarm = result
 
 
 def recommend(
@@ -159,4 +170,4 @@ def random_choices(data, weights, samples):
     return result[:samples]
 
 
-# scorefarm = process_score_farm()
+process_score_farm()
