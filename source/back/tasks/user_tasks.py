@@ -5,6 +5,7 @@ from api.utils import (
     str_to_datetime,
 )
 from api.beatmaps import save_beatmaps, save_beatmap, load_beatmap
+from api.utils import str_to_datetime, datetime_to_str
 from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
 from api import objects, akatsuki
@@ -351,14 +352,29 @@ class TrackUserPlaytime(Task):
 class CrawlLovedMaps(Task):
     def __init__(self) -> None:
         super().__init__()
-        self.last_fetch = datetime.datetime(year=2000, month=1, day=1)
 
     def can_run(self) -> bool:
-        return (datetime.datetime.now() - self.last_fetch) > datetime.timedelta(
-            minutes=10
+        last_run = DataFile(
+            f"{config['common']['data_directory']}/loved_crawler.json.gz"
         )
+        last_run.load_data(
+            default={
+                "last_run": datetime_to_str(
+                    datetime.datetime(year=2000, month=1, day=1)
+                )
+            }
+        )
+        return (
+            datetime.datetime.now() - str_to_datetime(last_run.data["last_run"])
+        ) > datetime.timedelta(days=3)
 
     def run(self):
+        last_run = DataFile(
+            f"{config['common']['data_directory']}/loved_crawler.json.gz"
+        )
+        last_run.load_data()
+        last_run.data["last_run"] = datetime_to_str(datetime.datetime.now())
+        last_run.save_data()
         cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
         cache.load_data()
         loved_maps = (
