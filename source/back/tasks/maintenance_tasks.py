@@ -90,13 +90,13 @@ class BuildBeatmapCache(Task):
             else:
                 if beatmap["status"]["bancho"] < 1:
                     akatstatus = beatmap["status"]["akatsuki"]
-                    if akatstatus < 3:
+                    if akatstatus > 0 and akatstatus < 4:
                         key = "ranked_akatsuki"
                     elif akatstatus == 4:
                         key = "loved_akatsuki"
                 else:
                     banchostatus = beatmap["status"]["bancho"]
-                    if banchostatus < 3:
+                    if banchostatus < 4 and banchostatus > 0:
                         key = "ranked"
                     elif banchostatus == 4:
                         key = "loved"
