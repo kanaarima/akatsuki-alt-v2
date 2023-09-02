@@ -94,15 +94,21 @@ class StorePlayerStats(Task):
             playtime = DataFile(
                 f"{config['common']['data_directory']}/users_statistics/playtime/{user['user_id']}.json.gz"
             )
+            clears = DataFile(
+                f"{config['common']['data_directory']}/users_statistics/scores/{user['user_id']}.json.gz"
+            )
+            clears.load_data(default=None)
             playtime.load_data(default=None)
             playtime = playtime.data
             player, stats = akatsuki.get_user_stats(user["user_id"])
             first_places = dict()
             for name, gamemode in objects.gamemodes.items():
                 if playtime and "most_played" in playtime:
-                    stats[name][0]["play_time"] = playtime[name]["most_played"]
+                    stats[name][0]["play_time"] = playtime[name]["most_played"]                    
                 +playtime[name]["unsubmitted_plays"]
                 +playtime[name]["submitted_plays"]
+                if clears.data:
+                    stats[name][0]["clears"] = len(clears.data[name])
                 _, first_places[name], beatmaps = akatsuki.get_user_1s(
                     userid=user["user_id"],
                     gamemode=gamemode,
