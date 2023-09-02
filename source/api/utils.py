@@ -30,6 +30,7 @@ def find_unique(check_func, iterA, iterB):
             b.append(x)
     return (a, b)
 
+
 def today() -> datetime.datetime:
     return (datetime.datetime.today() - datetime.timedelta(days=1)).date()
 
@@ -63,6 +64,7 @@ HalfTime = 256
 Nightcore = 512
 Flashlight = 1024
 SpunOut = 4096
+AutoPilot = 8192
 Perfect = 16384
 
 
@@ -120,6 +122,8 @@ def convert_mods(magic_number):
         new -= TouchDevice
     if magic_number & Perfect:
         new -= Perfect
+    if magic_number & AutoPilot:
+        new -= AutoPilot
     return new
 
 
