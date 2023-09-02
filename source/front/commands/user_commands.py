@@ -371,8 +371,14 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
             return
     view = "all"
     if "view" in args:
-        valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki", "unranked"]
-        if args['view'].lower() not in valid_types:
+        valid_types = [
+            "ranked",
+            "ranked_akatsuki",
+            "loved",
+            "loved_akatsuki",
+            "unranked",
+        ]
+        if args["view"].lower() not in valid_types:
             await message.reply(f"Invalid view! {','.join(valid_types)}")
             return
         view = args["view"]
@@ -390,9 +396,11 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
             return
         cache = DataFile(cachepath)
         cache.load_data()
+        new_scores = list()
         for score in scores:
-            if score["beatmap_id"] not in cache.data[view]["total"]:
-                scores.remove(score)
+            if int(score["beatmap_id"]) in cache.data[view]["total"]:
+                new_scores.append(score)
+        scores = new_scores
     view = ScoresView(
         f"{player['name']}'s {gamemodes_full[gamemode]} scores ({len(scores):,})",
         list(scores),
