@@ -48,7 +48,7 @@ class BuildBeatmapCache(Task):
         self.last = datetime(year=1984, month=1, day=1)
 
     def can_run(self) -> bool:
-        return (datetime.now() - self.last) > timedelta(days=1)
+        return (datetime.now() - self.last) > timedelta(hours=1)
 
     def run(self) -> TaskStatus:
         self.last = datetime.now()
@@ -108,7 +108,7 @@ class BuildBeatmapCache(Task):
                     "title": beatmap["title"],
                     "difficulty_name": beatmap["difficulty_name"],
                     "length": beatmap["attributes"]["length"],
-                    "max_score": calculate_max_score(beatmap['attributes'])
+                    "max_score": calculate_max_score(beatmap["attributes"]),
                 }
                 ar = str(int(beatmap["attributes"]["ar"]))
                 if ar in cache[key]["ar"]:
