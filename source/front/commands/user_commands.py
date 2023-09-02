@@ -546,7 +546,7 @@ def _add_playtime(pt, fetch):
     if not pt:
         return fetch
     for name in gamemodes.keys():
-        if "rx" not in name:
+        if "rx" not in name and "ap" not in name:
             continue
         stats = fetch[name][0]
         if "most_played" in pt[name]:
