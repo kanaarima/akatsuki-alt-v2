@@ -30,7 +30,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 
 logging.basicConfig(
     level=logging.INFO,
-    format='<%(name)s> %(levelname)s: %(message)s',
+    format='[%(asctime)s] - <%(name)s> %(levelname)s: %(message)s',
     handlers=[file_handler, console_handler]
 )
 
