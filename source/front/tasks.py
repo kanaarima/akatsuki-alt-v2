@@ -65,7 +65,7 @@ async def post_user_updates():
     player_file.load_data()
     player_old_file.load_data()
     lists = user_leaderboards.generate_user_leaderboards(
-        player_new=player_file.data, player_old=player_file.data
+        player_new=player_file.data, player_old=player_old_file.data
     )
     for key in lists.keys():
         if key not in config["discord"]["channels"]:

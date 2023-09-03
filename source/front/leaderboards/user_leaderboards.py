@@ -31,6 +31,9 @@ def generate_user_leaderboards(
         to_post[f"player_{name}_score"] = generate_list(
             list(player_score.values()), format_player_score
         )
+    totalscore = get_total_score_lb(player_new, player_old)
+    for key in totalscore.keys():
+        to_post[key] = totalscore[key]
     return to_post
 
 
@@ -86,3 +89,71 @@ def format_player_score(
         rank_gain = f" {rank}"
         score_gain = f" {score}"
     return f"#{data_new[2]['global_ranking']} {data_new[0]['name']}{rank_gain} Ranked score: {data_new[1]['ranked_score']:,}{score_gain}"
+
+
+def format_player_total_score(
+    data_new: Tuple[Player, GamemodeStatistics, Ranking],
+    data_old: Tuple[Player, GamemodeStatistics, Ranking],
+):
+    score_gain = ""
+    rank_gain = ""
+    if data_old:
+        rank = _format_gain_string(
+            gain=data_new[2]["global_ranking"] - data_old[2]["global_ranking"],
+        )
+        score = _format_gain_string(
+            gain=data_new[1]["total_score"] - data_old[1]["total_score"]
+        )
+        rank_gain = f" {rank}"
+        score_gain = f" {score}"
+    return f"#{data_new[2]['global_ranking']} {data_new[0]['name']}{rank_gain} Total score: {data_new[1]['total_score']:,}{score_gain}"
+
+
+def get_total_score_lb(player_new, player_old):
+    players = {}
+    players_old = {}
+    res = {}
+    for name, gamemode in gamemodes.items():
+        players_old[name] = {}
+        for player, stats, ranking_score, ranking_pp in player_old[name]:
+            if player["id"] not in players_old[name]:
+                players_old[name][player["id"]] = (player, stats)
+    for name, gamemode in gamemodes.items():
+        players[name] = {}
+        for player, stats, ranking_score, ranking_pp in player_new[name]:
+            if player["id"] not in players[name]:
+                players[name][player["id"]] = (player, stats)
+    oldplayers = {}
+    for name, gamemode in gamemodes.items():
+        resl = list()
+        oldplayers[name] = resl
+        players_total_score = sorted(
+            list(players_old[name].values()),
+            key=lambda x: x[1]["total_score"],
+            reverse=True,
+        )
+        rank = 1
+        for player, stats in players_total_score:
+            resl.append((player, stats, Ranking(global_ranking=rank)))
+            rank += 1
+    for name, gamemode in gamemodes.items():
+        resl = list()
+        res[f"player_{name}_total_score"] = resl
+        players_total_score = sorted(
+            list(players[name].values()),
+            key=lambda x: x[1]["total_score"],
+            reverse=True,
+        )
+        rank = 1
+        for player, stats in players_total_score:
+            old = None
+            for oplayer, ostats, oranking in oldplayers[name]:
+                if player["id"] == oplayer["id"]:
+                    old = (oplayer, ostats, oranking)
+            resl.append(
+                format_player_total_score(
+                    (player, stats, Ranking(global_ranking=rank)), old
+                )
+            )
+            rank += 1
+    return res
