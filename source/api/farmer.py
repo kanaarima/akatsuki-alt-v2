@@ -78,7 +78,8 @@ def process_score_farm():
     scorefarmfile = DataFile(f"{config['common']['data_directory']}/score_farm.json.gz")
     if exists(f"{config['common']['data_directory']}/score_farm.json.gz"):
         scorefarmfile.load_data()
-        return scorefarmfile.data
+        scorefarm = scorefarmfile.data
+        return
 
     cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
     cache.load_data()
