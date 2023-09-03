@@ -17,6 +17,7 @@ class GZipRotator:
         os.remove(dest)
 
 
+os.makedirs(config['common']['log_directory'], exist_ok=True)
 type = "frontend" if "frontend" in "".join(sys.argv) else "backend"
 logformatter = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s")
 log = logging.handlers.TimedRotatingFileHandler(
