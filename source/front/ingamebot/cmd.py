@@ -1,8 +1,11 @@
-from osu.objects.player import Player
 from front.commands.user_commands import _parse_args
+from osu.objects.player import Player
+from api.objects import gamemodes
 import api.akatsuki as akatsuki
 import api.beatmaps as beatmaps
+from api.files import DataFile
 import api.farmer as farmer
+from config import config
 
 
 def ping(player: Player, message, args):
@@ -11,6 +14,10 @@ def ping(player: Player, message, args):
 
 def recommend(player: Player, message, args):
     _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
+    top100 = akatsuki.get_user_best(player.id, gamemodes["std_rx"])
+    skip_id = []
+    for play in top100[0]:
+        skip_id.append(play["beatmap_id"])
     total_pp = stats["std_rx"][0]["total_pp"]
     target = total_pp / 20
     min_pp = target - 20
@@ -56,7 +63,15 @@ def recommend(player: Player, message, args):
 
 
 def recommend_score(player: Player, message, args):
-    beatmap = farmer.recommend_score()[0]
+    skip_id = []
+    scores = DataFile(
+        f"{config['common']['data_directory']}/users_statistics/scores/{player.id}.json.gz"
+    )
+    if scores.exists():
+        scores.load_data()
+        for beatmapid in list(scores.data["std_rx"].keys()):
+            skip_id.append(int(beatmapid))
+    beatmap = farmer.recommend_score(skip_id)[0]
     link = f"osu://b/{beatmap['beatmap_id']}"
     title = f"{beatmap['title']} [{beatmap['difficulty_name']}] {int(beatmap['max_score']):,} (score/minute: {int(beatmap['score_minute']):,})"
     player.send_message(f"[{link} {title}]")
