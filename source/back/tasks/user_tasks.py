@@ -337,8 +337,8 @@ class TrackUserPlaytime(Task):
                 if status != 2 and status != 1:
                     continue
                 sorted_by_pp.append(score_pp)
-            # if len(sorted_by_pp) == 100:
-            #    break
+            if len(sorted_by_pp) == 100:
+                break
         for score_pp in sorted_by_pp:
             logger.info(f"rendering play {score['id']} by {user['user_id']}")
             if score_pp["id"] == score["id"]:  # Renderable
