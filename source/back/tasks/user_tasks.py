@@ -326,35 +326,7 @@ class TrackUserPlaytime(Task):
         scores: List[objects.Score],
         score: objects.Score,
     ):
-        if "render_permission" not in user or not user["render_permission"]:
-            return
-        sorted_by_pp = list()
-        for score_pp in sorted(scores, key=lambda x: x["pp"], reverse=True):
-            beatmap = load_beatmap(score["beatmap_id"])
-            if "status" in beatmap:
-                status = beatmap["status"]["akatsuki"]
-                # https://circleguard.github.io/ossapi/appendix.html#ossapi.enums.RankStatus
-                if status != 2 and status != 1:
-                    continue
-                sorted_by_pp.append(score_pp)
-            if len(sorted_by_pp) == 100:
-                break
-        for score_pp in sorted_by_pp:
-            logger.info(f"rendering play {score['id']} by {user['user_id']}")
-            if score_pp["id"] == score["id"]:  # Renderable
-                logger.info(f"User {user['user_id']} set a new top 100 play!")
-                player = akatsuki.get_user_info(user["user_id"])
-                renderurl = send_render(
-                    replayURL=f"https://akatsuki.gg/web/replays/{score['id']}",
-                    username=player["name"],
-                )
-                if renderurl:
-                    events.send_event(
-                        "frontend", events.render_event(user["user_id"], renderurl)
-                    )
-                else:
-                    logger.error(f"Failed rendering top play! {score['id']}")
-                break
+        return
 
     def _get_path(self):
         return f"{config['common']['data_directory']}/users_statistics/"
