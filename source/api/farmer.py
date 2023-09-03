@@ -157,11 +157,14 @@ def recommend(
 def recommend_score(skip_id=[], samples=1):
     beatmaps = list()
     weights = list()
+    max_maps = max(samples, 25)
     for beatmap, weight in scorefarm:
         if beatmap["beatmap_id"] in skip_id:
             continue
         beatmaps.append(beatmap)
         weights.append(weight)
+        if len(beatmaps) == max_maps:
+            break
     return random_choices(beatmaps, weights, samples)
 
 
