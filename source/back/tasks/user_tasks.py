@@ -105,7 +105,7 @@ class StorePlayerStats(Task):
             first_places = dict()
             for name, gamemode in objects.gamemodes.items():
                 if playtime and "most_played" in playtime:
-                    stats[name][0]["play_time"] = playtime[name]["most_played"]                    
+                    stats[name][0]["play_time"] = playtime[name]["most_played"]
                 +playtime[name]["unsubmitted_plays"]
                 +playtime[name]["submitted_plays"]
                 if clears.data:
@@ -334,12 +334,13 @@ class TrackUserPlaytime(Task):
             if "status" in beatmap:
                 status = beatmap["status"]["akatsuki"]
                 # https://circleguard.github.io/ossapi/appendix.html#ossapi.enums.RankStatus
-                if status != 2 or status != 1:
+                if status != 2 and status != 1:
                     continue
                 sorted_by_pp.append(score_pp)
             if len(sorted_by_pp) == 100:
                 break
         for score_pp in sorted_by_pp:
+            logger.info(f"rendering play {score['id']} by {user['id']}")
             if score_pp["id"] == score["id"]:  # Renderable
                 logger.info(f"User {user['user_id']} set a new top 100 play!")
                 player = akatsuki.get_user_info(user["user_id"])
@@ -348,7 +349,9 @@ class TrackUserPlaytime(Task):
                     username=player["name"],
                 )
                 if renderurl:
-                    events.send_event("frontend", events.render_event(user['user_id'], renderurl))
+                    events.send_event(
+                        "frontend", events.render_event(user["user_id"], renderurl)
+                    )
                 else:
                     logger.error(f"Failed rendering top play! {score['id']}")
                 break
