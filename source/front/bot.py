@@ -1,12 +1,12 @@
 from front import tasks, cmd
+from api.logging import logger
 from config import config
-import logging
 import discord
 
 
 class Bot(discord.Client):
     async def on_ready(self):
-        print(f"Logged on as {self.user}!")
+        logger.info(f"Logged on as {self.user}!")
         tasks.init_tasks()
 
     async def on_message(self, message: discord.Message):

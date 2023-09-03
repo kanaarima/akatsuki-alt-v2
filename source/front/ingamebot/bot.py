@@ -54,7 +54,7 @@ def handle_announce(message):
                 userid = int(string[len(url_profile) :])
             elif string.startswith(url_beatmap):
                 beatmap_id = int(string[len(url_beatmap) :])
-        print(f"{userid} set a #1 on {beatmap_id} ({gamemode_type})")
+        logger.info(f"{userid} set a #1 on {beatmap_id} ({gamemode_type})")
         file = DataFile(
             f"{config['common']['data_directory']}/leaderboards/users/{today()}_1s.json.gz"
         )
