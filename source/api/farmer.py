@@ -10,6 +10,12 @@ def process_scores():
     path = f"{config['common']['data_directory']}/scores.json.gz"
     if not exists(path):
         return
+    result = list()
+    result_file = DataFile(
+        f"{config['common']['data_directory']}/scores_processed.json.gz"
+    )
+    if result_file.exists():
+        return
     file = DataFile(path)
     file.load_data()
     scores: List[Score] = file.data
@@ -44,10 +50,7 @@ def process_scores():
             average_pp[beatmap_id][mods] = (
                 score["pp"] + average_pp[beatmap_id][mods]
             ) / 2
-    result = list()
-    result_file = DataFile(
-        f"{config['common']['data_directory']}/scores_processed.json.gz"
-    )
+
     for id in average_pp.keys():
         for mods in average_pp[id].keys():
             if not average_pp[id][mods]:
@@ -171,3 +174,4 @@ def random_choices(data, weights, samples):
 
 
 process_score_farm()
+process_scores()
