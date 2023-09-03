@@ -1,5 +1,6 @@
 from front import tasks, cmd
 from config import config
+import logging
 import discord
 
 
@@ -23,4 +24,7 @@ client = Bot(intents=intents)
 
 
 def main():
-    client.run(config["discord"]["bot_token"])
+    client.run(
+        config["discord"]["bot_token"],
+        log_handler=None
+    )
