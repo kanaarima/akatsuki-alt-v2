@@ -92,9 +92,9 @@ def process_score_farm():
             and int(id) not in cache.data["ranked_akatsuki"]["total"]
         ):
             continue
+        beatmap = cache.data["metadata"][id]
         if not beatmap["length"]:
             continue
-        beatmap = cache.data["metadata"][id]
         beatmap["beatmap_id"] = id
         beatmap["score_minute"] = beatmap["max_score"] / (beatmap["length"] / 60)
         max_score = max(beatmap["score_minute"], max_score)
