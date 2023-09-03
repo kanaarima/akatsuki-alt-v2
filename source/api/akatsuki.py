@@ -16,6 +16,9 @@ import datetime
 
 requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/", delay=0.8)
 lb_score_cache: Dict[str, List[Tuple[Player, GamemodeStatistics, Ranking]]] = dict()
+lb_total_score_cache: Dict[
+    str, List[Tuple[Player, GamemodeStatistics, Ranking]]
+] = dict()
 last_fetched = datetime.datetime(year=1984, month=1, day=1)
 
 
@@ -250,10 +253,16 @@ def get_user_stats(
         if not ranking_pp["global_ranking"]:
             ranking_pp = Ranking(global_ranking=-1, country_ranking=-1)
         ranking_score = Ranking(global_ranking=-1, country_ranking=-1)
+        ranking_total_score = Ranking(global_ranking=-1, country_ranking=-1)
         for player, _, ranking in lb_score_cache[name]:
             if player["id"] == user["id"]:
                 ranking_score = ranking
                 break
+        for player, _, ranking in lb_total_score_cache[name]:
+            if player["id"] == user["id"]:
+                ranking_total_score = ranking
+                break
+        stats["total_score_rank"] = ranking_total_score
         user_stats[name] = (stats, ranking_score, ranking_pp)
     return (user, user_stats)
 
@@ -374,7 +383,7 @@ def get_map_leaderboard(
 
 
 def update_score_cache():
-    global last_fetched
+    global last_fetched, lb_score_cache, lb_total_score_cache
     fetch = False
     if (datetime.datetime.now() - last_fetched) > datetime.timedelta(minutes=30):
         fetch = True
@@ -382,7 +391,36 @@ def update_score_cache():
         return
     last_fetched = datetime.datetime.now()
     for name, gamemode in objects.gamemodes.items():
-        pages = 2 if gamemode["mode"] == 0 else 1
+        pages = 8 if gamemode["mode"] == 0 and gamemode['relax'] == 1 else 1
         lb_score_cache[name] = get_user_leaderboard(
             gamemode=gamemode, sort=Sort_Method.SCORE, pages=pages
         )
+    lb_total_score_cache = {}
+
+    for name, gamemode in objects.gamemodes.items():
+        rank = 0
+        country_rank = {}
+        lb_total_score_cache[name] = list()
+        total_score_lb = sorted(
+            lb_score_cache[name], key=lambda x: x[1]["total_score"], reverse=True
+        )
+
+        def get(country):
+            if country in country_rank:
+                country_rank[country] += 1
+                return country_rank[country]
+            else:
+                country_rank[country] = 1
+                return 1
+
+        for player, stats, _ in total_score_lb:
+            rank += 1
+            lb_total_score_cache[name].append(
+                (
+                    player,
+                    stats,
+                    Ranking(
+                        global_ranking=rank, country_ranking=get(player["country"])
+                    ),
+                )
+            )

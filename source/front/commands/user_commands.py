@@ -180,13 +180,20 @@ async def show(full: str, split: list[str], message: discord.Message):
     global_score_rank_gain = _format_gain_string(
         oldest[gamemode][1]["global_ranking"] - recent[gamemode][1]["global_ranking"]
     )
+    global_total_score_rank_gain = _format_gain_string(
+        oldest[gamemode][0]["total_score_rank"]["global_ranking"]
+        - recent[gamemode][0]["total_score_rank"]["global_ranking"]
+    )
     country_rank_gain = _format_gain_string(
         oldest[gamemode][2]["country_ranking"] - recent[gamemode][2]["country_ranking"]
     )
     country_score_rank_gain = _format_gain_string(
         oldest[gamemode][1]["country_ranking"] - recent[gamemode][1]["country_ranking"]
     )
-
+    country_total_score_rank_gain = _format_gain_string(
+        oldest[gamemode][0]["total_score_rank"]["country_ranking"]
+        - recent[gamemode][0]["total_score_rank"]["country_ranking"]
+    )
     ranked_score_gain = _format_gain_string(
         recent[gamemode][0]["ranked_score"] - oldest[gamemode][0]["ranked_score"]
     )
@@ -222,7 +229,9 @@ async def show(full: str, split: list[str], message: discord.Message):
     fp_gain = _format_gain_string(
         recent[gamemode][0]["total_1s"] - oldest[gamemode][0]["total_1s"]
     )
-
+    clears_gain = _format_gain_string(
+        recent[gamemode][0]["clears"] - oldest[gamemode][0]["clears"]
+    )
     embed.add_field(
         name="Ranked score",
         value=f"{recent[gamemode][0]['ranked_score']:,}\n{ranked_score_gain}",
@@ -282,6 +291,18 @@ async def show(full: str, split: list[str], message: discord.Message):
     )
     embed.add_field(
         name="#1 count", value=f"{recent[gamemode][0]['total_1s']:,}\n{fp_gain}"
+    )
+    embed.add_field(
+        name="Global t.score rank",
+        value=f"#{recent[gamemode][0]['total_score_rank']['global_ranking']:,}\n{global_total_score_rank_gain}",
+    )
+    embed.add_field(
+        name="Country t.score rank",
+        value=f"#{recent[gamemode][0]['total_score_rank']['country_ranking']:,}\n{country_total_score_rank_gain}",
+    )
+    embed.add_field(
+        name="Clears",
+        value=f"{recent[gamemode][0]['clears']:,}\n{clears_gain}",
     )
     await message.reply(embed=embed)
 
@@ -515,21 +536,26 @@ def _get_download_link(beatmap_id: int):
 
 
 def _update_fetch(player: Player, user_file: DataFile):
+    user_file.load_data(default=[])
     playtime = DataFile(
         f"{config['common']['data_directory']}/users_statistics/playtime/{player['id']}.json.gz"
     )
     playtime.load_data(default=None)
     playtime = playtime.data
+    scores = DataFile(
+        f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
+    )
+    scores.load_data(default=None)
+    scores = scores.data
     for fetch in user_file.data:
         date = datetime.datetime.strptime(fetch[0], "%d/%m/%Y %H:%M:%S")
         if (datetime.datetime.now() - date) > datetime.timedelta(hours=24):
             user_file.data.remove(fetch)
-
     if not user_file.data:
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                _add_playtime(playtime, akatsuki.get_user_stats(player["id"])[1]),
+                _add_extra(playtime, scores, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
     date = datetime.datetime.strptime(user_file.data[-1][0], "%d/%m/%Y %H:%M:%S")
@@ -537,18 +563,20 @@ def _update_fetch(player: Player, user_file: DataFile):
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                _add_playtime(playtime, akatsuki.get_user_stats(player["id"])[1]),
+                _add_extra(playtime, scores, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
 
 
-def _add_playtime(pt, fetch):
+def _add_extra(pt, scores, fetch):
     if not pt:
         return fetch
     for name in gamemodes.keys():
+        stats = fetch[name][0]
+        if scores:
+            stats["clears"] = len(scores[name])
         if "rx" not in name and "ap" not in name:
             continue
-        stats = fetch[name][0]
         if "most_played" in pt[name]:
             stats["play_time"] = (
                 pt[name]["most_played"]
