@@ -31,19 +31,12 @@ def send_render(replayURL, username, render_config=default):
     payload["verificationKey"] = config["ordr"]["key"]
     req = requests.post_request("renders", data=payload)
     if req.status_code != 201:
-        print(req.status_code)
-        print(req.content)
         return None
     data = req.json()
-    finalreq = requests.get_request("renders", data={"renderID": data["renderID"]})
-    if req.status_code != 200:
-        print(req.status_code)
-        print(req.content)
-        return None
     for attempt in range(6):
         time.sleep(10)
+        finalreq = requests.get_request("renders", data={"renderID": data["renderID"]})
         for render in finalreq.json()["renders"]:
             if render["renderID"] == data["renderID"]:
-                print(render["videoUrl"])
                 return render["videoUrl"]
     return None
