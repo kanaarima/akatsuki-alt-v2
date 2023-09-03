@@ -135,6 +135,10 @@ async def handle_events():
                     await bot.client.get_channel(
                         config["discord"]["forward_channels"][event["channel"]]
                     ).send(content=event["message"], suppress_embeds=True)
+            elif event["name"] == "RenderEvent":
+                await bot.client.get_channel(config["discord"]["render_channel"]).send(
+                    f"{event['render_link']}"
+                )
     except:
         logger.error("Could not handle events!", exc_info=True)
 

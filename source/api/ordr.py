@@ -25,7 +25,6 @@ default = RenderConfig(
 
 
 def send_render(replayURL, username, render_config=default):
-    return
     payload = render_config.copy()
     payload["replayURL"] = replayURL
     payload["username"] = username
@@ -41,9 +40,10 @@ def send_render(replayURL, username, render_config=default):
         print(req.status_code)
         print(req.content)
         return None
-    time.sleep(5)  # TODO: fix this before re enabling
-    for render in finalreq.json()["renders"]:
-        if render["renderID"] == data["renderID"]:
-            print(render["videoUrl"])
-            return render["videoUrl"]
+    for attempt in range(6):
+        time.sleep(10)
+        for render in finalreq.json()["renders"]:
+            if render["renderID"] == data["renderID"]:
+                print(render["videoUrl"])
+                return render["videoUrl"]
     return None

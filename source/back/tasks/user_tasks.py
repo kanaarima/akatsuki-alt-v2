@@ -11,6 +11,7 @@ from api.files import DataFile, exists
 from api import objects, akatsuki
 from api.ordr import send_render
 from api.logging import logger
+import api.events as events
 from config import config
 from typing import List
 import datetime
@@ -342,10 +343,14 @@ class TrackUserPlaytime(Task):
             if score_pp["id"] == score["id"]:  # Renderable
                 logger.info(f"User {user['user_id']} set a new top 100 play!")
                 player = akatsuki.get_user_info(user["user_id"])
-                send_render(
+                renderurl = send_render(
                     replayURL=f"https://akatsuki.gg/web/replays/{score['id']}",
                     username=player["name"],
                 )
+                if renderurl:
+                    events.send_event("frontend", events.render_event(user['user_id'], renderurl))
+                else:
+                    logger.error(f"Failed rendering top play! {score['id']}")
                 break
 
     def _get_path(self):

@@ -10,10 +10,20 @@ class ChannelMessageEvent(TypedDict):
     message: str
 
 
+class RenderEvent(TypedDict):
+    name: str
+    userid: int
+    render_link: str
+
+
 def channel_message_event(userid, channel, message) -> ChannelMessageEvent:
     return ChannelMessageEvent(
         name="ChannelMessageEvent", userid=userid, channel=channel, message=message
     )
+
+
+def render_event(userid, render_link) -> ChannelMessageEvent:
+    return RenderEvent(name="RenderEvent", userid=userid, render_link=render_link)
 
 
 def send_event(target, event):
