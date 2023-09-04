@@ -259,8 +259,6 @@ class TrackUserPlaytime(Task):
                     if not _scores:
                         break
                     save_beatmaps(beatmaps)
-                    if skip == 0:
-                        userpt.data[name]["last_score_id"] = int(_scores[0]["id"])
                     exit = False
                     for score in _scores:
                         if str(score["beatmap_id"]) in scoredata.data[name]:
@@ -295,6 +293,8 @@ class TrackUserPlaytime(Task):
                                 userpt.data[name]["unsubmitted_plays"] += (
                                     map["attributes"]["length"] / divisor
                                 ) * multiplier
+                    if skip == 0:
+                        userpt.data[name]["last_score_id"] = int(_scores[0]["id"])
                     if exit:
                         break
                     else:
