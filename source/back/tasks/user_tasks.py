@@ -261,10 +261,9 @@ class TrackUserPlaytime(Task):
                     save_beatmaps(beatmaps)
                     exit = False
                     for score in _scores:
-                        if str(score["beatmap_id"]) in scoredata.data[name]:
-                            if int(score["id"]) == userpt.data[name]["last_score_id"]:
-                                exit = True
-                                break
+                        if int(score["id"]) == userpt.data[name]["last_score_id"]:
+                            exit = True
+                            break
                         map = load_beatmap(score["beatmap_id"])
                         # if map["length"] == 0:  # blame akatsuki api
                         #    continue
