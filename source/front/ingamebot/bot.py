@@ -83,7 +83,7 @@ def main():
         retry = False
 
         while True:
-            game.run(retry)
+            game.run(retry, exit_on_interrupt=True)
             game.logger.warning("Restarting...")
             retry = True
     except KeyboardInterrupt:
