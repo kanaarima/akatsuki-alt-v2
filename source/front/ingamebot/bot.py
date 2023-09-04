@@ -6,15 +6,10 @@ from osu.bancho.constants import Mods
 from front.ingamebot import cmd
 from api.files import DataFile
 from api.logging import logger
-from datetime import datetime
 from api.utils import today
 from config import config
 from typing import Union
 from osu import Game
-
-from threading import Thread
-
-import time
 
 game = Game(
     config["bot_account"]["username"],
@@ -33,13 +28,14 @@ commands = {
     "scoer": cmd.recommend_score,
 }
 
+
 @game.events.register(ServerPackets.SEND_MESSAGE)
 def on_message(sender: Player, message: str, target: Union[Player, Channel]):
     if type(target) == Channel:
         if target.name == "#announce":
             handle_announce(message)
 
-    elif (message := message.strip()).startswith('!'):
+    elif (message := message.strip()).startswith("!"):
         logger.info(f"CMD {message} ({sender})")
 
         # Parse command
@@ -50,6 +46,13 @@ def on_message(sender: Player, message: str, target: Union[Player, Channel]):
             commands[command](sender, message[1:], args)
         else:
             sender.send_message("Unknown command!")
+
+
+@game.events.register(ServerPackets.USER_STATS)
+def stats_update(player: Player):
+    # TODO: Process player data
+    pass
+
 
 @game.tasks.register(seconds=5)
 def reload_stats():
@@ -72,7 +75,7 @@ def reload_stats():
     game.bancho.update_status()
 
     for player in linked_players:
-        if (bancho_player := game.bancho.players.by_id(player['id'])):
+        if bancho_player := game.bancho.players.by_id(player["id"]):
             bancho_player.request_stats()
             ingame_players.add(bancho_player)
 
@@ -81,11 +84,10 @@ def reload_stats():
     game.bancho.update_status()
 
     for player in linked_players:
-        if (bancho_player := game.bancho.players.by_id(player['id'])):
+        if bancho_player := game.bancho.players.by_id(player["id"]):
             bancho_player.request_stats()
             ingame_players.add(bancho_player)
 
-    # TODO: Process player data
 
 def handle_announce(message):
     if "#1 place" in message:
