@@ -73,4 +73,9 @@ def handle_announce(message):
 
 
 def main():
-    game.run()
+    retry = False
+
+    while True:
+        game.run(retry)
+        game.logger.warning('Game crashed. Restarting...')
+        retry = True
