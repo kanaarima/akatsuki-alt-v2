@@ -232,6 +232,7 @@ class TrackUserPlaytime(Task):
                         "submitted_plays": 0,
                         "unsubmitted_plays": 0,
                         "most_played": 0,
+                        "last_score_id": 0,
                     }
                     scores: List[objects.Score] = scoredata.data[name].values()
                     for score in scores:
@@ -244,6 +245,8 @@ class TrackUserPlaytime(Task):
                     self._add_most_played(user["user_id"], pt, name, gamemode)
                     userpt.data[name] = pt
             for name, gamemode in objects.gamemodes.items():
+                if "last_score_id" not in userpt.data[name]:
+                    userpt.data[name]["last_score_id"] = 0
                 if "most_played" not in userpt.data[name]:
                     self._add_most_played(
                         user["user_id"], userpt.data[name], name, gamemode
@@ -256,12 +259,13 @@ class TrackUserPlaytime(Task):
                     if not _scores:
                         break
                     save_beatmaps(beatmaps)
+                    if skip == 0:
+                        userpt.data[name]["last_score_id"] = int(_scores[0]["id"])
+                    exit = False
                     for score in _scores:
                         if str(score["beatmap_id"]) in scoredata.data[name]:
-                            if (
-                                score["id"]
-                                == scoredata.data[name][str(score["beatmap_id"])]["id"]
-                            ):
+                            if int(score["id"]) == userpt.data[name]["last_score_id"]:
+                                exit = True
                                 break
                         map = load_beatmap(score["beatmap_id"])
                         # if map["length"] == 0:  # blame akatsuki api
@@ -291,11 +295,10 @@ class TrackUserPlaytime(Task):
                                 userpt.data[name]["unsubmitted_plays"] += (
                                     map["attributes"]["length"] / divisor
                                 ) * multiplier
+                    if exit:
+                        break
                     else:
                         skip += 1
-                        continue
-                    break
-
             userpt.save_data()
             scoredata.save_data()
         return self._finish()
