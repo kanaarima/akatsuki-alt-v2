@@ -16,11 +16,12 @@ class GZipRotator:
         f_in.close()
         os.remove(dest)
 
-os.makedirs(config['common']['log_directory'], exist_ok=True)
 
-type = "frontend" if "frontend" in "".join(sys.argv) else "backend"
+os.makedirs(config["common"]["log_directory"], exist_ok=True)
+
+type = sys.argv[1] if len(sys.argv) > 1 else "debug"
 file_handler = logging.handlers.TimedRotatingFileHandler(
-    filename=f"{config['common']['log_directory']}/debug_{type}.log",
+    filename=f"{config['common']['log_directory']}/{type}.log",
     when="midnight",
     interval=1,
     backupCount=5,
@@ -30,8 +31,8 @@ console_handler = logging.StreamHandler(sys.stdout)
 
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] - <%(name)s> %(levelname)s: %(message)s',
-    handlers=[file_handler, console_handler]
+    format="[%(asctime)s] - <%(name)s> %(levelname)s: %(message)s",
+    handlers=[file_handler, console_handler],
 )
 
 logger = logging.getLogger(type)
