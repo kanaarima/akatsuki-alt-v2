@@ -56,7 +56,7 @@ class ScoresView(discord.ui.View):
         button.label = f"Sort: {self.sort_types[self.sort_type]}"
         await interaction.response.edit_message(embed=self.get_embed(), view=self)
 
-    @discord.ui.button(label=f"↓", style=discord.ButtonStyle.gray)
+    @discord.ui.button(label="↓", style=discord.ButtonStyle.gray)
     async def sort_dir_button(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
@@ -83,7 +83,7 @@ class ScoresView(discord.ui.View):
 
     def get_embed(self):
         embed = discord.Embed(
-            title=self.title + f" ({self.index}/{int(len(self.scores) / self.size)})"
+            title=f"{self.title} ({self.index}/{int(len(self.scores) / self.size)})"
         )
         i = self.index * self.size
         for score in self.scores[i : i + self.size]:
@@ -114,9 +114,9 @@ class ScoreDiffView(discord.ui.View):
         self.message = message
         self.index = 0
         self.status = 0
-        self.scores_lost = list()
+        self.scores_lost = []
         self.scores_gained = scores_new.copy()
-        self.scores_overwritten = list()
+        self.scores_overwritten = []
         for score in scores_old:
             found = False
             for score_new in scores_new:
@@ -143,7 +143,7 @@ class ScoreDiffView(discord.ui.View):
 
     @discord.ui.button(label="Next", style=discord.ButtonStyle.gray)
     async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.index = min(int(len(self.scores) / 10), self.index + 1)
+        self.index = min(len(self.scores) // 10, self.index + 1)
         await interaction.response.edit_message(embed=self.get_embed(), view=self)
 
     @discord.ui.button(label="Current: new", style=discord.ButtonStyle.gray)
@@ -241,12 +241,13 @@ class StringListView(discord.ui.View):
     def get_embed(self):
         current_list = self.lists[list(self.lists.keys())[self.list_index]]
         embed = discord.Embed(
-            title=self.title + f" ({self.index}/{int(len(current_list) / self.size)})"
+            title=f"{self.title} ({self.index}/{int(len(current_list) / self.size)})"
         )
         i = self.index * self.size
-        str = ""
-        for string in current_list[i : i + self.size]:
-            str += f"{string[:int(1025/self.size)]}\n"
+        str = "".join(
+            f"{string[:int(1025 / self.size)]}\n"
+            for string in current_list[i : i + self.size]
+        )
         embed.add_field(name=list(self.lists.keys())[self.list_index], value=str)
         return embed
 

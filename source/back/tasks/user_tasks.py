@@ -27,7 +27,7 @@ class StoreUserLeaderboardsTask(Task):
     def run(self) -> TaskStatus:
         data = {}
         for name, gamemode in objects.gamemodes.items():
-            data[name] = list()
+            data[name] = []
             leaderboard_pp = akatsuki.get_user_leaderboard(
                 gamemode=gamemode, sort=akatsuki.Sort_Method.PP, pages=10
             )
@@ -82,14 +82,12 @@ class StorePlayerStats(Task):
 
     def run(self) -> TaskStatus:
         usersfile = DataFile(filepath=self._get_path_users())
-        usersfile.load_data(default=list())
+        usersfile.load_data(default=[])
         users: List[objects.LinkedPlayer] = usersfile.data
         for user in users:
             if not user["full_tracking"]:
                 continue
-            userfile = DataFile(
-                filepath=self._get_path() + f"{user['user_id']}.json.gz"
-            )
+            userfile = DataFile(filepath=f"{self._get_path()}{user['user_id']}.json.gz")
             userfile.data = {}
             playtime = DataFile(
                 f"{config['common']['data_directory']}/users_statistics/playtime/{user['user_id']}.json.gz"
@@ -101,7 +99,7 @@ class StorePlayerStats(Task):
             playtime.load_data(default=None)
             playtime = playtime.data
             player, stats = akatsuki.get_user_stats(user["user_id"])
-            first_places = dict()
+            first_places = {}
             for name, gamemode in objects.gamemodes.items():
                 if playtime and "most_played" in playtime:
                     stats[name][0]["play_time"] = playtime[name]["most_played"]
@@ -134,7 +132,7 @@ class StorePlayerScores(Task):
 
     def can_run(self) -> bool:
         userfile = DataFile(self._get_path_users())
-        userfile.load_data(default=list())
+        userfile.load_data(default=[])
         infofile = DataFile(f"{self._get_path()}/scores.json.gz")
         infofile.load_data(default={})
 
@@ -154,7 +152,7 @@ class StorePlayerScores(Task):
 
     def run(self) -> TaskStatus:
         userfile = DataFile(self._get_path_users())
-        userfile.load_data(default=list())
+        userfile.load_data(default=[])
         infofile = DataFile(f"{self._get_path()}/scores.json.gz")
         infofile.load_data(default={})
 
@@ -177,7 +175,7 @@ class StorePlayerScores(Task):
                     user["user_id"], gamemode, pages=1000
                 )
                 if name not in scorefile.data or not scorefile.data[name]:
-                    scorefile.data[name] = dict()
+                    scorefile.data[name] = {}
                 for score in scores:
                     scorefile.data[name][score["beatmap_id"]] = score
                 save_beatmaps(maps)
@@ -206,7 +204,7 @@ class TrackUserPlaytime(Task):
     def run(self) -> TaskStatus:
         self.last_fetch = datetime.datetime.now()
         userfile = DataFile(self._get_path_users())
-        userfile.load_data(default=list())
+        userfile.load_data(default=[])
         scorefile = DataFile(f"{self._get_path()}/scores.json.gz")
         scorefile.load_data(default={})
 
@@ -281,18 +279,17 @@ class TrackUserPlaytime(Task):
                                 score=score,
                                 gamemode=name,
                             )
-                        else:
+                        elif "attributes" in map:
                             total_hits = (
                                 score["count_300"]
                                 + score["count_100"]
                                 + score["count_50"]
                                 + score["count_miss"]
                             )
-                            if "attributes" in map:
-                                multiplier = total_hits / map["attributes"]["max_combo"]
-                                userpt.data[name]["unsubmitted_plays"] += (
-                                    map["attributes"]["length"] / divisor
-                                ) * multiplier
+                            multiplier = total_hits / map["attributes"]["max_combo"]
+                            userpt.data[name]["unsubmitted_plays"] += (
+                                map["attributes"]["length"] / divisor
+                            ) * multiplier
                     if skip == 0:
                         userpt.data[name]["last_score_id"] = int(_scores[0]["id"])
                     if exit:
@@ -391,9 +388,10 @@ class CrawlLovedMaps(Task):
         )
         logger.info(f"Crawling {len(loved_maps)} maps")
         path = f"{config['common']['data_directory']}/users_statistics/scores/"
-        userid = {}
-        for file in glob.glob(f"{path}*.json.gz"):
-            userid[int(file.replace(path, "").replace(".json.gz", ""))] = file
+        userid = {
+            int(file.replace(path, "").replace(".json.gz", "")): file
+            for file in glob.glob(f"{path}*.json.gz")
+        }
         for loved_map in loved_maps:
             scores = akatsuki.get_map_leaderboard(
                 loved_map, objects.gamemodes["std_rx"], pages=10000

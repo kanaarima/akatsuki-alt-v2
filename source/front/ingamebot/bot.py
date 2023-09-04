@@ -60,7 +60,7 @@ def handle_announce(message):
         )
         file.load_data()
         if str(userid) not in file.data:
-            file.data[str(userid)] = {"VN": list(), "RX": list(), "AP": list()}
+            file.data[str(userid)] = {"VN": [], "RX": [], "AP": []}
         if gamemode_type == "VN":
             file.data[str(userid)]["VN"].append(beatmap_id)
         elif gamemode_type == "RX":

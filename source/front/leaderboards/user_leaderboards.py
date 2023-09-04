@@ -13,8 +13,8 @@ def generate_user_leaderboards(
 ) -> Dict[str, List[str]]:
     to_post = {}
     for name, gamemode in gamemodes.items():
-        player_pp = dict()
-        player_score = dict()
+        player_pp = {}
+        player_score = {}
         for player, stats, ranking_score, ranking_pp in player_new[name]:
             if ranking_pp["global_ranking"] > 0:
                 player_pp[player["id"]] = [(player, stats, ranking_pp), None]
@@ -46,10 +46,10 @@ def generate_list(
     ],
     format_func,
 ) -> List[str]:
-    str_list = list()
-    for new, old in sorted(data, key=lambda x: x[0][2]["global_ranking"]):
-        str_list.append(format_func(new, old))
-    return str_list
+    return [
+        format_func(new, old)
+        for new, old in sorted(data, key=lambda x: x[0][2]["global_ranking"])
+    ]
 
 
 def format_player_pp(
@@ -125,27 +125,28 @@ def get_total_score_lb(player_new, player_old):
                 players[name][player["id"]] = (player, stats)
     oldplayers = {}
     for name, gamemode in gamemodes.items():
-        resl = list()
+        resl = []
         oldplayers[name] = resl
         players_total_score = sorted(
             list(players_old[name].values()),
             key=lambda x: x[1]["total_score"],
             reverse=True,
         )
-        rank = 1
-        for player, stats in players_total_score:
-            resl.append((player, stats, Ranking(global_ranking=rank)))
-            rank += 1
+        resl.extend(
+            (player, stats, Ranking(global_ranking=rank))
+            for rank, (player, stats) in enumerate(
+                players_total_score, start=1
+            )
+        )
     for name, gamemode in gamemodes.items():
-        resl = list()
+        resl = []
         res[f"player_{name}_total_score"] = resl
         players_total_score = sorted(
             list(players[name].values()),
             key=lambda x: x[1]["total_score"],
             reverse=True,
         )
-        rank = 1
-        for player, stats in players_total_score:
+        for rank, (player, stats) in enumerate(players_total_score, start=1):
             old = None
             for oplayer, ostats, oranking in oldplayers[name]:
                 if player["id"] == oplayer["id"]:
@@ -155,5 +156,4 @@ def get_total_score_lb(player_new, player_old):
                     (player, stats, Ranking(global_ranking=rank)), old
                 )
             )
-            rank += 1
     return res

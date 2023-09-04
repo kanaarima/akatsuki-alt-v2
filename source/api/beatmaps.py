@@ -20,7 +20,7 @@ client = ossapi.Ossapi(
     client_secret=config["osuapi"]["client_secret"],
 )
 ask_peppy = ApiHandler(base_url="https://akatsuki.gg/api/", delay=4)
-cache = dict()
+cache = {}
 cache_last_refresh = datetime.now()
 cache_enabled = False
 
@@ -30,7 +30,7 @@ def load_beatmap(beatmap_id) -> Beatmap:
     if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
         "cache"
     ]:
-        cache = dict()
+        cache = {}
         cache_last_refresh = datetime.now()
     if beatmap_id in cache and cache_enabled:
         return cache[beatmap_id]
@@ -65,7 +65,7 @@ def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
     if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
         "cache"
     ]:
-        cache = dict()
+        cache = {}
         cache_last_refresh = datetime.now()
     if cache_enabled:
         cache[beatmap["beatmap_id"]] = beatmap
@@ -237,15 +237,14 @@ def get_difficulties(beatmap: calc_beatmap) -> Dict[int, BeatmapDifficulty]:
     time_mods = (0, utils.DoubleTime, utils.HalfTime)
     difficulty_mods = (0, utils.HardRock, utils.Easy)
     preference_mods_r = (utils.Hidden, utils.Flashlight)
-    combinations = list()
+    combinations = []
     for n in range(len(preference_mods_r) + 1):
         combinations += list(itertools.combinations(preference_mods_r, n))
-    for time_mod in time_mods:
-        for difficulty_mod in difficulty_mods:
-            for preference_mods in combinations:
-                mods = sum(preference_mods) + difficulty_mod + time_mod
-                res[str(mods)] = get_difficulty(beatmap, mods)
-                res[str(mods + utils.Relax)] = get_difficulty(
-                    beatmap, mods + utils.Relax
-                )
+    for time_mod, difficulty_mod in itertools.product(time_mods, difficulty_mods):
+        for preference_mods in combinations:
+            mods = sum(preference_mods) + difficulty_mod + time_mod
+            res[str(mods)] = get_difficulty(beatmap, mods)
+            res[str(mods + utils.Relax)] = get_difficulty(
+                beatmap, mods + utils.Relax
+            )
     return res

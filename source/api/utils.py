@@ -3,7 +3,7 @@ import datetime
 
 
 def merge_dict(source: dict, target: dict) -> None:
-    for key in source.keys():
+    for key in source:
         if key not in target:
             target[key] = source[key]
 
@@ -14,8 +14,8 @@ def update_dicts(a: dict, b: dict) -> None:
 
 
 def find_unique(check_func, iterA, iterB):
-    a = list()
-    b = list()
+    a = []
+    b = []
     for x in iterA:
         for y in iterB:
             if check_func(x, y):
@@ -32,15 +32,15 @@ def find_unique(check_func, iterA, iterB):
 
 
 def today() -> datetime.datetime:
-    return (datetime.datetime.today() - datetime.timedelta(days=1)).date()
+    return (datetime.datetime.now() - datetime.timedelta(days=1)).date()
 
 
 def yesterday() -> datetime.datetime:
-    return (datetime.datetime.today() - datetime.timedelta(days=1)).date()
+    return (datetime.datetime.now() - datetime.timedelta(days=1)).date()
 
 
 def other_yesterday() -> datetime.datetime:
-    return (datetime.datetime.today() - datetime.timedelta(days=2)).date()
+    return (datetime.datetime.now() - datetime.timedelta(days=2)).date()
 
 
 def datetime_to_str(dt: datetime.datetime) -> str:
@@ -69,7 +69,7 @@ Perfect = 16384
 
 
 def get_mods(magic_number):
-    mods = list()
+    mods = []
     if magic_number & SpunOut:
         mods.append("SO")
     if magic_number & Easy:
