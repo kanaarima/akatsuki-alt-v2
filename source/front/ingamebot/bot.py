@@ -89,7 +89,7 @@ def reload_stats(sender, message, target):
             bancho_player.request_stats()
             ingame_players.add(bancho_player)
 
-    logger.info(f'Got {len(ingame_players)} players')
+    # TODO: Process player data
 
 def handle_announce(message):
     if "#1 place" in message:
