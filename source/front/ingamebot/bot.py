@@ -1,6 +1,8 @@
 from api.events import send_event, channel_message_event
+from api.objects import Player as AkatsukiPlayer
 from osu.bancho.constants import ServerPackets
 from osu.objects import Player, Channel
+from osu.bancho.constants import Mods
 from front.ingamebot import cmd
 from api.files import DataFile
 from api.logging import logger
@@ -9,6 +11,10 @@ from api.utils import today
 from config import config
 from typing import Union
 from osu import Game
+
+from threading import Thread
+
+import time
 
 game = Game(
     config["bot_account"]["username"],
@@ -26,7 +32,6 @@ commands = {
     "cook": cmd.recommend,
     "scoer": cmd.recommend_score,
 }
-
 
 @game.events.register(ServerPackets.SEND_MESSAGE)
 def on_message(sender: Player, message: str, target: Union[Player, Channel]):
@@ -46,6 +51,45 @@ def on_message(sender: Player, message: str, target: Union[Player, Channel]):
         else:
             sender.send_message("Unknown command!")
 
+# TODO: Find alternative way of executing event
+@game.events.register(ServerPackets.SEND_MESSAGE)
+def reload_stats(sender, message, target):
+    if target.name != '#announce':
+        return
+
+    # Load user stats
+    discord_users = DataFile(
+        filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
+    )
+    discord_users.load_data(default={})
+
+    # Load players that are currently online
+    linked_players = list()
+    ingame_players = set()
+
+    for user in discord_users.data.values():
+        player = AkatsukiPlayer(**user[0])
+        linked_players.append(player)
+
+    # Try to load users with rx
+    game.bancho.status.mods = Mods.Relax
+    game.bancho.update_status()
+
+    for player in linked_players:
+        if (bancho_player := game.bancho.players.by_id(player['id'])):
+            bancho_player.request_stats()
+            ingame_players.add(bancho_player)
+
+    # Try to load users with nm
+    game.bancho.status.mods = Mods.NoMod
+    game.bancho.update_status()
+
+    for player in linked_players:
+        if (bancho_player := game.bancho.players.by_id(player['id'])):
+            bancho_player.request_stats()
+            ingame_players.add(bancho_player)
+
+    logger.info(f'Got {len(ingame_players)} players')
 
 def handle_announce(message):
     if "#1 place" in message:
