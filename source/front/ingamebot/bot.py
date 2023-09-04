@@ -36,7 +36,8 @@ def on_message(sender: Player, message: str, target: Union[Player, Channel]):
             handle_announce(message)
 
     elif (message := message.strip()).startswith("!"):
-        logger.info(f"CMD {message} ({sender})")
+        # Command was executed
+        logger.info(f"{sender} executed a command: {message}")
 
         # Parse command
         command, *args = message[1:].split()
@@ -89,35 +90,49 @@ def reload_stats():
             ingame_players.add(bancho_player)
 
 
-def handle_announce(message):
+def handle_announce(message: str) -> None:
     if "#1 place" in message:
         gamemode_type = message[1:3]
-        userid = 0
-        send_event("frontend", channel_message_event(userid, "#announce", message))
-        beatmap_id = 0
-        url_profile = "[https://akatsuki.gg/u/"
+        user_id = 0
+
+        # Send event to discord bot
+        send_event(
+            target="frontend",
+            event=channel_message_event(user_id, "#announce", message),
+        )
+
         url_beatmap = "[https://osu.akatsuki.gg/beatmaps/"
+        url_profile = "[https://akatsuki.gg/u/"
+        beatmap_id = 0
+
+        # Parse user_id and beatmap_id
         for string in message.split():
             if string.startswith(url_profile):
-                userid = int(string[len(url_profile) :])
+                user_id = int(string[len(url_profile) :])
+
             elif string.startswith(url_beatmap):
                 beatmap_id = int(string[len(url_beatmap) :])
-        logger.info(f"{userid} set a #1 on {beatmap_id} ({gamemode_type})")
+
+        logger.info(f"{user_id} set a #1 on {beatmap_id} ({gamemode_type})")
+
+        # Save to today's #1's
         file = DataFile(
             f"{config['common']['data_directory']}/leaderboards/users/{today()}_1s.json.gz"
         )
         file.load_data()
-        if str(userid) not in file.data:
-            file.data[str(userid)] = {"VN": [], "RX": [], "AP": []}
+
+        if str(user_id) not in file.data:
+            file.data[str(user_id)] = {"VN": [], "RX": [], "AP": []}
         if gamemode_type == "VN":
-            file.data[str(userid)]["VN"].append(beatmap_id)
+            file.data[str(user_id)]["VN"].append(beatmap_id)
         elif gamemode_type == "RX":
-            file.data[str(userid)]["RX"].append(beatmap_id)
+            file.data[str(user_id)]["RX"].append(beatmap_id)
         elif gamemode_type == "AP":
-            file.data[str(userid)]["AP"].append(beatmap_id)
+            file.data[str(user_id)]["AP"].append(beatmap_id)
+
         file.save_data()
     else:
-        logger.info(f"Can't handle announce {message}")
+        logger.warning(f"Can't handle announce: {message}")
 
 
 def main():

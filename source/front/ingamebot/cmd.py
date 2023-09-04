@@ -58,10 +58,7 @@ def recommend(player: Player, message, args):
             for i in range(0, len(parsed["exclude_mods"]), 2)
         ]
 
-    mods = (
-        parsed["mods"].upper()
-        if "mods" in parsed else None
-    )
+    mods = parsed["mods"].upper() if "mods" in parsed else None
 
     recommend = farmer.recommend(
         pp_min=min_pp,
@@ -73,7 +70,7 @@ def recommend(player: Player, message, args):
     )
 
     if not (beatmap := beatmaps.load_beatmap(recommend[0]["beatmap_id"])):
-        player.send_message('Failed to load beatmap.')
+        player.send_message("Failed to load beatmap.")
         return
 
     title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
