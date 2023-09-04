@@ -92,9 +92,7 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     map = map[0]
     # Process map
     beatmaps.save_beatmap(map)
-    map = beatmaps.load_beatmap(
-        map["beatmap_id"]
-    )
+    map = beatmaps.load_beatmap(map["beatmap_id"])
     await message.reply(embed=get_score_embed(player=player, beatmap=map, score=score))
 
 
@@ -532,13 +530,15 @@ def _update_fetch(player: Player, user_file: DataFile):
 
 
 def _add_extra(pt, scores, fetch):
-    if not pt:
-        return fetch
     for name in gamemodes.keys():
         stats = fetch[name][0]
         if scores:
             stats["clears"] = len(scores[name])
+        else:
+            stats["clears"] = "-1"
         if "rx" not in name and "ap" not in name:
+            continue
+        if not pt:
             continue
         if "most_played" in pt[name]:
             stats["play_time"] = (
