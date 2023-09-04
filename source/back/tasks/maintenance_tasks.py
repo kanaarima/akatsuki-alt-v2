@@ -270,7 +270,7 @@ class StoreTopPlays(Task):
 
 class CheckAkatsukiNominationChannel(Task):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(asynchronous=True)
 
     def can_run(self) -> bool:
         last_checked_file = DataFile(
