@@ -76,6 +76,9 @@ def recommend_score(player: Player, message, args):
 
 
 def help(player: Player, message, args):
-    player.send_message(
-        f"KompirBot made by [https://akatsuki.gg/u/91076?mode=0&rx=1 Adachi].\nCommands:\n!recommend (min_pp=pp) (max_pp=pp) (mods=mods) (include_mods=mods) (exclude_mods=mods) | recommends a farm map\n!recommend_score | recommends a score farm map"
-    )
+    player.send_message("\n".join([
+        "KompirBot made by [https://akatsuki.gg/u/91076?mode=0&rx=1 Adachi].",
+        "Commands:"
+        "!recommend (min_pp=pp) (max_pp=pp) (mods=mods) (include_mods=mods) (exclude_mods=mods) | recommends a farm map",
+        "!recommend_score | recommends a score farm map"
+    ]))
