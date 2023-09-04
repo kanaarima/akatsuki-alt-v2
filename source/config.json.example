@@ -2,14 +2,15 @@
     "common": {
         "data_directory": "../data/",
         "log_directory": "../logs/",
+        "cache_directory": "../cache/",
         "cache": 0
     },
     "discord": {
         "bot_token": "TOKEN",
         "bot_prefix": "!",
-        "channels": [],
-        "forward_channels": [],
-        "render_channel": [],
+        "channels": {},
+        "forward_channels": {},
+        "render_channel": 0,
         "status_update": {
             "channel_id": 0,
             "message_id": 0
