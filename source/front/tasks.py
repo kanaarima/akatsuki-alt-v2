@@ -1,13 +1,17 @@
 from api.utils import str_to_datetime, datetime_to_str, yesterday, other_yesterday
 from front.leaderboards import clan_leaderboards, user_leaderboards
+from api.objects import gamemodes_full
+from front.views import get_score_embed
 from api.files import DataFile
 from api.logging import logger
+import api.akatsuki as akatsuki
+import api.beatmaps as beatmaps
 from datetime import datetime
 from discord.ext import tasks
 from config import config
 from front import bot
-import subprocess
 import api.events
+import subprocess
 import discord
 import asyncio
 import glob
@@ -131,13 +135,27 @@ async def handle_events():
         events = api.events.read_events("frontend")
         for event in events:
             if event["name"] == "ChannelMessageEvent":
-                if event["channel"] in config["discord"]["forward_channels"]:
+                message_event: api.events.ChannelMessageEvent = event
+                if message_event["channel"] in config["discord"]["forward_channels"]:
                     await bot.client.get_channel(
-                        config["discord"]["forward_channels"][event["channel"]]
-                    ).send(content=event["message"], suppress_embeds=True)
-            elif event["name"] == "RenderEvent":
+                        config["discord"]["forward_channels"][message_event["channel"]]
+                    ).send(content=message_event["message"], suppress_embeds=True)
+            elif event["name"] == "TopPlayEvent":
+                top_play_event: api.events.TopPlayEvent = event
+                beatmap = beatmaps.load_beatmap(top_play_event["beatmap_id"])
+                if not beatmap:  # should be unnecessary
+                    continue
+                player = akatsuki.get_user_info(top_play_event["user_id"])
+                title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} top play! (#{top_play_event['index']})"
+                embed = get_score_embed(
+                    player=player,
+                    beatmap=beatmap,
+                    score=top_play_event["score"],
+                    title_overwrite=title,
+                    use_thumbnail=False,
+                )
                 await bot.client.get_channel(config["discord"]["render_channel"]).send(
-                    f"{event['render_link']}"
+                    embed=embed
                 )
     except:
         logger.error("Could not handle events!", exc_info=True)

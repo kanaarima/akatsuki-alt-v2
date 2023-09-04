@@ -273,10 +273,12 @@ class TrackUserPlaytime(Task):
                                 userpt.data[name]["submitted_plays"] += (
                                     map["attributes"]["length"] / divisor
                                 )
-                            if name == "std_rx":
-                                self._check_renderable(
-                                    user, list(scoredata.data[name].values()), score
-                                )
+                            self._check_if_top_play(
+                                user_id=user["user_id"],
+                                scores=scoredata.data[name],
+                                score=score,
+                                gamemode=name,
+                            )
                         else:
                             total_hits = (
                                 score["count_300"]
@@ -319,13 +321,32 @@ class TrackUserPlaytime(Task):
                 beatmap["attributes"]["length"] * multiplier
             ) * playcount
 
-    def _check_renderable(
+    def _check_if_top_play(
         self,
-        user: objects.LinkedPlayer,
+        user_id: int,
         scores: List[objects.Score],
         score: objects.Score,
+        gamemode: str,
     ):
-        return
+        ranked_scores = 0
+        for user_score in scores.values():
+            beatmap = load_beatmap(user_score["beatmap_id"])
+            if not beatmap or "status" not in beatmap:
+                continue
+            if beatmap["status"]["akatsuki"] < 1 or beatmap["status"]["akatsuki"] > 2:
+                continue
+            ranked_scores += 1
+            if score["id"] == user_score["id"]:
+                event = events.top_play_event(
+                    user_id=user_id,
+                    beatmap_id=beatmap["beatmap_id"],
+                    score=score,
+                    index=ranked_scores,
+                    gamemode=gamemode,
+                )
+                events.send_event(target="frontend", event=event)
+            if ranked_scores == 99:
+                break
 
     def _get_path(self):
         return f"{config['common']['data_directory']}/users_statistics/"

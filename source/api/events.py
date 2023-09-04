@@ -1,4 +1,5 @@
 from api.files import DataFile
+from api.objects import Score
 from typing import TypedDict
 from config import config
 
@@ -10,10 +11,13 @@ class ChannelMessageEvent(TypedDict):
     message: str
 
 
-class RenderEvent(TypedDict):
+class TopPlayEvent(TypedDict):
     name: str
-    userid: int
-    render_link: str
+    user_id: int
+    beatmap_id: int
+    score: Score
+    index: int
+    gamemode: str
 
 
 def channel_message_event(userid, channel, message) -> ChannelMessageEvent:
@@ -22,8 +26,15 @@ def channel_message_event(userid, channel, message) -> ChannelMessageEvent:
     )
 
 
-def render_event(userid, render_link) -> ChannelMessageEvent:
-    return RenderEvent(name="RenderEvent", userid=userid, render_link=render_link)
+def top_play_event(user_id, beatmap_id, score, index, gamemode) -> ChannelMessageEvent:
+    return TopPlayEvent(
+        name="TopPlayEvent",
+        user_id=user_id,
+        beatmap_id=beatmap_id,
+        score=score,
+        index=index,
+        gamemode=gamemode,
+    )
 
 
 def send_event(target, event):

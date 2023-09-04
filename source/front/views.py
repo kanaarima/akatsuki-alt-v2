@@ -1,5 +1,5 @@
-from api.utils import get_mods_simple, datetime_to_str
-from api.objects import Player, Score
+from api.utils import get_mods_simple, datetime_to_str, convert_mods
+from api.objects import Player, Score, Beatmap
 from api.beatmaps import load_beatmap
 from datetime import datetime
 from typing import List, Dict
@@ -249,3 +249,56 @@ class StringListView(discord.ui.View):
             str += f"{string[:int(1025/self.size)]}\n"
         embed.add_field(name=list(self.lists.keys())[self.list_index], value=str)
         return embed
+
+
+def get_score_embed(
+    player: Player,
+    beatmap: Beatmap,
+    score: Score,
+    title_overwrite=None,
+    use_thumbnail=True,
+):
+    embed = discord.Embed(title=title_overwrite)
+    url = f"https://assets.ppy.sh/beatmaps/{beatmap['beatmap_set_id']}/covers/cover@2x.jpg"
+    if use_thumbnail:
+        embed.set_thumbnail(url=url)
+    else:
+        embed.set_image(url=url)
+    artist = beatmap["artist"]
+    title = beatmap["title"]
+    difficulty = beatmap["difficulty_name"]
+    mods = "".join(get_mods_simple(score["mods"]))
+    sr = (
+        ""
+        if "difficulty" not in beatmap
+        else f"[{beatmap['difficulty'][str(convert_mods(score['mods']))]['star_rating']:.1f}*] "
+    )
+    embed.set_author(
+        name=f"{sr}{artist} - {title[:180]} [{difficulty}] +{mods}\n",
+        icon_url=f"https://a.akatsuki.gg/{player['id']}",
+    )
+    combo = (
+        "x"
+        if "attributes" not in beatmap
+        else f"/{beatmap['attributes']['max_combo']}x"
+    )
+    rank = score["rank"]
+    if score["completed"] < 2:
+        run = ""
+        if "attributes" in beatmap:
+            total = (
+                score["count_300"]
+                + score["count_100"]
+                + score["count_50"]
+                + score["count_miss"]
+            )
+            total_map = (
+                beatmap["attributes"]["circles"]
+                + beatmap["attributes"]["sliders"]
+                + beatmap["attributes"]["spinners"]
+            )
+            run = f" ({int((total/total_map)*100)}%)"
+        rank = f"F{run}"
+    text = f"➤**{rank} {score['combo']}{combo} {score['accuracy']:.2f}% [{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}] {score['pp']}pp {score['score']:,}**"
+    embed.description = text
+    return embed
