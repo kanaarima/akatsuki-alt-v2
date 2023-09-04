@@ -94,23 +94,42 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
     return beatmap
 
 
-def download_beatmap(beatmap_id) -> True:
+def download_beatmap(beatmap_id) -> bool:
     sleep(1.5)
-    return _osudirect_download(beatmap_id)
+    if (content := _osudirect_download(beatmap_id)):
+        return content
+
+    # Use old.ppy.sh as backup endpoint
+    return _ppy_download(beatmap_id)
 
 
-def _osudirect_download(beatmap_id) -> True:
-    req = requests.get(
+def _osudirect_download(beatmap_id) -> bool:
+    response = requests.get(
         f"https://osu.direct/api/osu/{beatmap_id}",
         headers=DEFAULT_HEADERS,
     )
-    if req.status_code != 200:
-        logger.warning(f"GET {req.url} {req.status_code}")
-        logger.warning(f"{req.text}")
+    if response.status_code != 200:
+        logger.warning(f"GET {response.url} {response.status_code}")
+        logger.warning(f"{response.text}")
         return False
-    logger.info(f"GET {req.url} {req.status_code}")
+    logger.info(f"GET {response.url} {response.status_code}")
     file = BinaryFile(f"{base_path}/{beatmap_id}.osu.gz")
-    file.data = req.content
+    file.data = response.content
+    file.save_data()
+    return True
+
+def _ppy_download(beatmap_id) -> bool:
+    response = requests.get(
+        f'https://old.ppy.sh/osu/{beatmap_id}',
+        headers=DEFAULT_HEADERS,
+    )
+    if response.status_code != 200:
+        logger.warning(f"GET {response.url} {response.status_code}")
+        logger.warning(f"{response.text}")
+        return False
+    logger.info(f"GET {response.url} {response.status_code}")
+    file = BinaryFile(f"{base_path}/{beatmap_id}.osu.gz")
+    file.data = response.content
     file.save_data()
     return True
 
