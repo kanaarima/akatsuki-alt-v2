@@ -73,12 +73,12 @@ def handle_announce(message):
 
 
 def main():
-    retry = False
-
     try:
+        retry = False
+
         while True:
             game.run(retry)
-            game.logger.warning('Game crashed. Restarting...')
+            game.logger.warning('Restarting...')
             retry = True
     except KeyboardInterrupt:
         exit(0)
