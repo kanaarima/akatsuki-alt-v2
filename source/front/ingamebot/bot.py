@@ -1,12 +1,13 @@
 from api.events import send_event, channel_message_event
 from osu.bancho.constants import ServerPackets
-from osu.objects.channel import Channel
+from osu.objects import Player, Channel
 from front.ingamebot import cmd
 from api.files import DataFile
 from api.logging import logger
 from datetime import datetime
 from api.utils import today
 from config import config
+from typing import Union
 from osu import Game
 
 game = Game(
@@ -28,15 +29,20 @@ commands = {
 
 
 @game.events.register(ServerPackets.SEND_MESSAGE)
-def on_message(sender, message, target):
+def on_message(sender: Player, message: str, target: Union[Player, Channel]):
     if type(target) == Channel:
         if target.name == "#announce":
             handle_announce(message)
-    elif message[0] == "!":  # command
+
+    elif (message := message.strip()).startswith('!'):
         logger.info(f"CMD {message} ({sender})")
-        split = message[1:].split()
-        if split[0] in commands:
-            commands[split[0]](sender, message[1:], split[1:])
+
+        # Parse command
+        command, *args = message[1:].split()
+        command = command.lower()
+
+        if command in commands:
+            commands[command](sender, message[1:], args)
         else:
             sender.send_message("Unknown command!")
 
