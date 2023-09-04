@@ -12,9 +12,11 @@ from config import config
 from front import bot
 import api.events
 import subprocess
+import requests
 import discord
 import asyncio
 import glob
+import io
 
 
 async def post_list(channel_id, strings):
@@ -145,6 +147,7 @@ async def handle_events():
                 beatmap = beatmaps.load_beatmap(top_play_event["beatmap_id"])
                 if not beatmap:  # should be unnecessary
                     continue
+                replay = get_replay(top_play_event["score"]["id"])
                 player = akatsuki.get_user_info(top_play_event["user_id"])
                 title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} top play! (#{top_play_event['index']})"
                 embed = get_score_embed(
@@ -157,8 +160,25 @@ async def handle_events():
                 await bot.client.get_channel(config["discord"]["render_channel"]).send(
                     embed=embed
                 )
+                if replay:
+                    await bot.client.get_channel(
+                        config["discord"]["render_channel"]
+                    ).send(
+                        file=discord.File(
+                            fp=replay, filename=f"{top_play_event['score']['id']}.osr"
+                        )
+                    )
     except:
         logger.error("Could not handle events!", exc_info=True)
+
+
+def get_replay(scoreid):
+    req = requests.get(
+        f"https://akatsuki.gg/web/replays/{scoreid}", allow_redirects=True
+    )
+    if req.status_code != 200:  # 404?
+        return
+    return io.BytesIO(req.content)
 
 
 def init_tasks():
