@@ -15,12 +15,8 @@ import utils.api
 import datetime
 
 requests = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/v1/", delay=0.8)
-lb_score_cache: Dict[
-    str, List[Tuple[Player, GamemodeStatistics, Ranking]]
-] = {}
-lb_total_score_cache: Dict[
-    str, List[Tuple[Player, GamemodeStatistics, Ranking]]
-] = {}
+lb_score_cache: Dict[str, List[Tuple[Player, GamemodeStatistics, Ranking]]] = {}
+lb_total_score_cache: Dict[str, List[Tuple[Player, GamemodeStatistics, Ranking]]] = {}
 last_fetched = datetime.datetime(year=1984, month=1, day=1)
 
 
@@ -90,8 +86,7 @@ def search_users(username: str) -> List[Player]:
     if not apiusers:
         return res
     res.extend(
-        Player(name=apiuser["username"], id=apiuser["id"])
-        for apiuser in apiusers
+        Player(name=apiuser["username"], id=apiuser["id"]) for apiuser in apiusers
     )
     return res
 
@@ -394,7 +389,7 @@ def update_score_cache():
         return
     last_fetched = datetime.datetime.now()
     for name, gamemode in objects.gamemodes.items():
-        pages = 8 if gamemode["mode"] == 0 and gamemode['relax'] == 1 else 1
+        pages = 8 if gamemode["mode"] == 0 and gamemode["relax"] == 1 else 1
         lb_score_cache[name] = get_user_leaderboard(
             gamemode=gamemode, sort=Sort_Method.SCORE, pages=pages
         )

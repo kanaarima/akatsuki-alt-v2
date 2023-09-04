@@ -440,7 +440,9 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
             lists[key] = []
             for list_key in cache.data[type][key].keys():
                 all = len(cache.data[type][key][list_key])
-                found = sum(1 for id in cache.data[type][key][list_key] if str(id) in scores)
+                found = sum(
+                    1 for id in cache.data[type][key][list_key] if str(id) in scores
+                )
                 if include_all or found == all:
                     lists[key].append(f"{list_key}: {found}/{all}")
             if not lists[key]:
@@ -474,9 +476,7 @@ async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
 
 
 async def _link_warning(message: discord.Message):
-    await message.reply(
-        "You don't have an account linked! use !link username/userID."
-    )
+    await message.reply("You don't have an account linked! use !link username/userID.")
 
 
 async def _wrong_gamemode_warning(message: discord.Message):

@@ -109,8 +109,7 @@ async def refresh_status():
             maps_path = f"{config['common']['data_directory']}/beatmaps"
             update_embed = discord.Embed(title="Service status")
             tasks_status = "".join(
-                f"{task}: {status}\n"
-                for task, status in status_data.data.items()
+                f"{task}: {status}\n" for task, status in status_data.data.items()
             )
             if not tasks_status:
                 tasks_status = "No tasks currently running."

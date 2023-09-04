@@ -36,6 +36,7 @@ def main():
         manager.loop()
     elif sys.argv[1] == "gamefrontend":
         import front.ingamebot.bot as igbot
+
         igbot.main()
     else:
         wrong_args()

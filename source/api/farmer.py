@@ -98,9 +98,7 @@ def process_score_farm():
         max_score = max(beatmap["score_minute"], max_score)
         beatmaps.append(beatmap)
     beatmaps.sort(key=lambda x: x["score_minute"], reverse=True)
-    result = [
-        (beatmap, beatmap["score_minute"] / max_score) for beatmap in beatmaps
-    ]
+    result = [(beatmap, beatmap["score_minute"] / max_score) for beatmap in beatmaps]
     scorefarmfile.data = result
     scorefarmfile.save_data()
     scorefarm = result

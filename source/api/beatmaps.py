@@ -96,7 +96,7 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
 
 def download_beatmap(beatmap_id) -> bool:
     sleep(1.5)
-    if (content := _osudirect_download(beatmap_id)):
+    if (content := _osudirect_download(beatmap_id)) :
         return content
 
     # Use old.ppy.sh as backup endpoint
@@ -118,9 +118,10 @@ def _osudirect_download(beatmap_id) -> bool:
     file.save_data()
     return True
 
+
 def _ppy_download(beatmap_id) -> bool:
     response = requests.get(
-        f'https://old.ppy.sh/osu/{beatmap_id}',
+        f"https://old.ppy.sh/osu/{beatmap_id}",
         headers=DEFAULT_HEADERS,
     )
     if response.status_code != 200:
@@ -244,7 +245,5 @@ def get_difficulties(beatmap: calc_beatmap) -> Dict[int, BeatmapDifficulty]:
         for preference_mods in combinations:
             mods = sum(preference_mods) + difficulty_mod + time_mod
             res[str(mods)] = get_difficulty(beatmap, mods)
-            res[str(mods + utils.Relax)] = get_difficulty(
-                beatmap, mods + utils.Relax
-            )
+            res[str(mods + utils.Relax)] = get_difficulty(beatmap, mods + utils.Relax)
     return res

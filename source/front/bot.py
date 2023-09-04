@@ -24,7 +24,4 @@ client = Bot(intents=intents)
 
 
 def main():
-    client.run(
-        config["discord"]["bot_token"],
-        log_handler=None
-    )
+    client.run(config["discord"]["bot_token"], log_handler=None)

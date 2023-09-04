@@ -134,9 +134,7 @@ def get_total_score_lb(player_new, player_old):
         )
         resl.extend(
             (player, stats, Ranking(global_ranking=rank))
-            for rank, (player, stats) in enumerate(
-                players_total_score, start=1
-            )
+            for rank, (player, stats) in enumerate(players_total_score, start=1)
         )
     for name, gamemode in gamemodes.items():
         resl = []

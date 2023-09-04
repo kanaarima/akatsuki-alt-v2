@@ -14,7 +14,7 @@ async def handle_command(message: discord.Message):
             await commands[split[0]](full, split[1:], message)
         except:
             logger.error(f"{full} raised an exception!", exc_info=True)
-            await message.reply('An error occurred while running this command!')
+            await message.reply("An error occurred while running this command!")
     else:
         await message.reply(content="Unknown command!")
 
