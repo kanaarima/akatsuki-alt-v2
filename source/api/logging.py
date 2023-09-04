@@ -33,11 +33,10 @@ class ColorFormatter(logging.Formatter):
 class GZipRotator:
     def __call__(self, source, dest):
         os.rename(source, dest)
-        f_in = open(dest, "rb")
-        f_out = gzip.open("%s.gz" % dest, "wb")
-        f_out.writelines(f_in)
-        f_out.close()
-        f_in.close()
+        with open(dest, "rb") as f_in:
+            f_out = gzip.open(f"{dest}.gz", "wb")
+            f_out.writelines(f_in)
+            f_out.close()
         os.remove(dest)
 
 

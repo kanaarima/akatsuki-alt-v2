@@ -9,7 +9,7 @@ def convert_old_clan(oldclan: types.old_clan, data: dict = None):
         data = {}
     for gamemode in objects.gamemodes.keys():
         if gamemode not in data:
-            data[gamemode] = list()
+            data[gamemode] = []
     clan = objects.Clan(
         clan_id=oldclan["id"], clan_name=oldclan["name"], clan_tag=oldclan["tag"]
     )
@@ -41,10 +41,10 @@ def convert_old_user(user):
     player = objects.Player(
         id=user["id"], name=user["username"], country=user["country"]
     )
-    first_places = dict()
-    statistics = dict()
+    first_places = {}
+    statistics = {}
     for name, gamemode in objects.gamemodes.items():
-        first_places[name] = list()
+        first_places[name] = []
         old_stats = user["stats"][gamemode["relax"]][name.split("_")[0]]
         score_rank = objects.Ranking(
             global_ranking=old_stats["global_rank_score"],

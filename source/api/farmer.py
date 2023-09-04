@@ -10,7 +10,7 @@ def process_scores():
     path = f"{config['common']['data_directory']}/scores.json.gz"
     if not exists(path):
         return
-    result = list()
+    result = []
     result_file = DataFile(
         f"{config['common']['data_directory']}/scores_processed.json.gz"
     )
@@ -51,19 +51,18 @@ def process_scores():
                 score["pp"] + average_pp[beatmap_id][mods]
             ) / 2
 
-    for id in average_pp.keys():
-        for mods in average_pp[id].keys():
-            if not average_pp[id][mods]:
-                continue
-            result.append(
-                {
-                    "beatmap_id": id,
-                    "mods": mods,
-                    "frequency_all": frequency[id],
-                    "frequency_mods": frequency_mods[id][mods],
-                    "average_pp": average_pp[id][mods],
-                }
-            )
+    for id, value in average_pp.items():
+        result.extend(
+            {
+                "beatmap_id": id,
+                "mods": mods,
+                "frequency_all": frequency[id],
+                "frequency_mods": frequency_mods[id][mods],
+                "average_pp": average_pp[id][mods],
+            }
+            for mods in value.keys()
+            if average_pp[id][mods]
+        )
     result_file.data = result
     result_file.save_data()
 
@@ -83,8 +82,7 @@ def process_score_farm():
 
     cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
     cache.load_data()
-    beatmaps = list()
-    result = list()
+    beatmaps = []
     max_score = 0
     for id in cache.data["metadata"].keys():
         if (
@@ -100,8 +98,9 @@ def process_score_farm():
         max_score = max(beatmap["score_minute"], max_score)
         beatmaps.append(beatmap)
     beatmaps.sort(key=lambda x: x["score_minute"], reverse=True)
-    for beatmap in beatmaps:
-        result.append((beatmap, beatmap["score_minute"] / max_score))
+    result = [
+        (beatmap, beatmap["score_minute"] / max_score) for beatmap in beatmaps
+    ]
     scorefarmfile.data = result
     scorefarmfile.save_data()
     scorefarm = result
@@ -126,8 +125,8 @@ def recommend(
             (min(score["frequency_mods"], freq_mods_cap) / freq_mods_cap) / 2
         )
 
-    found = list()
-    weights = list()
+    found = []
+    weights = []
     for score in scores.data:
         if score["beatmap_id"] in skip_id:
             continue
@@ -141,7 +140,7 @@ def recommend(
                 failed = True
         if mods:
             if "RX" not in mods:
-                mods = mods + "RX"
+                mods = f"{mods}RX"
             if mods != score["mods"]:
                 failed = True
         if failed:
@@ -157,8 +156,8 @@ def recommend(
 
 
 def recommend_score(skip_id=[], samples=1):
-    beatmaps = list()
-    weights = list()
+    beatmaps = []
+    weights = []
     max_maps = max(samples, 25)
     for beatmap, weight in scorefarm:
         if beatmap["beatmap_id"] in skip_id:
@@ -174,7 +173,7 @@ def random_choices(data, weights, samples):
     normalised = numpy.asarray(weights)
     normalised /= normalised.sum()
     choices = numpy.random.choice(data, p=normalised, size=samples * 2)
-    result = list()
+    result = []
     [result.append(x) for x in choices if x not in result]
     return result[:samples]
 

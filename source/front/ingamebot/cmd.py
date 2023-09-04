@@ -15,14 +15,11 @@ def ping(player: Player, message, args):
 def recommend(player: Player, message, args):
     _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
     top100 = akatsuki.get_user_best(player.id, gamemodes["std_rx"])
-    skip_id = []
-    for play in top100[0]:
-        skip_id.append(play["beatmap_id"])
+    skip_id = [play["beatmap_id"] for play in top100[0]]
     total_pp = stats["std_rx"][0]["total_pp"]
     target = total_pp / 20
     min_pp = target - 20
     max_pp = target + 20
-    mods = None
     mods_include = []
     mods_exclude = ["EZ", "FL"]
     parsed = _parse_args(args, nodefault=True)
@@ -37,8 +34,7 @@ def recommend(player: Player, message, args):
             player.send_message("pp value should be a number.")
             return
         max_pp = int(parsed["max_pp"])
-    if "mods" in parsed:
-        mods = parsed["mods"].upper()
+    mods = parsed["mods"].upper() if "mods" in parsed else None
     if "include_mods" in parsed:
         mods_include = [
             parsed["include_mods"][i : i + 2]
@@ -70,8 +66,9 @@ def recommend_score(player: Player, message, args):
     )
     if scores.exists():
         scores.load_data()
-        for beatmapid in list(scores.data["std_rx"].keys()):
-            skip_id.append(int(beatmapid))
+        skip_id.extend(
+            int(beatmapid) for beatmapid in list(scores.data["std_rx"].keys())
+        )
     beatmap = farmer.recommend_score(skip_id, 1)[0]
     link = f"osu://b/{beatmap['beatmap_id']}"
     title = f"{beatmap['title']} [{beatmap['difficulty_name']}] {int(beatmap['max_score']):,} (score/minute: {int(beatmap['score_minute']):,})"

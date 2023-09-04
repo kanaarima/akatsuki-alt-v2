@@ -108,9 +108,10 @@ async def refresh_status():
             status_data.load_data()
             maps_path = f"{config['common']['data_directory']}/beatmaps"
             update_embed = discord.Embed(title="Service status")
-            tasks_status = ""
-            for task, status in status_data.data.items():
-                tasks_status += f"{task}: {status}\n"
+            tasks_status = "".join(
+                f"{task}: {status}\n"
+                for task, status in status_data.data.items()
+            )
             if not tasks_status:
                 tasks_status = "No tasks currently running."
             update_embed.add_field(name="Backend operations", value=tasks_status)

@@ -13,8 +13,8 @@ def generate_clan_leaderboards(
 ) -> Dict[str, List[str]]:
     to_post = {}
     for name, gamemode in gamemodes.items():
-        clan_pp = dict()
-        clan_1s = dict()
+        clan_pp = {}
+        clan_1s = {}
         for clan, stats, ranking_1s, ranking_pp in clan_new[name]:
             if ranking_pp["global_ranking"] > 0:
                 clan_pp[clan["clan_id"]] = [(clan, stats, ranking_pp), None]
@@ -43,10 +43,10 @@ def generate_list(
     ],
     format_func,
 ) -> List[str]:
-    str_list = list()
-    for new, old in sorted(data, key=lambda x: x[0][2]["global_ranking"]):
-        str_list.append(format_func(new, old))
-    return str_list
+    return [
+        format_func(new, old)
+        for new, old in sorted(data, key=lambda x: x[0][2]["global_ranking"])
+    ]
 
 
 def format_clan_pp(

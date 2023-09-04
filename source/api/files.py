@@ -39,17 +39,17 @@ class DataFile:
 
     def wait_lock(self):
         elapsed = 0.0
-        while Path(self.filepath + ".lock").exists():
+        while Path(f"{self.filepath}.lock").exists():
             time.sleep(0.1)
             elapsed += 0.1
             if elapsed > 30:  # Most likely a dead lock
                 self.unlock()
 
     def lock(self):
-        Path(self.filepath + ".lock").touch(exist_ok=True)
+        Path(f"{self.filepath}.lock").touch(exist_ok=True)
 
     def unlock(self):
-        Path(self.filepath + ".lock").unlink(missing_ok=True)
+        Path(f"{self.filepath}.lock").unlink(missing_ok=True)
 
     def exists(self):
         return exists(self.filepath)

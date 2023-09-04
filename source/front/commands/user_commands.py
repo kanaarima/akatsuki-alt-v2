@@ -17,8 +17,8 @@ import discord
 
 
 async def link(full: str, split: list[str], message: discord.Message):
-    if len(split) < 1:
-        await message.reply(f"!link username/userID")
+    if not split:
+        await message.reply("!link username/userID")
         return
     userid = -1
     if split[0].isnumeric():
@@ -26,11 +26,11 @@ async def link(full: str, split: list[str], message: discord.Message):
     else:
         userid = akatsuki.lookup_user(" ".join(split))
         if not userid:
-            await message.reply(f"No user matching found. Perhaps use UserID?")
+            await message.reply("No user matching found. Perhaps use UserID?")
             return
     info = akatsuki.get_user_info(userid)
     if not info:
-        await message.reply(f"No user matching found. Perhaps use UserID?")
+        await message.reply("No user matching found. Perhaps use UserID?")
         return
     file_tracking = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users.json.gz"
@@ -38,7 +38,7 @@ async def link(full: str, split: list[str], message: discord.Message):
     file_links = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
     )
-    file_tracking.load_data(default=list())
+    file_tracking.load_data(default=[])
     file_links.load_data(default={})
     for user in file_tracking.data:
         if user["user_id"] == userid:
@@ -49,11 +49,11 @@ async def link(full: str, split: list[str], message: discord.Message):
     file_links.data[str(message.author.id)] = (info, "std")
     file_tracking.save_data()
     file_links.save_data()
-    await message.reply(f"Linked successfully.")
+    await message.reply("Linked successfully.")
 
 
 async def set_default_gamemode(full: str, split: list[str], message: discord.Message):
-    if len(split) < 1:
+    if not split:
         await message.reply("!setdefault gamemode")
         return
     discord_id = str(message.author.id)
@@ -78,7 +78,7 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     if not player:
         await _link_warning(message)
         return
-    if len(split) > 0:
+    if split:
         if split[0].lower() in gamemodes:
             mode = split[0].lower()
         else:
@@ -86,7 +86,7 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
             return
     score, map = akatsuki.get_user_recent(userid=player["id"], gamemode=gamemodes[mode])
     if not score:
-        await message.reply(f"No recent scores found.")
+        await message.reply("No recent scores found.")
         return
     score = score[0]
     map = map[0]
@@ -123,7 +123,7 @@ async def show(full: str, split: list[str], message: discord.Message):
     if "compareto" in args:
         path = f"{config['common']['data_directory']}/users_statistics/{args['compareto']}/{player['id']}.json.gz"
         if not exists(path):
-            await message.reply(f"You don't have stats recorded for that day!")
+            await message.reply("You don't have stats recorded for that day!")
             return
         oldfile = DataFile(path)
         oldfile.load_data()
@@ -287,7 +287,7 @@ async def show_1s(full: str, split: list[str], message: discord.Message):
         new = True
     path = f"{config['common']['data_directory']}/users_statistics/{yesterday()}/{player['id']}.json.gz"
     if not exists(path):
-        await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+        await message.reply("Your statistics aren't fetched yet. Please wait!")
         return
     file = DataFile(path)
     file.load_data()
@@ -307,7 +307,7 @@ async def show_1s(full: str, split: list[str], message: discord.Message):
     if new:
         path_old = f"{config['common']['data_directory']}/users_statistics/{other_yesterday()}/{player['id']}.json.gz"
         if not exists(path_old):
-            await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+            await message.reply("Your statistics aren't fetched yet. Please wait!")
             return
         file = DataFile(path_old)
         file.load_data()
@@ -366,7 +366,7 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
         view = args["view"]
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     if not exists(path):
-        await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+        await message.reply("Your statistics aren't fetched yet. Please wait!")
         return
     file = DataFile(path)
     file.load_data()
@@ -374,14 +374,15 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
     if view != "all":
         cachepath = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
         if not exists(cachepath):
-            await message.reply(f"Beatmaps cache is still being built. Please wait!")
+            await message.reply("Beatmaps cache is still being built. Please wait!")
             return
         cache = DataFile(cachepath)
         cache.load_data()
-        new_scores = list()
-        for score in scores:
-            if int(score["beatmap_id"]) in cache.data[view]["total"]:
-                new_scores.append(score)
+        new_scores = [
+            score
+            for score in scores
+            if int(score["beatmap_id"]) in cache.data[view]["total"]
+        ]
         scores = new_scores
     view = ScoresView(
         f"{player['name']}'s {gamemodes_full[gamemode]} scores ({len(scores):,})",
@@ -399,18 +400,15 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     args = _parse_args(split, nodefault=True)
     type = "ranked"
     viewtype = "info"
-    include_all = False
-
     valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki", "unranked"]
-    valid_views = ["info", "maps", "maps_missing"]
-    if "all" in args:
-        include_all = True
+    include_all = "all" in args
     if "type" in args:
         if args["type"].lower() not in valid_types:
             await message.reply(f"Invalid type! {','.join(valid_types)}")
             return
         type = args["type"].lower()
     if "view" in args:
+        valid_views = ["info", "maps", "maps_missing"]
         if args["view"].lower() not in valid_views:
             await message.reply(f"Invalid view! {','.join(valid_views)}")
             return
@@ -418,49 +416,40 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     path_cache = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
     if not exists(path):
-        await message.reply(f"Your statistics aren't fetched yet. Please wait!")
+        await message.reply("Your statistics aren't fetched yet. Please wait!")
         return
     if not exists(path_cache):
-        await message.reply(f"Beatmaps cache is still being built. Please wait!")
+        await message.reply("Beatmaps cache is still being built. Please wait!")
         return
     cache = DataFile(path_cache)
     cache.load_data()
     file = DataFile(path)
     file.load_data()
-    lists = dict()
+    lists = {}
     scores = file.data[gamemode]
     title = "Statistics"
     if viewtype == "info":
-        lists["Completion"] = list()
+        lists["Completion"] = []
         for key in valid_types:
             total = len(cache.data[key]["total"])
-            found = 0
-            for id in cache.data[key]["total"]:
-                if str(id) in scores:
-                    found += 1
+            found = sum(1 for id in cache.data[key]["total"] if str(id) in scores)
             lists["Completion"].append(f"{key}: {found}/{total}")
         for key in cache.data[type].keys():
             if key == "total":
                 continue
-            else:
-                lists[key] = list()
-                for list_key in cache.data[type][key].keys():
-                    found = 0
-                    all = len(cache.data[type][key][list_key])
-                    for id in cache.data[type][key][list_key]:
-                        if str(id) in scores:
-                            found += 1
-                    if include_all:
-                        lists[key].append(f"{list_key}: {found}/{all}")
-                    elif found == all:
-                        lists[key].append(f"{list_key}: {found}/{all}")
-                if not lists[key]:
-                    lists[key].append("No completion for this category :(")
-    elif viewtype == "maps" or viewtype == "maps_missing":
+            lists[key] = []
+            for list_key in cache.data[type][key].keys():
+                all = len(cache.data[type][key][list_key])
+                found = sum(1 for id in cache.data[type][key][list_key] if str(id) in scores)
+                if include_all or found == all:
+                    lists[key].append(f"{list_key}: {found}/{all}")
+            if not lists[key]:
+                lists[key].append("No completion for this category :(")
+    elif viewtype in ["maps", "maps_missing"]:
         missing = viewtype == "maps_missing"
         title = f"Clears {'missing' if missing else ''}"
         for key in valid_types:
-            lists[key] = list()
+            lists[key] = []
             for id in cache.data[key]["total"]:
                 if (str(id) not in scores and missing) or (
                     str(id) in scores and not missing
@@ -485,7 +474,9 @@ async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
 
 
 async def _link_warning(message: discord.Message):
-    await message.reply(f"You don't have an account linked! use !link username/userID.")
+    await message.reply(
+        "You don't have an account linked! use !link username/userID."
+    )
 
 
 async def _wrong_gamemode_warning(message: discord.Message):
@@ -532,10 +523,7 @@ def _update_fetch(player: Player, user_file: DataFile):
 def _add_extra(pt, scores, fetch):
     for name in gamemodes.keys():
         stats = fetch[name][0]
-        if scores:
-            stats["clears"] = len(scores[name])
-        else:
-            stats["clears"] = "-1"
+        stats["clears"] = len(scores[name]) if scores else "-1"
         if "rx" not in name and "ap" not in name:
             continue
         if not pt:
@@ -560,9 +548,7 @@ def _format_gain_string(gain, fix=""):
 
 
 def _format_notation(gain):
-    if gain == 0:
-        return ""
-    return f"(+{gain:.2e})"
+    return "" if gain == 0 else f"(+{gain:.2e})"
 
 
 def _parse_args(args: List[str], nodefault=False) -> dict:

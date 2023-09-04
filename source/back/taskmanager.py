@@ -60,10 +60,10 @@ class TaskManager:
 
     def loop(self):
         sighandler = SignalHandler()
-        threads: Dict[Task, Thread] = dict()
+        threads: Dict[Task, Thread] = {}
         sync_thread = None
         while True:
-            sync_tasks: List[Task] = list()
+            sync_tasks: List[Task] = []
             for task in self.tasks:
                 if (
                     task.asynchronous

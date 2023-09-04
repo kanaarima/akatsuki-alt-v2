@@ -59,15 +59,15 @@ class BuildBeatmapCache(Task):
 
         def cache_value():
             return {
-                "star_rating": dict(),
-                "length": dict(),
-                "ar": dict(),
-                "od": dict(),
-                "cs": dict(),
-                "tags": dict(),
-                "mappers": dict(),
-                "artists": dict(),
-                "total": list(),
+                "star_rating": {},
+                "length": {},
+                "ar": {},
+                "od": {},
+                "cs": {},
+                "tags": {},
+                "mappers": {},
+                "artists": {},
+                "total": [],
             }
 
         cache = {
@@ -90,56 +90,54 @@ class BuildBeatmapCache(Task):
             key = "unranked"
             if "status" not in beatmap:
                 continue
+            if beatmap["status"]["bancho"] < 1:
+                akatstatus = beatmap["status"]["akatsuki"]
+                if akatstatus > 0 and akatstatus < 4:
+                    key = "ranked_akatsuki"
+                elif akatstatus == 4:
+                    key = "loved_akatsuki"
             else:
-                if beatmap["status"]["bancho"] < 1:
-                    akatstatus = beatmap["status"]["akatsuki"]
-                    if akatstatus > 0 and akatstatus < 4:
-                        key = "ranked_akatsuki"
-                    elif akatstatus == 4:
-                        key = "loved_akatsuki"
-                else:
-                    banchostatus = beatmap["status"]["bancho"]
-                    if banchostatus < 4 and banchostatus > 0:
-                        key = "ranked"
-                    elif banchostatus == 4:
-                        key = "loved"
+                banchostatus = beatmap["status"]["bancho"]
+                if banchostatus < 4 and banchostatus > 0:
+                    key = "ranked"
+                elif banchostatus == 4:
+                    key = "loved"
             if "attributes" not in beatmap or beatmap["attributes"]["mode"] != 0:
                 continue
+            cache["metadata"][beatmap_id] = {
+                "artist": beatmap["artist"],
+                "title": beatmap["title"],
+                "difficulty_name": beatmap["difficulty_name"],
+                "length": beatmap["attributes"]["length"],
+                "max_score": calculate_max_score(beatmap["attributes"]),
+            }
+            ar = str(int(beatmap["attributes"]["ar"]))
+            if ar in cache[key]["ar"]:
+                cache[key]["ar"][ar].append(beatmap_id)
             else:
-                cache["metadata"][beatmap_id] = {
-                    "artist": beatmap["artist"],
-                    "title": beatmap["title"],
-                    "difficulty_name": beatmap["difficulty_name"],
-                    "length": beatmap["attributes"]["length"],
-                    "max_score": calculate_max_score(beatmap["attributes"]),
-                }
-                ar = str(int(beatmap["attributes"]["ar"]))
-                if ar in cache[key]["ar"]:
-                    cache[key]["ar"][ar].append(beatmap_id)
+                cache[key]["ar"][ar] = [beatmap_id]
+            od = str(int(beatmap["attributes"]["od"]))
+            if od in cache[key]["od"]:
+                cache[key]["od"][od].append(beatmap_id)
+            else:
+                cache[key]["od"][od] = [beatmap_id]
+            cs = str(int(beatmap["attributes"]["cs"]))
+            if cs in cache[key]["cs"]:
+                cache[key]["cs"][cs].append(beatmap_id)
+            else:
+                cache[key]["cs"][cs] = [beatmap_id]
+            length = int(beatmap["attributes"]["length"] / 60)
+            if length == 0:
+                if "<1" in cache[key]["length"]:
+                    cache[key]["length"]["<1"].append(beatmap_id)
                 else:
-                    cache[key]["ar"][ar] = [beatmap_id]
-                od = str(int(beatmap["attributes"]["od"]))
-                if od in cache[key]["od"]:
-                    cache[key]["od"][od].append(beatmap_id)
+                    cache[key]["length"]["<1"] = [beatmap_id]
+            else:
+                length = str(length)
+                if length in cache[key]["length"]:
+                    cache[key]["length"][length].append(beatmap_id)
                 else:
-                    cache[key]["od"][od] = [beatmap_id]
-                cs = str(int(beatmap["attributes"]["cs"]))
-                if cs in cache[key]["cs"]:
-                    cache[key]["cs"][cs].append(beatmap_id)
-                else:
-                    cache[key]["cs"][cs] = [beatmap_id]
-                length = int(beatmap["attributes"]["length"] / 60)
-                if length == 0:
-                    if "<1" in cache[key]["length"]:
-                        cache[key]["length"]["<1"].append(beatmap_id)
-                    else:
-                        cache[key]["length"]["<1"] = [beatmap_id]
-                else:
-                    length = str(length)
-                    if length in cache[key]["length"]:
-                        cache[key]["length"][length].append(beatmap_id)
-                    else:
-                        cache[key]["length"][length] = [beatmap_id]
+                    cache[key]["length"][length] = [beatmap_id]
             if "difficulty" in beatmap:
                 sr = str(int(beatmap["difficulty"]["0"]["star_rating"]))
                 if sr in cache[key]["star_rating"]:
@@ -170,7 +168,7 @@ class BuildBeatmapCache(Task):
         def sort_dict(dikt, key, reverse):
             return dict(sorted(dikt.items(), key=key, reverse=reverse))
 
-        for key in cache.keys():
+        for key in cache:
             if key == "metadata":
                 continue
             cache[key]["star_rating"] = sort_dict(
@@ -226,7 +224,7 @@ class FixAkatsukiBeatmapRankings(Task):
             if "status" not in beatmap:
                 continue  # Scuffed map?
             bancho_status = beatmap["status"]["bancho"]
-            if bancho_status == 1 or bancho_status == 2:
+            if bancho_status in [1, 2]:
                 continue
             if "checked" in beatmap["status"]:
                 if (
@@ -253,7 +251,7 @@ class StoreTopPlays(Task):
         return not exists(f"{config['common']['data_directory']}/scores.json.gz")
 
     def run(self) -> TaskStatus:
-        scores_all = list()
+        scores_all = []
         for player, _, _ in akatsuki.get_user_leaderboard(
             gamemode=gamemodes["std_rx"], sort=akatsuki.Sort_Method.PP_ALL, pages=10
         ):
@@ -300,7 +298,7 @@ class CheckAkatsukiNominationChannel(Task):
         code = res.wait()
         if code != 0:
             logger.warning(f"Selfbot returned code {code}")
-        mapsetids = list()
+        mapsetids = []
         with open(f"{config['common']['cache_directory']}/messages.json") as f:
             data = json.load(f)
             for message in data["messages"]:

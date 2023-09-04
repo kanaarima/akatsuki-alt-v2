@@ -13,9 +13,9 @@ class StoreClanLeaderboardsTask(Task):
         return not exists(self._get_path())
 
     def run(self) -> TaskStatus:
-        data = dict()
+        data = {}
         for name, gamemode in objects.gamemodes.items():
-            data[name] = list()
+            data[name] = []
             leaderboard_1s = akatsuki.get_clan_leaderboard(
                 gamemode=gamemode, sort=akatsuki.Sort_Method.COUNT_1S, pages=2
             )
