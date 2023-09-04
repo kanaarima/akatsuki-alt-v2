@@ -252,6 +252,7 @@ class TrackUserPlaytime(Task):
                         user["user_id"], userpt.data[name], name, gamemode
                     )
                 skip = 0
+                old_id = userpt.data[name]["last_score_id"]
                 while True:
                     _scores, beatmaps = akatsuki.get_user_recent(
                         user["user_id"], gamemode, skip=skip, length=50
@@ -261,7 +262,7 @@ class TrackUserPlaytime(Task):
                     save_beatmaps(beatmaps)
                     exit = False
                     for score in _scores:
-                        if int(score["id"]) == userpt.data[name]["last_score_id"]:
+                        if int(score["id"]) == old_id:
                             exit = True
                             break
                         map = load_beatmap(score["beatmap_id"])
