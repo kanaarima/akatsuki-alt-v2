@@ -1,10 +1,9 @@
 import back.tasks.maintenance_tasks as maintenance_tasks
-from back.taskmanager import TaskManager
 import back.tasks.clan_tasks as clan_tasks
 import back.tasks.user_tasks as user_tasks
+from back.taskmanager import TaskManager
+from api.logging import logger
 import front.bot as bot
-import front.ingamebot.bot as igbot
-import config
 import sys
 
 
@@ -35,6 +34,7 @@ def main():
         )
         manager.loop()
     elif sys.argv[1] == "gamefrontend":
+        import front.ingamebot.bot as igbot
         igbot.main()
     else:
         wrong_args()
