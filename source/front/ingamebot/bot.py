@@ -51,12 +51,8 @@ def on_message(sender: Player, message: str, target: Union[Player, Channel]):
         else:
             sender.send_message("Unknown command!")
 
-# TODO: Find alternative way of executing event
-@game.events.register(ServerPackets.SEND_MESSAGE)
-def reload_stats(sender, message, target):
-    if target.name != '#announce':
-        return
-
+@game.tasks.register(seconds=5)
+def reload_stats():
     # Load user stats
     discord_users = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
