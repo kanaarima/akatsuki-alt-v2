@@ -1,9 +1,26 @@
 {
     "common": {
-        "data_directory": "../data/"
+        "data_directory": "../data/",
+        "log_directory": "../logs/",
+        "cache": 0
     },
     "discord": {
         "bot_token": "TOKEN",
-        "bot_prefix": "!"
+        "bot_prefix": "!",
+        "channels": [],
+        "forward_channels": [],
+        "render_channel": [],
+        "status_update": {
+            "channel_id": 0,
+            "message_id": 0
+        }
+    },
+    "osuapi": {
+        "client_id": 0,
+        "client_secret": ""
+    },
+    "bot_account": {
+        "username": "",
+        "password": ""
     }
 }

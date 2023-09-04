@@ -1,11 +1,12 @@
 from front import tasks, cmd
+from api.logging import logger
 from config import config
 import discord
 
 
 class Bot(discord.Client):
     async def on_ready(self):
-        print(f"Logged on as {self.user}!")
+        logger.info(f"Logged on as {self.user}!")
         tasks.init_tasks()
 
     async def on_message(self, message: discord.Message):
@@ -23,4 +24,7 @@ client = Bot(intents=intents)
 
 
 def main():
-    client.run(config["discord"]["bot_token"])
+    client.run(
+        config["discord"]["bot_token"],
+        log_handler=None
+    )

@@ -46,7 +46,7 @@ async def post_clan_updates():
     )
     for key in lists.keys():
         if key not in config["discord"]["channels"]:
-            print(f"{key} not found!")
+            logger.warning(f"{key} not found!")
             continue
         await post_list(config["discord"]["channels"][key], lists[key][:100])
 
@@ -69,7 +69,7 @@ async def post_user_updates():
     )
     for key in lists.keys():
         if key not in config["discord"]["channels"]:
-            print(f"{key} not found!")
+            logger.warning(f"{key} not found!")
             continue
         await post_list(config["discord"]["channels"][key], lists[key])
 
