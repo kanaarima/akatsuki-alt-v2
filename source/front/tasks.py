@@ -160,7 +160,7 @@ async def handle_events():
                 await bot.client.get_channel(config["discord"]["render_channel"]).send(
                     embed=embed
                 )
-                if replay:
+                if replay and "std" in top_play_event["gamemode"]:
                     channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
                     )
