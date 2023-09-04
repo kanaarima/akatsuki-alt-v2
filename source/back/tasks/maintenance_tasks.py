@@ -8,8 +8,11 @@ import api.beatmaps as beatmaps
 import api.akatsuki as akatsuki
 from api.logging import logger
 from config import config
+import subprocess
 import utils.api
 import glob
+import json
+import time
 
 ask_peppy = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/", delay=4)
 
@@ -263,3 +266,68 @@ class StoreTopPlays(Task):
         file.data = scores_all
         file.save_data()
         return self._finish()
+
+
+class CheckAkatsukiNominationChannel(Task):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def can_run(self) -> bool:
+        last_checked_file = DataFile(
+            f"{config['common']['data_directory']}/discord_crawler.json"
+        )
+        if last_checked_file.exists():
+            last_checked_file.load_data()
+            if (
+                datetime.now() - str_to_datetime(last_checked_file.data["last_checked"])
+            ) < timedelta(days=1):
+                return False
+        return True
+
+    def run(self):
+        dce_path = f"{config['discord_crawler']['discord_chat_exporter_dll_path']}"
+        date = f"--after {(datetime.now() - timedelta(days=2)).date()}"
+        last_checked_file = DataFile(
+            f"{config['common']['data_directory']}/discord_crawler.json"
+        )
+        if not last_checked_file.exists():
+            date = ""
+        args = f"export -t {config['discord_crawler']['selfbot_token']} -c 597200076561055795 -f json -o {config['common']['cache_directory']}/messages.json"
+        res = subprocess.Popen(
+            f"dotnet {dce_path} {args} {date}",
+            shell=True,
+        )
+        code = res.wait()
+        if code != 0:
+            logger.warning(f"Selfbot returned code {code}")
+        mapsetids = list()
+        with open(f"{config['common']['cache_directory']}/messages.json") as f:
+            data = json.load(f)
+            for message in data["messages"]:
+                if "https://osu.ppy.sh" not in message["content"]:
+                    continue
+                if not message["reactions"]:
+                    continue
+                text = message["content"]
+                for string in text.split("/"):
+                    if string.isnumeric():
+                        mapsetids.append(int(string))
+                        break
+        logger.info(f"potentially found {len(mapsetids)} beatmap sets")
+        for mapsetid in mapsetids:
+            try:
+                mapset = beatmaps.client.beatmapset(beatmapset_id=mapsetid)
+            except Exception:
+                pass  # 404
+            if not mapset:  # Sometimes they're deleted
+                logger.info(f"Beatmap Set {mapsetid} is deleted!")
+            for beatmap in mapset.beatmaps:
+                beatmap._beatmapset = mapset
+                if not exists(f"{beatmaps.base_path}/{beatmap.id}.json.gz"):
+                    logger.info(f"Found new akatsuki beatmap {beatmap.id}")
+                    beatmaps.save_beatmap(
+                        {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
+                    )
+                time.sleep(1)
+        last_checked_file.data = {"last_checked": {datetime_to_str(datetime.now())}}
+        last_checked_file.save_data()
