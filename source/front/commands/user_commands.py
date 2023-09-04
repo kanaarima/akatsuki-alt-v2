@@ -130,6 +130,7 @@ async def show(full: str, split: list[str], message: discord.Message):
         oldest = oldfile.data["statistics"]
         if "total_score_rank" not in oldest:
             oldest[gamemode][0]["total_score_rank"] = Ranking(global_ranking=0, country_ranking=0)
+            oldest[gamemode][0]["clears"] = 0
     embed = discord.Embed(
         colour=discord.Color.og_blurple(),
         title=f"Stats for {player['name']}",
