@@ -1,16 +1,22 @@
 from api.utils import str_to_datetime, datetime_to_str, yesterday, other_yesterday
 from front.leaderboards import clan_leaderboards, user_leaderboards
+from api.objects import gamemodes_full
+from front.views import get_score_embed
 from api.files import DataFile
 from api.logging import logger
+import api.akatsuki as akatsuki
+import api.beatmaps as beatmaps
 from datetime import datetime
 from discord.ext import tasks
 from config import config
 from front import bot
-import subprocess
 import api.events
+import subprocess
+import requests
 import discord
 import asyncio
 import glob
+import io
 
 
 async def post_list(channel_id, strings):
@@ -131,19 +137,73 @@ async def handle_events():
         events = api.events.read_events("frontend")
         for event in events:
             if event["name"] == "ChannelMessageEvent":
-                if event["channel"] in config["discord"]["forward_channels"]:
+                message_event: api.events.ChannelMessageEvent = event
+                if message_event["channel"] in config["discord"]["forward_channels"]:
                     await bot.client.get_channel(
-                        config["discord"]["forward_channels"][event["channel"]]
-                    ).send(content=event["message"], suppress_embeds=True)
-            elif event["name"] == "RenderEvent":
-                await bot.client.get_channel(config["discord"]["render_channel"]).send(
-                    f"{event['render_link']}"
+                        config["discord"]["forward_channels"][message_event["channel"]]
+                    ).send(content=message_event["message"], suppress_embeds=True)
+            elif event["name"] == "TopPlayEvent":
+                top_play_event: api.events.TopPlayEvent = event
+                beatmap = beatmaps.load_beatmap(top_play_event["beatmap_id"])
+                if not beatmap:  # should be unnecessary
+                    continue
+                replay = get_replay(top_play_event["score"]["id"])
+                player = akatsuki.get_user_info(top_play_event["user_id"])
+                title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} top play! (#{top_play_event['index']})"
+                embed = get_score_embed(
+                    player=player,
+                    beatmap=beatmap,
+                    score=top_play_event["score"],
+                    title_overwrite=title,
+                    use_thumbnail=False,
                 )
+                await bot.client.get_channel(config["discord"]["event_channel"]).send(
+                    embed=embed
+                )
+                if replay and "std" in top_play_event["gamemode"]:
+                    channel = bot.client.get_channel(
+                        config["discord"]["render_channel"]
+                    )
+                    webhook = await channel.create_webhook(name="Replay fetcher")
+                    await webhook.send(
+                        file=discord.File(
+                            fp=replay, filename=f"{top_play_event['score']['id']}.osr"
+                        )
+                    )
+                    await webhook.delete()
     except:
         logger.error("Could not handle events!", exc_info=True)
+
+
+@tasks.loop(minutes=1)
+async def cleanup_render_channel():
+    channel = bot.client.get_channel(config["discord"]["render_channel"])
+    history = channel.history(limit=100)
+    async for message in history:
+        try:
+            if message.author.id == bot.client.user.id:
+                continue
+            if message.attachments:
+                continue
+            if "https://" in message.content:
+                await channel.send(content=message.content.split()[1])
+            await message.delete()
+            await asyncio.sleep(1)
+        except:
+            continue
+
+
+def get_replay(scoreid):
+    req = requests.get(
+        f"https://akatsuki.gg/web/replays/{scoreid}", allow_redirects=True
+    )
+    if req.status_code != 200:  # 404?
+        return
+    return io.BytesIO(req.content)
 
 
 def init_tasks():
     post_lb_updates.start()
     refresh_status.start()
     handle_events.start()
+    cleanup_render_channel.start()

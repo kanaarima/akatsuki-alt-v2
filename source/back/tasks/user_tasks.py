@@ -232,6 +232,7 @@ class TrackUserPlaytime(Task):
                         "submitted_plays": 0,
                         "unsubmitted_plays": 0,
                         "most_played": 0,
+                        "last_score_id": 0,
                     }
                     scores: List[objects.Score] = scoredata.data[name].values()
                     for score in scores:
@@ -244,11 +245,14 @@ class TrackUserPlaytime(Task):
                     self._add_most_played(user["user_id"], pt, name, gamemode)
                     userpt.data[name] = pt
             for name, gamemode in objects.gamemodes.items():
+                if "last_score_id" not in userpt.data[name]:
+                    userpt.data[name]["last_score_id"] = 0
                 if "most_played" not in userpt.data[name]:
                     self._add_most_played(
                         user["user_id"], userpt.data[name], name, gamemode
                     )
                 skip = 0
+                old_id = userpt.data[name]["last_score_id"]
                 while True:
                     _scores, beatmaps = akatsuki.get_user_recent(
                         user["user_id"], gamemode, skip=skip, length=50
@@ -256,13 +260,11 @@ class TrackUserPlaytime(Task):
                     if not _scores:
                         break
                     save_beatmaps(beatmaps)
+                    exit = False
                     for score in _scores:
-                        if str(score["beatmap_id"]) in scoredata.data[name]:
-                            if (
-                                score["id"]
-                                == scoredata.data[name][str(score["beatmap_id"])]["id"]
-                            ):
-                                break
+                        if int(score["id"]) == old_id:
+                            exit = True
+                            break
                         map = load_beatmap(score["beatmap_id"])
                         # if map["length"] == 0:  # blame akatsuki api
                         #    continue
@@ -273,10 +275,12 @@ class TrackUserPlaytime(Task):
                                 userpt.data[name]["submitted_plays"] += (
                                     map["attributes"]["length"] / divisor
                                 )
-                            if name == "std_rx":
-                                self._check_renderable(
-                                    user, list(scoredata.data[name].values()), score
-                                )
+                            self._check_if_top_play(
+                                user_id=user["user_id"],
+                                scores=scoredata.data[name],
+                                score=score,
+                                gamemode=name,
+                            )
                         else:
                             total_hits = (
                                 score["count_300"]
@@ -289,11 +293,12 @@ class TrackUserPlaytime(Task):
                                 userpt.data[name]["unsubmitted_plays"] += (
                                     map["attributes"]["length"] / divisor
                                 ) * multiplier
+                    if skip == 0:
+                        userpt.data[name]["last_score_id"] = int(_scores[0]["id"])
+                    if exit:
+                        break
                     else:
                         skip += 1
-                        continue
-                    break
-
             userpt.save_data()
             scoredata.save_data()
         return self._finish()
@@ -319,13 +324,32 @@ class TrackUserPlaytime(Task):
                 beatmap["attributes"]["length"] * multiplier
             ) * playcount
 
-    def _check_renderable(
+    def _check_if_top_play(
         self,
-        user: objects.LinkedPlayer,
+        user_id: int,
         scores: List[objects.Score],
         score: objects.Score,
+        gamemode: str,
     ):
-        return
+        ranked_scores = 0
+        for user_score in scores.values():
+            beatmap = load_beatmap(user_score["beatmap_id"])
+            if not beatmap or "status" not in beatmap:
+                continue
+            if beatmap["status"]["akatsuki"] < 1 or beatmap["status"]["akatsuki"] > 2:
+                continue
+            ranked_scores += 1
+            if score["id"] == user_score["id"]:
+                event = events.top_play_event(
+                    user_id=user_id,
+                    beatmap_id=beatmap["beatmap_id"],
+                    score=score,
+                    index=ranked_scores,
+                    gamemode=gamemode,
+                )
+                events.send_event(target="frontend", event=event)
+            if ranked_scores == 99:
+                break
 
     def _get_path(self):
         return f"{config['common']['data_directory']}/users_statistics/"

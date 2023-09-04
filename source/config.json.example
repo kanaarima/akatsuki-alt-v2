@@ -2,14 +2,16 @@
     "common": {
         "data_directory": "../data/",
         "log_directory": "../logs/",
+        "cache_directory": "../cache/",
         "cache": 0
     },
     "discord": {
         "bot_token": "TOKEN",
         "bot_prefix": "!",
-        "channels": [],
-        "forward_channels": [],
-        "render_channel": [],
+        "channels": {},
+        "forward_channels": {},
+        "render_channel": 0,
+        "event_channel": 0,
         "status_update": {
             "channel_id": 0,
             "message_id": 0
@@ -22,5 +24,9 @@
     "bot_account": {
         "username": "",
         "password": ""
+    },
+    "discord_crawler": {
+        "selfbot_token": "",
+        "discord_chat_exporter_dll_path": ""
     }
 }

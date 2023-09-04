@@ -5,7 +5,7 @@ from api.utils import (
     convert_mods,
     datetime_to_str,
 )
-from front.views import ScoresView, ScoreDiffView, StringListView
+from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed
 from api.files import DataFile, exists
 from typing import List, Tuple, Dict
 import api.beatmaps as beatmaps
@@ -92,47 +92,8 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     map = map[0]
     # Process map
     beatmaps.save_beatmap(map)
-    map = beatmaps.load_beatmap(
-        map["beatmap_id"]
-    )  # TODO maybe add update_beatmap call?
-    embed = discord.Embed()
-    embed.set_thumbnail(
-        url=f"https://assets.ppy.sh/beatmaps/{map['beatmap_set_id']}/covers/cover@2x.jpg"
-    )
-    artist = map["artist"]
-    title = map["title"]
-    difficulty = map["difficulty_name"]
-    mods = "".join(get_mods_simple(score["mods"]))
-    sr = (
-        ""
-        if "difficulty" not in map
-        else f"[{map['difficulty'][str(convert_mods(score['mods']))]['star_rating']:.1f}*] "
-    )
-    embed.set_author(
-        name=f"{sr}{artist} - {title[:180]} [{difficulty}] +{mods}\n",
-        icon_url=f"https://a.akatsuki.gg/{player['id']}",
-    )
-    combo = "x" if "attributes" not in map else f"/{map['attributes']['max_combo']}x"
-    rank = score["rank"]
-    if score["completed"] < 2:
-        run = ""
-        if "attributes" in map:
-            total = (
-                score["count_300"]
-                + score["count_100"]
-                + score["count_50"]
-                + score["count_miss"]
-            )
-            total_map = (
-                map["attributes"]["circles"]
-                + map["attributes"]["sliders"]
-                + map["attributes"]["spinners"]
-            )
-            run = f" ({int((total/total_map)*100)}%)"
-        rank = f"F{run}"
-    text = f"➤**{rank} {score['combo']}{combo} {score['accuracy']:.2f}% [{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}] {score['pp']}pp {score['score']:,}**"
-    embed.description = text
-    await message.reply(embed=embed)
+    map = beatmaps.load_beatmap(map["beatmap_id"])
+    await message.reply(embed=get_score_embed(player=player, beatmap=map, score=score))
 
 
 async def show(full: str, split: list[str], message: discord.Message):
@@ -569,13 +530,15 @@ def _update_fetch(player: Player, user_file: DataFile):
 
 
 def _add_extra(pt, scores, fetch):
-    if not pt:
-        return fetch
     for name in gamemodes.keys():
         stats = fetch[name][0]
         if scores:
             stats["clears"] = len(scores[name])
+        else:
+            stats["clears"] = "-1"
         if "rx" not in name and "ap" not in name:
+            continue
+        if not pt:
             continue
         if "most_played" in pt[name]:
             stats["play_time"] = (

@@ -30,6 +30,7 @@ def main():
                 maintenance_tasks.CheckNewRankedBeatmaps(),
                 maintenance_tasks.BuildBeatmapCache(),
                 maintenance_tasks.StoreTopPlays(),
+                maintenance_tasks.CheckAkatsukiNominationChannel(),
             ]
         )
         manager.loop()
