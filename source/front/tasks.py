@@ -161,15 +161,36 @@ async def handle_events():
                     embed=embed
                 )
                 if replay:
-                    await bot.client.get_channel(
+                    channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
-                    ).send(
+                    )
+                    webhook = await channel.create_webhook(name="Replay fetcher")
+                    await webhook.send(
                         file=discord.File(
                             fp=replay, filename=f"{top_play_event['score']['id']}.osr"
                         )
                     )
+                    await webhook.delete()
     except:
         logger.error("Could not handle events!", exc_info=True)
+
+
+@tasks.loop(minutes=1)
+async def cleanup_render_channel():
+    channel = bot.client.get_channel(config["discord"]["render_channel"])
+    history = channel.history(limit=100)
+    async for message in history:
+        try:
+            if message.author.id == bot.client.user.id:
+                continue
+            if message.attachments:
+                continue
+            if "https://" in message.content:
+                await channel.send(content=message.content.split()[1])
+            await message.delete()
+            await asyncio.sleep(1)
+        except:
+            continue
 
 
 def get_replay(scoreid):
@@ -185,3 +206,4 @@ def init_tasks():
     post_lb_updates.start()
     refresh_status.start()
     handle_events.start()
+    cleanup_render_channel.start()
