@@ -197,7 +197,7 @@ def get_replay(scoreid):
     req = requests.get(
         f"https://akatsuki.gg/web/replays/{scoreid}", allow_redirects=True
     )
-    if req.status_code != 200:  # 404?
+    if not req.ok:  # 404?
         return
     return io.BytesIO(req.content)
 

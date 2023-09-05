@@ -113,7 +113,7 @@ def _osudirect_download(beatmap_id) -> bool:
         f"https://osu.direct/api/osu/{beatmap_id}",
         headers=DEFAULT_HEADERS,
     )
-    if response.status_code != 200:
+    if not response.ok:
         logger.warning(f"GET {response.url} {response.status_code}")
         logger.warning(f"{response.text}")
         return False
@@ -129,7 +129,7 @@ def _ppy_download(beatmap_id) -> bool:
         f"https://old.ppy.sh/osu/{beatmap_id}",
         headers=DEFAULT_HEADERS,
     )
-    if response.status_code != 200:
+    if not response.ok:
         logger.warning(f"GET {response.url} {response.status_code}")
         logger.warning(f"{response.text}")
         return False
