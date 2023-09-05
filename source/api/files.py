@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Optional
 from pathlib import Path
 import asyncio
 import json
@@ -12,8 +13,8 @@ class DataFile:
         Path([item[::-1] for item in filepath[::-1].split("/", 1)][::-1][0]).mkdir(
             parents=True, exist_ok=True
         )
-        self.filepath = filepath
-        self.data = None
+        self.filepath: str = filepath
+        self.data: Optional[dict] = None
 
     def load_data(self, default={}):
         self.wait_lock()
