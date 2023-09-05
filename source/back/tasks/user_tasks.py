@@ -338,7 +338,9 @@ class TrackUserPlaytime(Task):
                 play_type="clears",
             )
             events.send_event(target="frontend", event=event)
-        for user_score in scores.values():
+        for user_score in sorted(
+            list(scores.values()), key=lambda x: x["pp"], reverse=True
+        ):
             beatmap = load_beatmap(user_score["beatmap_id"])
             if not beatmap or "status" not in beatmap:
                 continue
