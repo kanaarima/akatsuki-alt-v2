@@ -115,7 +115,7 @@ def get_user_leaderboard(
         req = requests.get_request(
             f"leaderboard?mode={gamemode['mode']}&p={page+1}&l={length}&rx={gamemode['relax']}&sort={sort.value}"
         )
-        if not req.status_code.ok:
+        if not req.ok:
             break
         apiusers = req.json()["users"]
         if not apiusers:
