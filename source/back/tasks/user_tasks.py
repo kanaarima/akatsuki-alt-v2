@@ -328,6 +328,16 @@ class TrackUserPlaytime(Task):
         gamemode: str,
     ):
         ranked_scores = 0
+        if len(scores) % 100 == 0:
+            event = events.top_play_event(
+                user_id=user_id,
+                beatmap_id=score["beatmap_id"],
+                score=score,
+                index=len(scores),
+                gamemode=gamemode,
+                play_type="clears",
+            )
+            events.send_event(target="frontend", event=event)
         for user_score in scores.values():
             beatmap = load_beatmap(user_score["beatmap_id"])
             if not beatmap or "status" not in beatmap:
@@ -342,6 +352,28 @@ class TrackUserPlaytime(Task):
                     score=score,
                     index=ranked_scores,
                     gamemode=gamemode,
+                    play_type="pp",
+                )
+                events.send_event(target="frontend", event=event)
+            if ranked_scores == 99:
+                break
+        for user_score in sorted(
+            list(scores.values()), key=lambda x: x["score"], reverse=True
+        ):
+            beatmap = load_beatmap(user_score["beatmap_id"])
+            if not beatmap or "status" not in beatmap:
+                continue
+            if beatmap["status"]["akatsuki"] < 1 or beatmap["status"]["akatsuki"] > 2:
+                continue
+            ranked_scores += 1
+            if score["id"] == user_score["id"]:
+                event = events.top_play_event(
+                    user_id=user_id,
+                    beatmap_id=beatmap["beatmap_id"],
+                    score=score,
+                    index=ranked_scores,
+                    gamemode=gamemode,
+                    play_type="score",
                 )
                 events.send_event(target="frontend", event=event)
             if ranked_scores == 99:

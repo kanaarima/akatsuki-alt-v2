@@ -147,9 +147,13 @@ async def handle_events():
                 beatmap = beatmaps.load_beatmap(top_play_event["beatmap_id"])
                 if not beatmap:  # should be unnecessary
                     continue
+                top_play_event["play_type"]
                 replay = get_replay(top_play_event["score"]["id"])
                 player = akatsuki.get_user_info(top_play_event["user_id"])
-                title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} top play! (#{top_play_event['index']})"
+                name = {"score": "score ", "clears": "clears ", "pp": ""}
+                title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} {name[top_play_event['play_type']]}top play! (#{top_play_event['index']})"
+                if top_play_event["play_type"] == "clears":
+                    title = f"{player['name']} reached a new {gamemodes_full[top_play_event['gamemode']]} clears milestone! ({top_play_event['index']} scores)"
                 embed = get_score_embed(
                     player=player,
                     beatmap=beatmap,
@@ -160,7 +164,11 @@ async def handle_events():
                 await bot.client.get_channel(config["discord"]["event_channel"]).send(
                     embed=embed
                 )
-                if replay and "std" in top_play_event["gamemode"]:
+                if (
+                    replay
+                    and "std" in top_play_event["gamemode"]
+                    and "clears" not in top_play_event["play_type"]
+                ):
                     channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
                     )

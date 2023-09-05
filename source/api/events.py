@@ -13,6 +13,7 @@ class ChannelMessageEvent(TypedDict):
 
 class TopPlayEvent(TypedDict):
     name: str
+    play_type: str
     user_id: int
     beatmap_id: int
     score: Score
@@ -26,7 +27,9 @@ def channel_message_event(userid, channel, message) -> ChannelMessageEvent:
     )
 
 
-def top_play_event(user_id, beatmap_id, score, index, gamemode) -> ChannelMessageEvent:
+def top_play_event(
+    user_id, beatmap_id, score, index, gamemode, play_type="pp"
+) -> ChannelMessageEvent:
     return TopPlayEvent(
         name="TopPlayEvent",
         user_id=user_id,
@@ -34,6 +37,7 @@ def top_play_event(user_id, beatmap_id, score, index, gamemode) -> ChannelMessag
         score=score,
         index=index,
         gamemode=gamemode,
+        play_type=play_type,
     )
 
 
