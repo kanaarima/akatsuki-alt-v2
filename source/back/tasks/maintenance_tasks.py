@@ -230,9 +230,8 @@ class FixAkatsukiBeatmapRankings(Task):
                 ) < timedelta(weeks=2):
                     continue
             info = akatsuki.get_map_info(beatmap_id)
-            if not info:
-                continue
-            beatmap["status"]["akatsuki"] = info["ranked"] - 1  # offset by 1
+            if info:
+                beatmap["status"]["akatsuki"] = info["ranked"] - 1  # offset by 1
             beatmap["status"]["checked"] = datetime_to_str(datetime.now())
             beatmaps.save_beatmap(beatmap, overwrite=True, trustable=True)
             logger.info(

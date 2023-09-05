@@ -184,7 +184,7 @@ def fix_metadata(beatmap: Beatmap):
                 beatmap["status"]["akatsuki"] = (
                     info["ranked"] - 1
                 )  # seems to be offset by 1
-                beatmap["status"]["checked"] = utils.datetime_to_str(datetime.now())
+            beatmap["status"]["checked"] = utils.datetime_to_str(datetime.now())
     sleep(0.3)
 
 
