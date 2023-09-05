@@ -311,6 +311,8 @@ class CheckAkatsukiNominationChannel(Task):
                         break
         logger.info(f"potentially found {len(mapsetids)} beatmap sets")
         for mapsetid in mapsetids:
+            if self.suspended:
+                return self._finish()
             try:
                 mapset = beatmaps.client.beatmapset(beatmapset_id=mapsetid)
             except Exception:
