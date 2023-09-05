@@ -1,4 +1,4 @@
-from front.commands import user_commands
+from front.commands import user_commands, debug_commands
 from api.logging import logger
 import api.metrics as metrics
 from config import config
@@ -33,4 +33,5 @@ commands = {
     "show1s": user_commands.show_1s,
     "showclears": user_commands.show_scores,
     "showcompletion": user_commands.show_scores_completion,
+    "checkbeatmaptype": debug_commands.check_beatmap_type,
 }

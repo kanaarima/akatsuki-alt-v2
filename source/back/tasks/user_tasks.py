@@ -305,7 +305,6 @@ class TrackUserPlaytime(Task):
         for playcount, apibeatmap in akatsuki.get_user_most_played(
             userid=userid, gamemode=gamemode, pages=10000
         ):
-            save_beatmap(apibeatmap)
             beatmap = load_beatmap(apibeatmap["beatmap_id"])
             if (
                 not beatmap

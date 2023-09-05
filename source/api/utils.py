@@ -99,6 +99,42 @@ def get_mods(magic_number):
     return mods
 
 
+def mods_from_string(mods_str):
+    mods_str = mods_str.upper()
+    if not mods_str or mods_str == "NM":
+        return 0
+    mods = 0
+    if "NF" in mods_str:
+        mods += NoFail
+    if "EZ" in mods_str:
+        mods += Easy
+    if "TD" in mods_str:
+        mods += TouchDevice
+    if "HD" in mods_str:
+        mods += Hidden
+    if "HR" in mods_str:
+        mods += HardRock
+    if "SD" in mods_str:
+        mods += SuddenDeath
+    if "DT" in mods_str:
+        mods += DoubleTime
+    if "RX" in mods_str:
+        mods += Relax
+    if "HT" in mods_str:
+        mods += HalfTime
+    if "NC" in mods_str:
+        mods += Nightcore
+    if "FL" in mods_str:
+        mods += Flashlight
+    if "SO" in mods_str:
+        mods += SpunOut
+    if "AP" in mods_str:
+        mods += AutoPilot
+    if "PF" in mods_str:
+        mods += Perfect
+    return mods
+
+
 def get_mods_simple(magic_number):
     mods = get_mods(magic_number)
     if "NC" in mods:
