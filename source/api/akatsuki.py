@@ -380,6 +380,13 @@ def get_map_leaderboard(
     return res
 
 
+def get_map_info(beatmap_id: int):
+    res = requests.get_request(f"beatmaps?b={beatmap_id}")
+    if res.status_code != 200:
+        return
+    return res.json()
+
+
 def update_score_cache():
     global last_fetched, lb_score_cache, lb_total_score_cache
     fetch = False

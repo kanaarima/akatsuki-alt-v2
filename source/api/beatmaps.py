@@ -3,7 +3,7 @@ from api.files import DataFile, BinaryFile, exists
 from akatsuki_pp_py import Beatmap as calc_beatmap
 from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
-from utils.api import ApiHandler
+from api.akatsuki import get_map_info
 from api.logging import logger
 from typing import List, Dict
 from datetime import datetime
@@ -19,7 +19,6 @@ client = ossapi.Ossapi(
     client_id=config["osuapi"]["client_id"],
     client_secret=config["osuapi"]["client_secret"],
 )
-ask_peppy = ApiHandler(base_url="https://akatsuki.gg/api/", delay=4)
 cache = {}
 cache_last_refresh = datetime.now()
 cache_enabled = False
@@ -180,11 +179,11 @@ def fix_metadata(beatmap: Beatmap):
             bancho=b._beatmapset.ranked.value, akatsuki=b._beatmapset.ranked.value
         )
         if b._beatmapset.ranked.value < 1 or b._beatmapset.ranked.value > 2:
-            info = ask_peppy.get_request(
-                f"get_beatmaps?limit=1&b={beatmap['beatmap_id']}"
-            )
-            if info.status_code == 200 and info.json():
-                beatmap["status"]["akatsuki"] = int(info.json()[0]["approved"])
+            info = get_map_info(beatmap["beatmap_id"])
+            if info:
+                beatmap["status"]["akatsuki"] = (
+                    info["ranked"] - 1
+                )  # seems to be offset by 1
                 beatmap["status"]["checked"] = utils.datetime_to_str(datetime.now())
     sleep(0.3)
 

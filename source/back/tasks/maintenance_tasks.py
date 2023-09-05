@@ -14,8 +14,6 @@ import glob
 import json
 import time
 
-ask_peppy = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/", delay=4)
-
 
 class CheckNewRankedBeatmaps(Task):
     def __init__(self) -> None:
@@ -231,10 +229,10 @@ class FixAkatsukiBeatmapRankings(Task):
                     datetime.now() - str_to_datetime(beatmap["status"]["checked"])
                 ) < timedelta(weeks=2):
                     continue
-            info = ask_peppy.get_request(f"get_beatmaps?limit=1&b={beatmap_id}")
-            if info.status_code != 200 or not info.json():
+            info = akatsuki.get_map_info(beatmap_id)
+            if not info:
                 continue
-            beatmap["status"]["akatsuki"] = int(info.json()[0]["approved"])
+            beatmap["status"]["akatsuki"] = info["ranked"] - 1  # offset by 1
             beatmap["status"]["checked"] = datetime_to_str(datetime.now())
             beatmaps.save_beatmap(beatmap, overwrite=True, trustable=True)
             logger.info(
