@@ -25,7 +25,7 @@ cache_last_refresh = datetime.now()
 cache_enabled = False
 
 
-def load_beatmap(beatmap_id) -> Beatmap:
+def load_beatmap(beatmap_id, force_fetch=False) -> Beatmap:
     global cache, cache_last_refresh
     if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
         "cache"
@@ -35,17 +35,23 @@ def load_beatmap(beatmap_id) -> Beatmap:
     if beatmap_id in cache and cache_enabled:
         return cache[beatmap_id]
     path = f"{base_path}/{beatmap_id}.json.gz"
-    if not exists(path):
+    new = None
+    if not exists(path) or force_fetch:
         new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
         if len(new.keys()) == 1:
             return
         if cache_enabled:
             cache[beatmap_id] = new
-        return new
     file = DataFile(path)
     file.load_data()
+    if new:
+        file.data = new
+    if "attributes" not in file.data:
+        file.data = {"beatmap_id": beatmap_id}
+        fix_metadata(file.data)
     if cache_enabled:
         cache[beatmap_id] = file.data
+    file.save_data()
     return file.data
 
 
@@ -96,7 +102,7 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
 
 def download_beatmap(beatmap_id) -> bool:
     sleep(1.5)
-    if (content := _osudirect_download(beatmap_id)) :
+    if content := _osudirect_download(beatmap_id):
         return content
 
     # Use old.ppy.sh as backup endpoint
