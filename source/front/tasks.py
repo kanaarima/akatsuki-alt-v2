@@ -166,11 +166,12 @@ async def handle_events():
                 await bot.client.get_channel(config["discord"]["event_channel"]).send(
                     embed=embed
                 )
+                limit = 25 if top_play_event["gamemode"] == "std_rx" else 5
                 if (
                     replay
-                    and "disabled" in top_play_event["gamemode"]
+                    and "std" in top_play_event["gamemode"]
                     and "pp" in top_play_event["play_type"]
-                    and top_play_event["index"] < 25
+                    and top_play_event["index"] < limit
                 ):
                     channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
