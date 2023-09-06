@@ -327,7 +327,7 @@ class TrackUserPlaytime(Task):
         score: objects.Score,
         gamemode: str,
     ):
-        logger.info(f"{user_id} set play {user_id}")
+        logger.info(f"{user_id} set play {score['id']}")
         ranked_scores = 0
         if len(scores) % 100 == 0:
             event = events.top_play_event(

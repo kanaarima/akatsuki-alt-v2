@@ -43,7 +43,7 @@ def top_play_event(
 
 
 def send_event(target, event):
-    logger.info(f"sending {event.name} event to {target}")
+    logger.info(f"sending {event['name']} event to {target}")
     file = DataFile(f"{config['common']['data_directory']}/events/{target}.json.gz")
     file.load_data(default=[])
     file.data.append(event)
