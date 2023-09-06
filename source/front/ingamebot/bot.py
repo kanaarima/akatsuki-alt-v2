@@ -87,8 +87,6 @@ def reload_stats():
 
 
 def handle_announce(message: str) -> None:
-    # TODO: Add regexes to parse announce messages
-
     if "#1 place" in message:
         gamemode_type = message[1:3]
         user_id = 0
