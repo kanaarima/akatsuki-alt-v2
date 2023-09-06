@@ -168,8 +168,9 @@ async def handle_events():
                 )
                 if (
                     replay
-                    and "std_rx" in top_play_event["gamemode"]
+                    and "disabled" in top_play_event["gamemode"]
                     and "pp" in top_play_event["play_type"]
+                    and top_play_event["index"] < 25
                 ):
                     channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
