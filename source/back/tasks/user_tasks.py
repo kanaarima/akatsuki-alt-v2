@@ -358,6 +358,7 @@ class TrackUserPlaytime(Task):
                 events.send_event(target="frontend", event=event)
             if ranked_scores == 199:
                 break
+        ranked_scores = 0
         for user_score in sorted(
             list(scores.values()), key=lambda x: x["score"], reverse=True
         ):
