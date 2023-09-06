@@ -1,18 +1,50 @@
 from front.commands.user_commands import _parse_args
 from osu.objects.player import Player
+
 from api.objects import gamemodes
 import api.akatsuki as akatsuki
 import api.beatmaps as beatmaps
 from api.files import DataFile
 import api.farmer as farmer
+
+from typing import List, Callable, Optional
+from dataclasses import dataclass
 from config import config
 
 
+@dataclass
+class Command:
+    triggers: List[str]
+    function: Callable
+    doc: Optional[str]
+
+
+commands: List[Command] = []
+
+
+def command(*aliases: List[str]) -> Callable:
+    def wrapper(f: Callable) -> Callable:
+        commands.append(
+            Command(
+                triggers=aliases,
+                function=f,
+                doc=f.__doc__
+            )
+        )
+        return f
+
+    return wrapper
+
+
+@command("ping")
 def ping(player: Player, message, args):
     player.send_message("pong!")
 
 
+@command("recommend", "r", "cook")
 def recommend(player: Player, message, args):
+    """<min_pp=pp> <max_pp=pp> <mods=mods> <include_mods=mods> <exclude_mods=mods> - Recommends a farm map"""
+
     # Fetch user stats
     _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
     top100 = akatsuki.get_user_best(player.id, gamemodes["std_rx"])
@@ -79,7 +111,9 @@ def recommend(player: Player, message, args):
     player.send_message(f"[{link} {title}]")
 
 
+@command("recommend_score", "rs", "scoer")
 def recommend_score(player: Player, message, args):
+    """- Recommends a score farm map"""
     skip_id = []
     scores = DataFile(
         f"{config['common']['data_directory']}/users_statistics/scores/{player.id}.json.gz"
@@ -97,14 +131,25 @@ def recommend_score(player: Player, message, args):
     player.send_message(f"[{link} {title}]")
 
 
+@command("help", "h")
 def help(player: Player, message, args):
+    """- Shows this message"""
+
+    # Create command string if they have a __doc__ string
+    command_strings = [
+        f"{config['discord']['bot_prefix']}{cmd.triggers[0]} {cmd.doc}"
+        for cmd in commands
+        if cmd.doc
+    ]
+
     player.send_message(
         "\n".join(
             [
                 "KompirBot made by [https://akatsuki.gg/u/91076?mode=0&rx=1 Adachi].",
-                "Commands:",
-                "   !recommend <min_pp=pp> <max_pp=pp> <mods=mods> <include_mods=mods> <exclude_mods=mods> - Recommends a farm map",
-                "   !recommend_score - Recommends a score farm map",
+                "",
+                "Commands",
+                "--------",
+                "\n".join(command_strings),
             ]
         )
     )

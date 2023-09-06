@@ -8,7 +8,7 @@ from osu.bancho.constants import ServerPackets
 from osu.objects import Player, Channel
 from osu.bancho.constants import Mods
 
-from front.ingamebot import commands as cmd
+from front.ingamebot import commands
 
 from config import config
 from typing import Union
@@ -22,17 +22,6 @@ game = Game(
 
 logger = get_logger("osu.bot")
 
-commands = {
-    "ping": cmd.ping,
-    "recommend": cmd.recommend,
-    "r": cmd.recommend,
-    "help": cmd.help,
-    "recommend_score": cmd.recommend_score,
-    "rs": cmd.recommend_score,
-    "cook": cmd.recommend,
-    "scoer": cmd.recommend_score,
-}
-
 
 @game.events.register(ServerPackets.SEND_MESSAGE)
 def on_message(sender: Player, message: str, target: Union[Player, Channel]):
@@ -45,13 +34,15 @@ def on_message(sender: Player, message: str, target: Union[Player, Channel]):
         logger.info(f"{sender} executed a command: {message}")
 
         # Parse command
-        command, *args = message[1:].split()
-        command = command.lower()
+        trigger, *args = message[1:].split()
+        trigger = trigger.lower()
 
-        if command in commands:
-            commands[command](sender, message[1:], args)
-        else:
-            sender.send_message("Unknown command!")
+        for command in commands.commands:
+            if trigger in command.triggers:
+                command.function(sender, message[1:], args)
+                return
+
+        sender.send_message("Unknown command!")
 
 
 @game.events.register(ServerPackets.USER_STATS)
