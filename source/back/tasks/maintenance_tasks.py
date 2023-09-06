@@ -276,6 +276,11 @@ class CheckAkatsukiNominationChannel(Task):
         if last_checked_file.exists():
             last_checked_file.load_data()
             if (
+                not last_checked_file.data
+                or "last_checked" not in last_checked_file.data
+            ):
+                return True
+            if (
                 datetime.now() - str_to_datetime(last_checked_file.data["last_checked"])
             ) < timedelta(days=1):
                 return False
