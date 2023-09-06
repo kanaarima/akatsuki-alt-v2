@@ -167,7 +167,7 @@ async def handle_events():
                 if (
                     replay
                     and "std" in top_play_event["gamemode"]
-                    and "clears" not in top_play_event["play_type"]
+                    and "pp" in top_play_event["play_type"]
                 ):
                     channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
