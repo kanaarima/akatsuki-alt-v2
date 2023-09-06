@@ -6,13 +6,15 @@ from api.tasks import Task, TaskStatus
 from api.objects import gamemodes
 import api.beatmaps as beatmaps
 import api.akatsuki as akatsuki
-from api.logging import logger
+from api.logging import get_logger
 from config import config
 import subprocess
 import utils.api
 import glob
 import json
 import time
+
+logger = get_logger("tasks.maintenance")
 
 
 class CheckNewRankedBeatmaps(Task):

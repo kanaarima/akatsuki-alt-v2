@@ -1,8 +1,10 @@
 from api.files import DataFile
-from api.logging import logger
+from api.logging import get_logger
 from api.objects import Score
 from typing import TypedDict
 from config import config
+
+logger = get_logger("api.events")
 
 
 class ChannelMessageEvent(TypedDict):

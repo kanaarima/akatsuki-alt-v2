@@ -9,12 +9,14 @@ from api.utils import str_to_datetime, datetime_to_str
 from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
 from api import objects, akatsuki
-from api.logging import logger
+from api.logging import get_logger
 import api.events as events
 from config import config
 from typing import List
 import datetime
 import glob
+
+logger = get_logger("tasks.users")
 
 
 class StoreUserLeaderboardsTask(Task):
@@ -356,7 +358,7 @@ class TrackUserPlaytime(Task):
                     play_type="pp",
                 )
                 events.send_event(target="frontend", event=event)
-            if ranked_scores == 199:
+            if ranked_scores == 120:
                 break
         ranked_scores = 0
         for user_score in sorted(
@@ -376,7 +378,7 @@ class TrackUserPlaytime(Task):
                     play_type="score",
                 )
                 events.send_event(target="frontend", event=event)
-            if ranked_scores == 99:
+            if ranked_scores == 100:
                 break
 
     def _get_path(self):

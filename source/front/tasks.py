@@ -3,7 +3,7 @@ from front.leaderboards import clan_leaderboards, user_leaderboards
 from api.objects import gamemodes_full
 from front.views import get_score_embed
 from api.files import DataFile
-from api.logging import logger
+from api.logging import get_logger
 import api.akatsuki as akatsuki
 import api.beatmaps as beatmaps
 from datetime import datetime
@@ -17,6 +17,8 @@ import discord
 import asyncio
 import glob
 import io
+
+logger = get_logger("discord.bot")
 
 
 async def post_list(channel_id, strings):
@@ -166,7 +168,7 @@ async def handle_events():
                 )
                 if (
                     replay
-                    and "std" in top_play_event["gamemode"]
+                    and "std_rx" in top_play_event["gamemode"]
                     and "pp" in top_play_event["play_type"]
                 ):
                     channel = bot.client.get_channel(

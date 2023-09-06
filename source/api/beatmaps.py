@@ -4,7 +4,7 @@ from akatsuki_pp_py import Beatmap as calc_beatmap
 from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
 from api.akatsuki import get_map_info
-from api.logging import logger
+from api.logging import get_logger
 from typing import List, Dict
 from datetime import datetime
 from config import config
@@ -22,6 +22,7 @@ client = ossapi.Ossapi(
 cache = {}
 cache_last_refresh = datetime.now()
 cache_enabled = False
+logger = get_logger("api.beatmaps")
 
 
 def load_beatmap(beatmap_id, force_fetch=False) -> Beatmap:

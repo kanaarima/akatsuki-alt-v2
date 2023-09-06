@@ -3,12 +3,13 @@ from api.beatmaps import load_beatmap, base_path
 from typing import List, Tuple, Dict, TypedDict
 from api.files import DataFile, exists
 from api.objects import Score, Beatmap
-from api.logging import logger
+from api.logging import get_logger
 from config import config
 import numpy
 import glob
 import json
 
+logger = get_logger("api.farmer")
 
 def process_scores():
     path = f"{config['common']['data_directory']}/scores.json.gz"

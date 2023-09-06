@@ -1,8 +1,10 @@
 from front.commands import user_commands, debug_commands
-from api.logging import logger
+from api.logging import get_logger
 import api.metrics as metrics
 from config import config
 import discord
+
+logger = get_logger("discord.bot")
 
 
 async def handle_command(message: discord.Message):
