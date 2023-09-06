@@ -88,7 +88,7 @@ class ScoresView(discord.ui.View):
         i = self.index * self.size
         for score in self.scores[i : i + self.size]:
             beatmap_info = load_beatmap(score["beatmap_id"])
-            if not beatmap_info:
+            if not beatmap_info or "artist" not in beatmap_info:
                 text += "Unknown Beatmap?\n"
                 continue
             text_beatmap = f"{beatmap_info['artist']} - {beatmap_info['title']} [{beatmap_info['difficulty_name']}]"
@@ -170,7 +170,7 @@ class ScoreDiffView(discord.ui.View):
         i = self.index * 10
         for score in self.scores[i : i + 10]:
             beatmap_info = load_beatmap(score["beatmap_id"])
-            if not beatmap_info:
+            if not beatmap_info or "artist" not in beatmap_info:
                 text += "Unknown Beatmap?\n"
                 continue
             text_beatmap = f"{beatmap_info['artist']} - {beatmap_info['title']} [{beatmap_info['difficulty_name']}]"
