@@ -5,7 +5,7 @@ from osu.objects import Player, Channel
 from osu.bancho.constants import Mods
 from front.ingamebot import cmd
 from api.files import DataFile
-from api.logging import logger
+from api.logging import get_logger
 from api.utils import today
 from config import config
 from typing import Union
@@ -16,6 +16,8 @@ game = Game(
     config["bot_account"]["password"],
     server="akatsuki.gg",
 )
+
+logger = get_logger("osu.bot")
 
 commands = {
     "ping": cmd.ping,

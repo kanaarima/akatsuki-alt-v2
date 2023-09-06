@@ -6,7 +6,7 @@ from api.tasks import Task, TaskStatus
 from api.objects import gamemodes
 import api.beatmaps as beatmaps
 import api.akatsuki as akatsuki
-from api.logging import logger
+from api.logging import get_logger
 from config import config
 import subprocess
 import utils.api
@@ -14,7 +14,7 @@ import glob
 import json
 import time
 
-ask_peppy = utils.api.ApiHandler(base_url="https://akatsuki.gg/api/", delay=4)
+logger = get_logger("tasks.maintenance")
 
 
 class CheckNewRankedBeatmaps(Task):
@@ -231,10 +231,9 @@ class FixAkatsukiBeatmapRankings(Task):
                     datetime.now() - str_to_datetime(beatmap["status"]["checked"])
                 ) < timedelta(weeks=2):
                     continue
-            info = ask_peppy.get_request(f"get_beatmaps?limit=1&b={beatmap_id}")
-            if info.status_code != 200 or not info.json():
-                continue
-            beatmap["status"]["akatsuki"] = int(info.json()[0]["approved"])
+            info = akatsuki.get_map_info(beatmap_id)
+            if info:
+                beatmap["status"]["akatsuki"] = info["ranked"] - 1  # offset by 1
             beatmap["status"]["checked"] = datetime_to_str(datetime.now())
             beatmaps.save_beatmap(beatmap, overwrite=True, trustable=True)
             logger.info(
@@ -313,6 +312,8 @@ class CheckAkatsukiNominationChannel(Task):
                         break
         logger.info(f"potentially found {len(mapsetids)} beatmap sets")
         for mapsetid in mapsetids:
+            if self.suspended:
+                return self._finish()
             try:
                 mapset = beatmaps.client.beatmapset(beatmapset_id=mapsetid)
             except Exception:

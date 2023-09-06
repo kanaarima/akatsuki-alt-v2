@@ -2,7 +2,6 @@ import back.tasks.maintenance_tasks as maintenance_tasks
 import back.tasks.clan_tasks as clan_tasks
 import back.tasks.user_tasks as user_tasks
 from back.taskmanager import TaskManager
-from api.logging import logger
 import front.bot as bot
 import sys
 

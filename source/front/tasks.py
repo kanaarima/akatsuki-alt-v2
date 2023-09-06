@@ -3,7 +3,7 @@ from front.leaderboards import clan_leaderboards, user_leaderboards
 from api.objects import gamemodes_full
 from front.views import get_score_embed
 from api.files import DataFile
-from api.logging import logger
+from api.logging import get_logger
 import api.akatsuki as akatsuki
 import api.beatmaps as beatmaps
 from datetime import datetime
@@ -17,6 +17,8 @@ import discord
 import asyncio
 import glob
 import io
+
+logger = get_logger("discord.bot")
 
 
 async def post_list(channel_id, strings):
@@ -147,9 +149,12 @@ async def handle_events():
                 beatmap = beatmaps.load_beatmap(top_play_event["beatmap_id"])
                 if not beatmap:  # should be unnecessary
                     continue
-                replay = get_replay(top_play_event["score"]["id"])
+                top_play_event["play_type"]
                 player = akatsuki.get_user_info(top_play_event["user_id"])
-                title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} top play! (#{top_play_event['index']})"
+                name = {"score": "score ", "clears": "clears ", "pp": ""}
+                title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} {name[top_play_event['play_type']]}top play! (#{top_play_event['index']})"
+                if top_play_event["play_type"] == "clears":
+                    title = f"{player['name']} reached a new {gamemodes_full[top_play_event['gamemode']]} clears milestone! ({top_play_event['index']} scores)"
                 embed = get_score_embed(
                     player=player,
                     beatmap=beatmap,
@@ -160,7 +165,15 @@ async def handle_events():
                 await bot.client.get_channel(config["discord"]["event_channel"]).send(
                     embed=embed
                 )
-                if replay and "std" in top_play_event["gamemode"]:
+                limit = 25 if top_play_event["gamemode"] == "std_rx" else 5
+                if (
+                    "std" in top_play_event["gamemode"]
+                    and "pp" in top_play_event["play_type"]
+                    and top_play_event["index"] < limit
+                ):
+                    replay = get_replay(top_play_event["score"]["id"])
+                    if not replay:
+                        continue
                     channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
                     )
@@ -197,7 +210,7 @@ def get_replay(scoreid):
     req = requests.get(
         f"https://akatsuki.gg/web/replays/{scoreid}", allow_redirects=True
     )
-    if req.status_code != 200:  # 404?
+    if not req.ok:  # 404?
         return
     return io.BytesIO(req.content)
 

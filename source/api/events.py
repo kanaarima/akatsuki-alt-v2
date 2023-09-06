@@ -1,7 +1,10 @@
 from api.files import DataFile
+from api.logging import get_logger
 from api.objects import Score
 from typing import TypedDict
 from config import config
+
+logger = get_logger("api.events")
 
 
 class ChannelMessageEvent(TypedDict):
@@ -13,6 +16,7 @@ class ChannelMessageEvent(TypedDict):
 
 class TopPlayEvent(TypedDict):
     name: str
+    play_type: str
     user_id: int
     beatmap_id: int
     score: Score
@@ -26,7 +30,9 @@ def channel_message_event(userid, channel, message) -> ChannelMessageEvent:
     )
 
 
-def top_play_event(user_id, beatmap_id, score, index, gamemode) -> ChannelMessageEvent:
+def top_play_event(
+    user_id, beatmap_id, score, index, gamemode, play_type="pp"
+) -> ChannelMessageEvent:
     return TopPlayEvent(
         name="TopPlayEvent",
         user_id=user_id,
@@ -34,10 +40,12 @@ def top_play_event(user_id, beatmap_id, score, index, gamemode) -> ChannelMessag
         score=score,
         index=index,
         gamemode=gamemode,
+        play_type=play_type,
     )
 
 
 def send_event(target, event):
+    logger.info(f"sending {event['name']} event to {target}")
     file = DataFile(f"{config['common']['data_directory']}/events/{target}.json.gz")
     file.load_data(default=[])
     file.data.append(event)

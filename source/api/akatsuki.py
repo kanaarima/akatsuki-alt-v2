@@ -93,7 +93,7 @@ def search_users(username: str) -> List[Player]:
 
 def lookup_user(username: str) -> int:
     req = requests.get_request(f"users/whatid?name={username}")
-    return None if req.status_code != 200 else req.json()["id"]
+    return req.json()["id"] if req.ok else None
 
 
 def get_user_leaderboard(
@@ -115,7 +115,7 @@ def get_user_leaderboard(
         req = requests.get_request(
             f"leaderboard?mode={gamemode['mode']}&p={page+1}&l={length}&rx={gamemode['relax']}&sort={sort.value}"
         )
-        if req.status_code != 200:
+        if not req.ok:
             break
         apiusers = req.json()["users"]
         if not apiusers:
@@ -152,7 +152,7 @@ def get_user_1s(
         req = requests.get_request(
             f"users/scores/first?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
-        if req.status_code != 200:
+        if not req.ok:
             break
         apiscores = req.json()["scores"]
         total = req.json()["total"]
@@ -173,7 +173,7 @@ def get_user_recent(
         req = requests.get_request(
             f"users/scores/recent?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1+skip}&l={length}&id={userid}"
         )
-        if req.status_code != 200:
+        if not req.ok:
             break
         apiscores = req.json()["scores"]
         if not apiscores:
@@ -193,7 +193,7 @@ def get_user_best(
         req = requests.get_request(
             f"users/scores/best?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
-        if req.status_code != 200:
+        if not req.ok:
             break
         apiscores = req.json()["scores"]
         if not apiscores:
@@ -212,7 +212,7 @@ def get_user_most_played(
         req = requests.get_request(
             f"users/most_played?mode={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}&id={userid}"
         )
-        if req.status_code != 200:
+        if not req.ok:
             break
         if most_played := req.json()["most_played_beatmaps"]:
             res.extend(
@@ -229,7 +229,7 @@ def get_user_stats(
     no_1s=False,
 ) -> Tuple[Player, Dict[str, Tuple[GamemodeStatistics, Ranking, Ranking]]]:
     req = requests.get_request(f"users/full?id={userid}&relax=-1")
-    if req.status_code != 200:
+    if not req.ok:
         return
     update_score_cache()
     data = req.json()
@@ -267,7 +267,7 @@ def get_user_stats(
 
 def get_user_info(userid: int) -> Player:
     req = requests.get_request(f"users?id={userid}")
-    if req.status_code != 200:
+    if not req.ok:
         return None
     data = req.json()
     return Player(
@@ -287,7 +287,7 @@ def get_clan_leaderboard(
             req = requests.get_request(
                 f"clans/stats/first?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
             )
-            if req.status_code != 200:
+            if not req.ok:
                 break
             apiclans = req.json()["clans"]
             if not apiclans:
@@ -308,7 +308,7 @@ def get_clan_leaderboard(
             req = requests.get_request(
                 f"clans/stats/all?m={gamemode['mode']}&rx={gamemode['relax']}&p={page+1}&l={length}"
             )
-            if req.status_code != 200:
+            if not req.ok:
                 break
             apiclans = req.json()["clans"]
             if not apiclans:
@@ -333,7 +333,7 @@ def get_clan_stats(
     req = requests.get_request(
         f"clans/stats?id={clan_id}&m={gamemode['mode']}&rx={gamemode['relax']}"
     )
-    if req.status_code != 200:
+    if not req.ok:
         return
     data = req.json()
     clan = Clan(
@@ -364,7 +364,7 @@ def get_map_leaderboard(
         req = requests.get_request(
             f"scores?b={beatmap_id}&l=100&p={page+1}&relax={gamemode['relax']}"
         )
-        if req.status_code != 200:
+        if not req.ok:
             break
         scores = req.json()["scores"]
         if not scores:
@@ -378,6 +378,13 @@ def get_map_leaderboard(
             score["beatmap"] = {"beatmap_id": beatmap_id}
             res.append((player, _score_from_apiscore(score, gamemode)))
     return res
+
+
+def get_map_info(beatmap_id: int):
+    res = requests.get_request(f"beatmaps?b={beatmap_id}")
+    if not res.ok:
+        return
+    return res.json()
 
 
 def update_score_cache():

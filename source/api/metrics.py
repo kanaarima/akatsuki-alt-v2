@@ -1,10 +1,12 @@
-from api.logging import logger, type
+from api.logging import get_logger, type
 from api.files import DataFile
 from config import config
 
 requests_sent = {}
 commands_used = {}
 wrong_commands_used = {}
+
+logger = get_logger("api.metrics")
 
 
 def log_request(request, post=False):

@@ -7,7 +7,6 @@ import os
 
 
 class ColorFormatter(logging.Formatter):
-
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
@@ -52,6 +51,7 @@ file_handler = logging.handlers.TimedRotatingFileHandler(
     backupCount=5,
 )
 file_handler.rotator = GZipRotator()
+file_handler.setFormatter(ColorFormatter())
 
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(ColorFormatter())
@@ -64,3 +64,9 @@ logging.basicConfig(
 
 logger = logging.getLogger(type)
 logger.setLevel(logging.DEBUG)
+
+
+def get_logger(logger_name):
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.DEBUG)
+    return logger

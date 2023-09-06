@@ -12,7 +12,7 @@ This is the code powering [Akatsuki! alt discord server](https://discord.gg/dGeZ
 Akatsuki! Alt provides users and clans statistics tracking as well as custom leaderboards for the Akatsuki! osu! server.
 
 # Credits
-[Lekuruu](https://github.com/Lekuruu): [osu.py](https://github.com/Lekuruu/osu.py) library for in-game bot support
+[Lekuruu](https://github.com/Lekuruu): [osu.py](https://github.com/Lekuruu/osu.py) library for in-game bot support and some help help cleaning up stuff
 
 [osu! alternative discord](https://discord.gg/VZWRZZXcW4): various help and inspiration
 

@@ -1,11 +1,13 @@
 from api.tasks import Task, TaskStatus
 from threading import Thread
 from typing import List, Dict
-from api.logging import logger
+from api.logging import get_logger
 from api.files import DataFile
 from config import config
 import signal
 import time
+
+logger = get_logger("taskmanager")
 
 
 class SignalHandler:

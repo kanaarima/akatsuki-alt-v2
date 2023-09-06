@@ -1,7 +1,9 @@
+from api.logging import get_logger
 from front import tasks, cmd
-from api.logging import logger
 from config import config
 import discord
+
+logger = get_logger("discord.bot")
 
 
 class Bot(discord.Client):

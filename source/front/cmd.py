@@ -1,13 +1,16 @@
-from front.commands import user_commands
-from api.logging import logger
+from front.commands import user_commands, debug_commands
+from api.logging import get_logger
 import api.metrics as metrics
 from config import config
 import discord
+import shlex
+
+logger = get_logger("discord.bot")
 
 
 async def handle_command(message: discord.Message):
     full = message.content[len(config["discord"]["bot_prefix"]) :]
-    split = full.split(" ")
+    split = shlex.split(full.lower())
     metrics.log_command(split[0], full, message, split[0] not in commands)
     if split[0] in commands:
         try:
@@ -33,4 +36,5 @@ commands = {
     "show1s": user_commands.show_1s,
     "showclears": user_commands.show_scores,
     "showcompletion": user_commands.show_scores_completion,
+    "checkbeatmaptype": debug_commands.check_beatmap_type,
 }

@@ -1,10 +1,15 @@
+from api.utils import get_mods, Relax, HardRock, DoubleTime, Hidden, Easy
+from api.beatmaps import load_beatmap, base_path
+from typing import List, Tuple, Dict, TypedDict
 from api.files import DataFile, exists
-from api.utils import get_mods
-from api.objects import Score
+from api.objects import Score, Beatmap
+from api.logging import get_logger
 from config import config
-from typing import List
 import numpy
+import glob
+import json
 
+logger = get_logger("api.farmer")
 
 def process_scores():
     path = f"{config['common']['data_directory']}/scores.json.gz"
@@ -153,6 +158,20 @@ def recommend(
     return random_choices(found, weights, samples)
 
 
+def recommend_next(
+    pp_min,
+    pp_max,
+    samples=1,
+    mods=None,
+    mods_include=[],
+    mods_exclude=[],
+    skip_id=[],
+    match_threshold=0.85,
+    match_type=None,
+):
+    pass
+
+
 def recommend_score(skip_id=[], samples=1):
     beatmaps = []
     weights = []
@@ -176,5 +195,184 @@ def random_choices(data, weights, samples):
     return result[:samples]
 
 
+class MapRatios(TypedDict):
+    speed_aim: float
+    speed_aim_pp: float
+    speed_notes: float
+    circles_object: float
+
+
+class Model(TypedDict):
+    min_sr: float
+    max_sr: float
+    matches: List[MapRatios]
+
+
+class FutureBeatmap(TypedDict):
+    matches: Dict[str, int]  # str: Model name, float: Match likelyhood
+    most_likely: str  # Model name with the highest likelyhood
+    beatmap_id: int
+    pp_100: float
+    pp_98: float
+    pp_95: float
+    mods: int
+
+
+futures: List[FutureBeatmap] = None
+
+
+def calculate_ratio(beatmap: Beatmap, mods: int) -> MapRatios:
+    difficulty = beatmap["difficulty"][str(mods)]
+    attributes = beatmap["attributes"]
+    divisor = 1.5 if (mods & 64) else 1
+
+    def ensure_value(value):
+        return value if value else 1
+
+    return MapRatios(
+        speed_aim=difficulty["speed_rating"] / difficulty["aim_rating"],
+        speed_aim_pp=difficulty["speed_pp"] / difficulty["aim_pp"],
+        speed_notes=ensure_value(difficulty["speed_note_count"])
+        / ensure_value(attributes["circles"]),
+        circles_object=ensure_value(attributes["circles"])
+        / ensure_value(attributes["sliders"])
+        + attributes["spinners"],
+        density=attributes["max_combo"] / (attributes["length"] / divisor),
+    )
+
+
+def compare_ratio(ratioA: MapRatios, ratioB: MapRatios):
+    key_entries = len(ratioA.keys())
+    likelyhood = 0.0
+
+    def calc(n1, n2):
+        return 1 - abs(n1 - n2) / (n1 + n2)
+
+    for key in ratioA.keys():
+        likelyhood += calc(ratioA[key], ratioB[key]) / key_entries
+    return likelyhood
+
+
+def check_against_model(ratio: MapRatios, model: Model):
+    avg = 0.0
+    best = 0.0
+    for model_ratio in model["matches"]:
+        likelyhood = compare_ratio(ratio, model_ratio)
+        best = max(likelyhood, best)
+        avg += likelyhood
+    avg /= len(model["matches"])
+    return best, avg
+
+
+def build_model(min_sr, max_sr, beatmaps: List[Tuple[Beatmap, int]]) -> Model:
+    return Model(
+        min_sr=min_sr,
+        max_sr=max_sr,
+        matches=[calculate_ratio(beatmap, mods) for beatmap, mods in beatmaps],
+    )
+
+
+def process_models(models: Dict[str, Model]):
+    futures = list()
+    for beatmap_file in glob.glob(f"{base_path}/*.json.gz"):
+        try:
+            id = beatmap_file.replace(f"{base_path}/", "").replace(".json.gz", "")
+            beatmap = load_beatmap(int(id))
+            if (
+                not beatmap
+                or "attributes" not in beatmap
+                or "difficulty" not in beatmap
+                or "status" not in beatmap
+            ):
+                continue
+            if beatmap["status"]["akatsuki"] < 1 or beatmap["status"]["akatsuki"] > 2:
+                continue
+            mods_combo = [
+                Relax,
+                HardRock,
+                Relax + DoubleTime + Hidden,
+                Relax + DoubleTime + Hidden + HardRock,
+                Relax + DoubleTime + Hidden + Easy,
+            ]
+            for mods in mods_combo:
+                difficulty = beatmap["difficulty"][str(mods)]
+                ratio = calculate_ratio(beatmap, mods)
+                matches = dict()
+                for model_name, model in models.items():
+                    if difficulty["star_rating"] < model["min_sr"]:
+                        continue
+                    if difficulty["star_rating"] > model["max_sr"]:
+                        continue
+                    best, avg = check_against_model(ratio, model)
+                    matches[model_name] = best
+                    matches[f"{model_name}_avg"] = avg
+                if not matches:
+                    continue
+                highest_match = ("", 0)
+                lowest_match = ("", 10000000)
+                for model_name, likely in matches.items():
+                    if likely > highest_match[1]:
+                        highest_match = (model_name, likely)
+                    if likely < lowest_match[1]:
+                        lowest_match = (model_name, likely)
+                # logger.info(
+                #     f"{beatmap['beatmap_id']}: Best match: {highest_match[0]} {highest_match[1]*100:.2f}% Worst match: {lowest_match[0]} {lowest_match[1]*100:.2f}%"
+                # )
+                futures.append(
+                    FutureBeatmap(
+                        beatmap_id=beatmap["beatmap_id"],
+                        most_likely=highest_match[0],
+                        pp_100=difficulty["pp_100"],
+                        pp_98=difficulty["pp_98"],
+                        pp_95=difficulty["pp_95"],
+                        mods=mods,
+                        matches=matches,
+                    )
+                )
+        except Exception as e:
+            if type(e) == ZeroDivisionError:  # incomplete data
+                continue
+            logger.warn(f"Skipping processing beatmap id {id}", exc_info=True)
+    return futures
+
+
+def load_models():
+    models: Dict[str, Model] = dict()
+    for file in glob.glob(f"{config['common']['data_directory']}/farmer/*.json"):
+        try:
+            with open(file) as f:
+                data = json.load(f)
+            logger.info(f"Loading model {data['name']}")
+            models[data["name"]] = build_model(
+                data["min_sr"],
+                data["max_sr"],
+                [
+                    (load_beatmap(entry["beatmap_id"]), entry["mods"])
+                    for entry in data["entries"]
+                ],
+            )
+        except:
+            logger.warn(f"Could not load model {file}", exc_info=True)
+            continue
+    return models
+
+
+def load_farm():
+    global futures
+    futures_file = DataFile(
+        f"{config['common']['data_directory']}/farmer/processed.json.gz"
+    )
+    if not futures_file.exists():
+        models = load_models()
+        if not models:
+            return
+        futures_file.data = process_models(models)
+        futures_file.save_data()
+    else:
+        futures_file.load_data()
+    futures = futures_file.data
+
+
+load_farm()
 process_score_farm()
 process_scores()
