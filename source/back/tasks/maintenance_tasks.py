@@ -322,7 +322,8 @@ class CheckAkatsukiNominationChannel(Task):
             try:
                 mapset = beatmaps.client.beatmapset(beatmapset_id=mapsetid)
             except Exception:
-                pass  # 404
+                logger.warn(f"Skipping {mapsetid}")
+                continue
             if not mapset:  # Sometimes they're deleted
                 logger.info(f"Beatmap Set {mapsetid} is deleted!")
             for beatmap in mapset.beatmaps:
