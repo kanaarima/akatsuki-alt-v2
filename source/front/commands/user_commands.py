@@ -407,6 +407,7 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     viewtype = "info"
     valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki", "unranked"]
     include_all = "all" in args
+    tags = None
     if "type" in args:
         if args["type"].lower() not in valid_types:
             await message.reply(f"Invalid type! {','.join(valid_types)}")
@@ -418,6 +419,8 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
             await message.reply(f"Invalid view! {','.join(valid_views)}")
             return
         viewtype = args["view"].lower()
+    if "tags" in args:
+        tags = args["tags"].split(",")
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     path_cache = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
     if not exists(path):
@@ -433,6 +436,20 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     lists = {}
     scores = file.data[gamemode]
     title = "Statistics"
+    filtered = list()
+    beatmap_tags = dict()
+    if tags:
+        view = tags
+        for key in valid_types:
+            for tag in cache.data[key]["tags"]:
+                if tag.lower() in tags:
+                    filtered.extend(cache.data[key]["tags"][tag])
+
+    def is_allowed(id):
+        if filtered:
+            return id in filtered
+        return True
+
     if viewtype == "info":
         lists["Completion"] = []
         for key in valid_types:
@@ -444,6 +461,8 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
                 continue
             lists[key] = []
             for list_key in cache.data[type][key].keys():
+                if key == "tags" and list_key.lower() not in tags:
+                    continue
                 all = len(cache.data[type][key][list_key])
                 found = sum(
                     1 for id in cache.data[type][key][list_key] if str(id) in scores
@@ -458,6 +477,8 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         for key in valid_types:
             lists[key] = []
             for id in cache.data[key]["total"]:
+                if not is_allowed(int(id)):
+                    continue
                 if (str(id) not in scores and missing) or (
                     str(id) in scores and not missing
                 ):
@@ -465,7 +486,6 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
                     lists[key].append(
                         f"{id} | {beatmap['artist']} - {beatmap['title']} [{beatmap['difficulty_name']}]"
                     )
-
     view = StringListView(title, lists, size=15)
     await view.reply(message)
 
