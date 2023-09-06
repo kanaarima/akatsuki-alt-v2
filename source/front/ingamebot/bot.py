@@ -1,12 +1,15 @@
 from api.events import send_event, channel_message_event
 from api.objects import Player as AkatsukiPlayer
+from api.logging import get_logger
+from api.files import DataFile
+from api.utils import today
+
 from osu.bancho.constants import ServerPackets
 from osu.objects import Player, Channel
 from osu.bancho.constants import Mods
-from front.ingamebot import cmd
-from api.files import DataFile
-from api.logging import get_logger
-from api.utils import today
+
+from front.ingamebot import commands as cmd
+
 from config import config
 from typing import Union
 from osu import Game
