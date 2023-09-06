@@ -67,23 +67,29 @@ class TaskManager:
         while True:
             sync_tasks: List[Task] = []
             for task in self.tasks:
-                if (
-                    task.asynchronous
-                    and name(task) in self.tasks_status.data
-                    and task in threads
-                ):
-                    if not threads[task].is_alive():
-                        logger.info(f"Task {name(task)} is done (async)")
-                        self.tasks_status.data.pop(name(task), None)
-                        self.tasks_status.save_data()
-                if not task.can_run():
+                try:
+                    if (
+                        task.asynchronous
+                        and name(task) in self.tasks_status.data
+                        and task in threads
+                    ):
+                        if not threads[task].is_alive():
+                            logger.info(f"Task {name(task)} is done (async)")
+                            self.tasks_status.data.pop(name(task), None)
+                            self.tasks_status.save_data()
+                    if not task.can_run():
+                        continue
+                    if task in threads and threads[task].is_alive():
+                        continue
+                    if task.asynchronous:
+                        threads[task] = self.start_async(task)
+                    else:
+                        sync_tasks.append(task)
+                except:
+                    logger.error(
+                        f"{name(task)} errored out on checking!", exc_info=True
+                    )
                     continue
-                if task in threads and threads[task].is_alive():
-                    continue
-                if task.asynchronous:
-                    threads[task] = self.start_async(task)
-                else:
-                    sync_tasks.append(task)
             if not sync_thread or not sync_thread.is_alive() and sync_tasks:
                 sync_thread = Thread(target=self.run_sync, args=[sync_tasks])
                 sync_thread.start()
