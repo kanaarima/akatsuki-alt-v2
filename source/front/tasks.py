@@ -150,7 +150,6 @@ async def handle_events():
                 if not beatmap:  # should be unnecessary
                     continue
                 top_play_event["play_type"]
-                replay = get_replay(top_play_event["score"]["id"])
                 player = akatsuki.get_user_info(top_play_event["user_id"])
                 name = {"score": "score ", "clears": "clears ", "pp": ""}
                 title = f"{player['name']} set a new {gamemodes_full[top_play_event['gamemode']]} {name[top_play_event['play_type']]}top play! (#{top_play_event['index']})"
@@ -168,11 +167,13 @@ async def handle_events():
                 )
                 limit = 25 if top_play_event["gamemode"] == "std_rx" else 5
                 if (
-                    replay
-                    and "std" in top_play_event["gamemode"]
+                    "std" in top_play_event["gamemode"]
                     and "pp" in top_play_event["play_type"]
                     and top_play_event["index"] < limit
                 ):
+                    replay = get_replay(top_play_event["score"]["id"])
+                    if not replay:
+                        continue
                     channel = bot.client.get_channel(
                         config["discord"]["render_channel"]
                     )

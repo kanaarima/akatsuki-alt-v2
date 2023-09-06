@@ -6,6 +6,7 @@ from api.utils import (
     datetime_to_str,
 )
 from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed
+from api.collections import generate_collection
 from api.files import DataFile, exists
 from typing import List, Tuple, Dict
 import api.beatmaps as beatmaps
@@ -14,6 +15,7 @@ from config import config
 from api.objects import *
 import datetime
 import discord
+import io
 
 
 async def link(full: str, split: list[str], message: discord.Message):
@@ -408,6 +410,8 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki", "unranked"]
     include_all = "all" in args
     tags = None
+    artists = None
+    mappers = None
     if "type" in args:
         if args["type"].lower() not in valid_types:
             await message.reply(f"Invalid type! {','.join(valid_types)}")
@@ -421,6 +425,10 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         viewtype = args["view"].lower()
     if "tags" in args:
         tags = args["tags"].split(",")
+    if "artists" in args:
+        artists = args["artists"].split(",")
+    if "mappers" in args:
+        mappers = args["mappers"].split(",")
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     path_cache = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
     if not exists(path):
@@ -438,30 +446,93 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     title = "Statistics"
     filtered = list()
     beatmap_tags = dict()
+    filters = 0
     if tags:
-        view = tags
+        filters += 1
         for key in valid_types:
             for tag in cache.data[key]["tags"]:
                 if tag.lower() in tags:
                     filtered.extend(cache.data[key]["tags"][tag])
+    if artists:
+        filters += 1
+        for key in valid_types:
+            for artist in cache.data[key]["artists"]:
+                if artist.lower() in artists:
+                    filtered.extend(cache.data[key]["artists"][artist])
+    if mappers:
+        filters += 1
+        for key in valid_types:
+            for mapper in cache.data[key]["mappers"]:
+                if mapper.lower() in mappers:
+                    filtered.extend(cache.data[key]["mappers"][mapper])
+    if filters > 1:
+        found = {}
+        for id in filtered:
+            if id in found:
+                found[id] += 1
+            else:
+                found[id] = 1
+        filtered = list()
+        for k, v in found.items():
+            if v == filters:
+                filtered.append(k)
 
     def is_allowed(id):
         if filtered:
             return id in filtered
         return True
 
-    if viewtype == "info":
+    def is_key_allowed(key):
+        if key == "total":
+            return False
+        if not filtered:
+            return True
+        valid = False
+        if tags and key == "tags":
+            valid = True
+        if artists and key == "artists":
+            valid = True
+        if mappers and key == "mappers":
+            valid = True
+        return valid
+
+    if "generate" in args:
+        if not filtered:
+            await message.reply(
+                f"You need to use filtering options first! (artists,mappers,tags)"
+            )
+            return
+        if len(filtered) > 10000:
+            await message.reply(f"Too many maps!")
+            return
+        maps = list()
+        for id in filtered:
+            beatmap = beatmaps.load_beatmap(id)
+            if beatmap:
+                maps.append(beatmap)
+        name = "Automated collection"
+        if "name" in args:
+            name = args['name']
+        filepath = f"{config['common']['cache_directory']}/{message.author.id}.osdb"
+        collection = generate_collection(maps, name, filepath)
+        await message.reply(file=discord.File(fp=filepath, filename="collection.osdb"))
+        return
+    elif viewtype == "info":
         lists["Completion"] = []
         for key in valid_types:
             total = len(cache.data[key]["total"])
             found = sum(1 for id in cache.data[key]["total"] if str(id) in scores)
             lists["Completion"].append(f"{key}: {found}/{total}")
         for key in cache.data[type].keys():
-            if key == "total":
+            if not is_key_allowed(key):
                 continue
             lists[key] = []
             for list_key in cache.data[type][key].keys():
-                if key == "tags" and list_key.lower() not in tags:
+                if tags and key == "tags" and list_key.lower() not in tags:
+                    continue
+                if artists and key == "artists" and list_key.lower() not in artists:
+                    continue
+                if mappers and key == "mappers" and list_key.lower() not in mappers:
                     continue
                 all = len(cache.data[type][key][list_key])
                 found = sum(
@@ -471,6 +542,8 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
                     lists[key].append(f"{list_key}: {found}/{all}")
             if not lists[key]:
                 lists[key].append("No completion for this category :(")
+        if not is_key_allowed("something"):
+            del lists["Completion"]
     elif viewtype in ["maps", "maps_missing"]:
         missing = viewtype == "maps_missing"
         title = f"Clears {'missing' if missing else ''}"
