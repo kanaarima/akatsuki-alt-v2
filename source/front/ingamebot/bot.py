@@ -51,15 +51,14 @@ def stats_update(player: Player):
     pass
 
 
-@game.tasks.register(seconds=5)
+@game.tasks.register(seconds=5, loop=True, threaded=True)
 def reload_stats():
-    # Load user stats
+    # Load linked discord users
     discord_users = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
     )
     discord_users.load_data(default={})
 
-    # Load players that are currently online
     linked_players = list()
     ingame_players = set()
 
@@ -67,19 +66,8 @@ def reload_stats():
         player = AkatsukiPlayer(**user[0])
         linked_players.append(player)
 
-    # Try to load users with rx
-    game.bancho.status.mods = Mods.Relax
-    game.bancho.update_status()
 
-    for player in linked_players:
-        if bancho_player := game.bancho.players.by_id(player["id"]):
-            bancho_player.request_stats()
-            ingame_players.add(bancho_player)
-
-    # Try to load users with nm
-    game.bancho.status.mods = Mods.NoMod
-    game.bancho.update_status()
-
+    # Try to find players that are currently online
     for player in linked_players:
         if bancho_player := game.bancho.players.by_id(player["id"]):
             bancho_player.request_stats()
