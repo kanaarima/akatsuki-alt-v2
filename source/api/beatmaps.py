@@ -46,9 +46,13 @@ def load_beatmap(beatmap_id, force_fetch=False) -> Beatmap:
     file.load_data()
     if new:
         file.data = new
-    if "attributes" not in file.data:
+    if (
+        "attributes" not in file.data
+        or "difficulty" not in file.data
+        and file.data["attributes"]["mode"] == 0
+    ):
         file.data = {"beatmap_id": beatmap_id}
-        fix_metadata(file.data)
+        process_beatmap(file.data)
     if cache_enabled:
         cache[beatmap_id] = file.data
     file.save_data()
@@ -87,6 +91,7 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
     if not exists(path):
         if not download_beatmap(beatmap["beatmap_id"]):
             logger.warn(f"Map {beatmap['beatmap_id']} can't be downloaded!")
+            fix_metadata(beatmap)
             return beatmap
     try:
         file = BinaryFile(path)
@@ -130,7 +135,7 @@ def _ppy_download(beatmap_id) -> bool:
         f"https://old.ppy.sh/osu/{beatmap_id}",
         headers=DEFAULT_HEADERS,
     )
-    if not response.ok:
+    if not response.ok or not response.content:
         logger.warning(f"GET {response.url} {response.status_code}")
         logger.warning(f"{response.text}")
         return False
