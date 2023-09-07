@@ -334,5 +334,5 @@ class CheckAkatsukiNominationChannel(Task):
                         {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
                     )
                 time.sleep(1)
-        last_checked_file.data = {"last_checked": {datetime_to_str(datetime.now())}}
+        last_checked_file.data = {"last_checked": datetime_to_str(datetime.now())}
         last_checked_file.save_data()
