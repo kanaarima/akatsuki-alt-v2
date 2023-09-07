@@ -1,5 +1,6 @@
 from front.commands.user_commands import _parse_args
 from osu.objects.player import Player
+from api.utils import get_mods
 
 from api.objects import gamemodes
 import api.akatsuki as akatsuki
@@ -24,13 +25,7 @@ commands: List[Command] = []
 
 def command(*aliases: List[str]) -> Callable:
     def wrapper(f: Callable) -> Callable:
-        commands.append(
-            Command(
-                triggers=aliases,
-                function=f,
-                doc=f.__doc__
-            )
-        )
+        commands.append(Command(triggers=aliases, function=f, doc=f.__doc__))
         return f
 
     return wrapper
@@ -43,7 +38,7 @@ def ping(player: Player, message, args):
 
 @command("recommend", "r", "cook")
 def recommend(player: Player, message, args):
-    """<min_pp=pp> <max_pp=pp> <mods=mods> <include_mods=mods> <exclude_mods=mods> - Recommends a farm map"""
+    """<min_pp=pp> <max_pp=pp> <mods=mods> <include_mods=mods> <exclude_mods=mods> <algo=old/auto/model_name> - Recommends a farm map"""
 
     # Fetch user stats
     _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
@@ -61,7 +56,8 @@ def recommend(player: Player, message, args):
 
     mods_include = []
     mods_exclude = ["EZ", "FL"]
-
+    algo = "old"
+    matches_threshold = 0.85
     # Parse command arguments
     parsed = _parse_args(args, nodefault=True)
 
@@ -78,35 +74,76 @@ def recommend(player: Player, message, args):
             return
         max_pp = int(parsed["max_pp"])
 
+    if "threshold" in parsed:
+        try:
+            matches_threshold = float(parsed["threshold"])
+        except:
+            player.send_message("threshold value should be a number.")
+            return
+
     if "include_mods" in parsed:
         mods_include = [
             parsed["include_mods"][i : i + 2]
             for i in range(0, len(parsed["include_mods"]), 2)
         ]
-
+        for mod in mods_include:
+            if mod in mods_exclude:
+                mods_exclude.remove(mod)
     if "exclude_mods" in parsed:
         mods_exclude = [
             parsed["exclude_mods"][i : i + 2]
             for i in range(0, len(parsed["exclude_mods"]), 2)
         ]
-
+    if "algo" in parsed:
+        algo = parsed["algo"].lower().split(",")
+        if algo == "auto":
+            algo = [
+                "aim",
+                "stream",
+            ]  # TODO: automatically chose algorithmn by top 100 plays
     mods = parsed["mods"].upper() if "mods" in parsed else None
+    if mods:
+        mods_exclude = []
+        mods_include = []
+    if algo == "old":
+        recommend = farmer.recommend(
+            pp_min=min_pp,
+            pp_max=max_pp,
+            mods=mods,
+            mods_include=mods_include,
+            mods_exclude=mods_exclude,
+            skip_id=skip_id,
+        )
 
-    recommend = farmer.recommend(
-        pp_min=min_pp,
-        pp_max=max_pp,
-        mods=mods,
-        mods_include=mods_include,
-        mods_exclude=mods_exclude,
-        skip_id=skip_id,
-    )
+        if not (beatmap := beatmaps.load_beatmap(recommend[0]["beatmap_id"])):
+            player.send_message("Failed to load beatmap.")
+            return
+        title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
+        link = f"osu://b/{beatmap['beatmap_id']}"
+    else:
+        recommend = farmer.recommend_next(
+            pp_min=min_pp,
+            pp_max=max_pp,
+            mods=mods,
+            mods_include=mods_include,
+            mods_exclude=mods_exclude,
+            skip_id=skip_id,
+            matches_types=algo,
+            matches_threshold=matches_threshold,
+        )
+        if not recommend:
+            player.send_message(f"Nothing found.")
+            return
+        recommend = recommend[0]
+        threshold = recommend["threshold"]
+        algo = recommend["match"]
+        mods = "".join(get_mods(recommend["future"]["mods"]))
 
-    if not (beatmap := beatmaps.load_beatmap(recommend[0]["beatmap_id"])):
-        player.send_message("Failed to load beatmap.")
-        return
-
-    title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
-    link = f"osu://b/{beatmap['beatmap_id']}"
+        if not (beatmap := beatmaps.load_beatmap(recommend["future"]["beatmap_id"])):
+            player.send_message("Failed to load beatmap.")
+            return
+        title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(recommend['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
+        link = f"osu://b/{beatmap['beatmap_id']}"
 
     player.send_message(f"[{link} {title}]")
 
@@ -129,6 +166,20 @@ def recommend_score(player: Player, message, args):
     link = f"osu://b/{beatmap['beatmap_id']}"
     title = f"{beatmap['title']} [{beatmap['difficulty_name']}] {int(beatmap['max_score']):,} (score/minute: {int(beatmap['score_minute']):,})"
     player.send_message(f"[{link} {title}]")
+
+
+@command("models", "chefs")
+def show_models(player: Player, message, args):
+    """- Shows recommendation algorithms"""
+    models = [
+        ("old", "old recommendation algorithm"),
+        ("auto", "automatically choose a model for you"),
+    ]
+    models.extend(farmer.models)
+    str = ""
+    for model in models:
+        str += f"{model[0]} - {model[1]}\n"  # use list comprension maybe
+    player.send_message(str)
 
 
 @command("help", "h")

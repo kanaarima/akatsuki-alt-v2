@@ -11,6 +11,30 @@ import json
 
 logger = get_logger("api.farmer")
 
+
+class MapRatios(TypedDict):
+    speed_aim: float
+    speed_aim_pp: float
+    speed_notes: float
+    circles_object: float
+
+
+class Model(TypedDict):
+    min_sr: float
+    max_sr: float
+    matches: List[MapRatios]
+
+
+class FutureBeatmap(TypedDict):
+    matches: Dict[str, int]  # str: Model name, float: Match likelyhood
+    most_likely: str  # Model name with the highest likelyhood
+    beatmap_id: int
+    pp_100: float
+    pp_98: float
+    pp_95: float
+    mods: int
+
+
 def process_scores():
     path = f"{config['common']['data_directory']}/scores.json.gz"
     if not exists(path):
@@ -158,6 +182,13 @@ def recommend(
     return random_choices(found, weights, samples)
 
 
+class Recommendation(TypedDict):
+    future: FutureBeatmap
+    threshold: int
+    match: str
+    pp_avg: int
+
+
 def recommend_next(
     pp_min,
     pp_max,
@@ -166,10 +197,61 @@ def recommend_next(
     mods_include=[],
     mods_exclude=[],
     skip_id=[],
-    match_threshold=0.85,
-    match_type=None,
-):
-    pass
+    matches_threshold=0.85,
+    matches_types=[],
+) -> List[Recommendation]:
+    possible_futures = list()
+    for future in futures:
+        if future["beatmap_id"] in skip_id:
+            continue
+        future_mods = "".join(get_mods(future["mods"]))
+        threshold = future["matches"][future["most_likely"]]
+        match_name = future["most_likely"]
+        avg_pp = (future["pp_98"] + future["pp_100"]) / 2
+        if avg_pp < pp_min or avg_pp > pp_max:
+            continue
+        if mods:
+            if future_mods != mods:
+                continue
+        fail = False
+        if mods_include:
+            for mod in mods_include:
+                if mod not in future_mods:
+                    fail = True
+        if mods_exclude:
+            for mod in mods_exclude:
+                if mod in future_mods:
+                    fail = True
+        if fail:
+            continue
+        if matches_types:
+            threshold = 0
+            match_name = None
+            for match_type in future["matches"]:
+                if match_type.lower() in matches_types:
+                    match_threshold = future["matches"][match_type]
+                    if match_threshold > threshold:
+                        match_name = match_type
+                        threshold = match_threshold
+            if not match_name:
+                continue
+        if threshold < matches_threshold:
+            continue
+        possible_futures.append(
+            {
+                "future": future,
+                "match": match_name,
+                "threshold": threshold,
+                "pp_avg": avg_pp,
+            }
+        )
+    if not possible_futures:
+        return
+    possible_futures.sort(
+        key=lambda x: x["threshold"], reverse=True
+    )  # maybe not needed?
+    weights = [possible["threshold"] for possible in possible_futures]
+    return random_choices(possible_futures, weights, samples)
 
 
 def recommend_score(skip_id=[], samples=1):
@@ -195,31 +277,8 @@ def random_choices(data, weights, samples):
     return result[:samples]
 
 
-class MapRatios(TypedDict):
-    speed_aim: float
-    speed_aim_pp: float
-    speed_notes: float
-    circles_object: float
-
-
-class Model(TypedDict):
-    min_sr: float
-    max_sr: float
-    matches: List[MapRatios]
-
-
-class FutureBeatmap(TypedDict):
-    matches: Dict[str, int]  # str: Model name, float: Match likelyhood
-    most_likely: str  # Model name with the highest likelyhood
-    beatmap_id: int
-    pp_100: float
-    pp_98: float
-    pp_95: float
-    mods: int
-
-
 futures: List[FutureBeatmap] = None
-
+models: List[Tuple[str,str]] = []
 
 def calculate_ratio(beatmap: Beatmap, mods: int) -> MapRatios:
     difficulty = beatmap["difficulty"][str(mods)]
@@ -357,11 +416,24 @@ def load_models():
     return models
 
 
+
 def load_farm():
-    global futures
+    global futures, models
     futures_file = DataFile(
         f"{config['common']['data_directory']}/farmer/processed.json.gz"
     )
+    for file in glob.glob(f"{config['common']['data_directory']}/farmer/*.json"):
+        with open(file) as f:
+            data = json.load(f)
+        name = ""
+        description = "No description."
+        if 'name' in data:
+            name = data['name']
+        else:
+            continue
+        if 'description' in data:
+            description = data['description']
+        models.append((name,description))
     if not futures_file.exists():
         models = load_models()
         if not models:
