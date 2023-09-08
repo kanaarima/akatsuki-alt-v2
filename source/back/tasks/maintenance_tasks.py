@@ -116,7 +116,7 @@ class BuildBeatmapCache(Task):
                 cache[key]["ar"][ar].append(beatmap_id)
             else:
                 cache[key]["ar"][ar] = [beatmap_id]
-            if "od" not in beatmap["attributes"]:  # Odd bug causes OD to be null
+            if not beatmap["attributes"]['od']:  # Odd bug causes OD to be null
                 continue
             od = str(int(beatmap["attributes"]["od"]))
             if od in cache[key]["od"]:
