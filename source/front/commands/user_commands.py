@@ -444,8 +444,8 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     lists = {}
     scores = file.data[gamemode]
     title = "Statistics"
-    filtered = list()
-    beatmap_tags = dict()
+    filtered = []
+    beatmap_tags = {}
     filters = 0
     if tags:
         filters += 1
@@ -472,15 +472,13 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
                 found[id] += 1
             else:
                 found[id] = 1
-        filtered = list()
+        filtered = []
         for k, v in found.items():
             if v == filters:
                 filtered.append(k)
 
     def is_allowed(id):
-        if filtered:
-            return id in filtered
-        return True
+        return id in filtered if filtered else True
 
     def is_key_allowed(key):
         if key == "total":
@@ -499,13 +497,13 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     if "generate" in args:
         if not filtered:
             await message.reply(
-                f"You need to use filtering options first! (artists,mappers,tags)"
+                "You need to use filtering options first! (artists,mappers,tags)"
             )
             return
         if len(filtered) > 10000:
-            await message.reply(f"Too many maps!")
+            await message.reply("Too many maps!")
             return
-        maps: List[Beatmap] = list()
+        maps: List[Beatmap] = []
         csv = "beatmap_set_id,beatmap_id,artist,title,difficulty_name,mapper,status_bancho,status_akatsuki\n"
         for id in filtered:
             beatmap = beatmaps.load_beatmap(id)

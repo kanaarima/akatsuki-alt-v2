@@ -185,8 +185,7 @@ def fix_metadata(beatmap: Beatmap):
             bancho=b._beatmapset.ranked.value, akatsuki=b._beatmapset.ranked.value
         )
         if b._beatmapset.ranked.value < 1 or b._beatmapset.ranked.value > 2:
-            info = get_map_info(beatmap["beatmap_id"])
-            if info:
+            if info := get_map_info(beatmap["beatmap_id"]):
                 beatmap["status"]["akatsuki"] = (
                     info["ranked"] - 1
                 )  # seems to be offset by 1

@@ -119,7 +119,6 @@ def recommend(player: Player, message, args):
             player.send_message("Failed to load beatmap.")
             return
         title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
-        link = f"osu://b/{beatmap['beatmap_id']}"
     else:
         recommend = farmer.recommend_next(
             pp_min=min_pp,
@@ -132,7 +131,7 @@ def recommend(player: Player, message, args):
             matches_threshold=matches_threshold,
         )
         if not recommend:
-            player.send_message(f"Nothing found.")
+            player.send_message("Nothing found.")
             return
         recommend = recommend[0]
         threshold = recommend["threshold"]
@@ -143,8 +142,7 @@ def recommend(player: Player, message, args):
             player.send_message("Failed to load beatmap.")
             return
         title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(recommend['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
-        link = f"osu://b/{beatmap['beatmap_id']}"
-
+    link = f"osu://b/{beatmap['beatmap_id']}"
     player.send_message(f"[{link} {title}]")
 
 
@@ -176,9 +174,7 @@ def show_models(player: Player, message, args):
         ("auto", "automatically choose a model for you"),
     ]
     models.extend(farmer.models)
-    str = ""
-    for model in models:
-        str += f"{model[0]} - {model[1]}\n"  # use list comprension maybe
+    str = "".join(f"{model[0]} - {model[1]}\n" for model in models)
     player.send_message(str)
 
 

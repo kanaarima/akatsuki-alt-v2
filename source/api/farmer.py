@@ -200,7 +200,7 @@ def recommend_next(
     matches_threshold=0.85,
     matches_types=[],
 ) -> List[Recommendation]:
-    possible_futures = list()
+    possible_futures = []
     for future in futures:
         if future["beatmap_id"] in skip_id:
             continue
@@ -332,7 +332,7 @@ def build_model(min_sr, max_sr, beatmaps: List[Tuple[Beatmap, int]]) -> Model:
 
 
 def process_models(models: Dict[str, Model]):
-    futures = list()
+    futures = []
     for beatmap_file in glob.glob(f"{base_path}/*.json.gz"):
         try:
             id = beatmap_file.replace(f"{base_path}/", "").replace(".json.gz", "")
@@ -356,7 +356,7 @@ def process_models(models: Dict[str, Model]):
             for mods in mods_combo:
                 difficulty = beatmap["difficulty"][str(mods)]
                 ratio = calculate_ratio(beatmap, mods)
-                matches = dict()
+                matches = {}
                 for model_name, model in models.items():
                     if difficulty["star_rating"] < model["min_sr"]:
                         continue
@@ -396,7 +396,7 @@ def process_models(models: Dict[str, Model]):
 
 
 def load_models():
-    models: Dict[str, Model] = dict()
+    models: Dict[str, Model] = {}
     for file in glob.glob(f"{config['common']['data_directory']}/farmer/*.json"):
         try:
             with open(file) as f:

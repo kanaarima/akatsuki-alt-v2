@@ -59,7 +59,7 @@ def reload_stats():
     )
     discord_users.load_data(default={})
 
-    linked_players = list()
+    linked_players = []
     ingame_players = set()
 
     for user in discord_users.data.values():
