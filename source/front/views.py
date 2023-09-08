@@ -269,11 +269,14 @@ def get_score_embed(
     title = beatmap["title"]
     difficulty = beatmap["difficulty_name"]
     mods = "".join(get_mods_simple(score["mods"]))
-    sr = (
-        ""
-        if "difficulty" not in beatmap
-        else f"[{beatmap['difficulty'][str(convert_mods(score['mods']))]['star_rating']:.1f}*] "
-    )
+    try:
+        sr = (
+            ""
+            if "difficulty" not in beatmap
+            else f"[{beatmap['difficulty'][str(convert_mods(score['mods']))]['star_rating']:.1f}*] "
+        )
+    except:
+        sr = -1
     embed.set_author(
         name=f"{sr}{artist} - {title[:180]} [{difficulty}] +{mods}\n",
         icon_url=f"https://a.akatsuki.gg/{player['id']}",
