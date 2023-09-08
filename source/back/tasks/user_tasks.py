@@ -311,7 +311,7 @@ class TrackUserPlaytime(Task):
             if (
                 not beatmap
                 or "attributes" not in beatmap
-                or beatmap["attributes"]["max_combo"] == 0
+                or not beatmap["attributes"]["max_combo"]
             ):
                 logger.warning(
                     f"Skipping {apibeatmap['beatmap_id']} for user {userid}!"
