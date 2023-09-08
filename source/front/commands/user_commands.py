@@ -505,17 +505,25 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         if len(filtered) > 10000:
             await message.reply(f"Too many maps!")
             return
-        maps = list()
+        maps: List[Beatmap] = list()
+        csv = "beatmap_set_id,beatmap_id,artist,title,difficulty_name,mapper,status_bancho,status_akatsuki\n"
         for id in filtered:
             beatmap = beatmaps.load_beatmap(id)
             if beatmap:
                 maps.append(beatmap)
+        for map in maps:
+            csv += f"{map['beatmap_set_id']},{map['beatmap_id']},{map['artist']},{map['title']},{map['difficulty_name']},{map['mapper']},{map['status']['bancho']},{map['status']['akatsuki']}\n"
         name = "Automated collection"
         if "name" in args:
-            name = args['name']
+            name = args["name"]
         filepath = f"{config['common']['cache_directory']}/{message.author.id}.osdb"
-        collection = generate_collection(maps, name, filepath)
-        await message.reply(file=discord.File(fp=filepath, filename="collection.osdb"))
+        generate_collection(maps, name, filepath)
+        await message.reply(
+            files=[
+                discord.File(fp=filepath, filename="collection.osdb"),
+                discord.File(io.BytesIO(bytes(csv, "utf-8")), filename="beatmaps.csv"),
+            ]
+        )
         return
     elif viewtype == "info":
         lists["Completion"] = []
