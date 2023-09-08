@@ -316,7 +316,93 @@ class CheckAkatsukiNominationChannel(Task):
                         mapsetids.append(int(string))
                         break
         logger.info(f"potentially found {len(mapsetids)} beatmap sets")
+        i = 0
         for mapsetid in mapsetids:
+            i += 1
+            logger.debug(f"Remaining: {i} out of {len(mapsetids)} (ID: {mapsetid})")
+            if self.suspended:
+                return self._finish()
+            try:
+                mapset = beatmaps.client.beatmapset(beatmapset_id=mapsetid)
+            except Exception:
+                logger.warn(f"Skipping {mapsetid}")
+                continue
+            if not mapset:  # Sometimes they're deleted
+                logger.info(f"Beatmap Set {mapsetid} is deleted!")
+            for beatmap in mapset.beatmaps:
+                beatmap._beatmapset = mapset
+                if not exists(f"{beatmaps.base_path}/{beatmap.id}.json.gz"):
+                    logger.info(f"Found new akatsuki beatmap {beatmap.id}")
+                    beatmaps.save_beatmap(
+                        {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
+                    )
+                time.sleep(1)
+        last_checked_file.data = {"last_checked": datetime_to_str(datetime.now())}
+        last_checked_file.save_data()
+
+
+class CheckAkatsukiBeatmapsChannel(Task):
+    def __init__(self) -> None:
+        super().__init__(asynchronous=True)
+
+    def can_run(self) -> bool:
+        last_checked_file = DataFile(
+            f"{config['common']['data_directory']}/discord_crawler_2.json"
+        )
+        if last_checked_file.exists():
+            last_checked_file.load_data()
+            if (
+                not last_checked_file.data
+                or "last_checked" not in last_checked_file.data
+            ):
+                return True
+            if (
+                datetime.now() - str_to_datetime(last_checked_file.data["last_checked"])
+            ) < timedelta(days=1):
+                return False
+        return True
+
+    def run(self):
+        dce_path = f"{config['discord_crawler']['discord_chat_exporter_dll_path']}"
+        date = f"--after {(datetime.now() - timedelta(days=2)).date()}"
+        last_checked_file = DataFile(
+            f"{config['common']['data_directory']}/discord_crawler_2.json"
+        )
+        if not last_checked_file.exists():
+            date = ""
+        args = f"export -t {config['discord_crawler']['selfbot_token']} -c 647363000629460992 -f json -o {config['common']['cache_directory']}/messages_2.json"
+        res = subprocess.Popen(
+            f"dotnet {dce_path} {args} {date}",
+            shell=True,
+        )
+        code = res.wait()
+        if code != 0:
+            logger.warning(f"Selfbot returned code {code}")
+        mapsetids = []
+        with open(f"{config['common']['cache_directory']}/messages_2.json") as f:
+            data = json.load(f)
+            for message in data["messages"]:
+                try:
+                    if not message["embeds"]:
+                        continue
+                    embed = message["embeds"][0]
+                    text = None
+                    for field in embed["fields"]:
+                        if "/d/" in field["value"]:
+                            text = field["value"].replace(")", "").split("/")[-1]
+                    if not text:
+                        continue
+                    for string in text.split("/"):
+                        if string.isnumeric():
+                            mapsetids.append(int(string))
+                            break
+                except:
+                    logger.warn(f"cant process message ID {message['id']}")
+        logger.info(f"potentially found {len(mapsetids)} beatmap sets")
+        i = 0
+        for mapsetid in mapsetids:
+            i += 1
+            logger.debug(f"Remaining: {i} out of {len(mapsetids)} (ID: {mapsetid})")
             if self.suspended:
                 return self._finish()
             try:
