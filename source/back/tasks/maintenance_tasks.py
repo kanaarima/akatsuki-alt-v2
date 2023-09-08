@@ -409,18 +409,19 @@ class CheckAkatsukiBeatmapsChannel(Task):
                 return self._finish()
             try:
                 mapset = beatmaps.client.beatmapset(beatmapset_id=mapsetid)
-            except Exception:
-                logger.warn(f"Skipping {mapsetid}")
-                continue
-            if not mapset:  # Sometimes they're deleted
-                logger.info(f"Beatmap Set {mapsetid} is deleted!")
-            for beatmap in mapset.beatmaps:
-                beatmap._beatmapset = mapset
-                if not exists(f"{beatmaps.base_path}/{beatmap.id}.json.gz"):
-                    logger.info(f"Found new akatsuki beatmap {beatmap.id}")
-                    beatmaps.save_beatmap(
-                        {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
-                    )
+                if not mapset:  # Sometimes they're deleted
+                    logger.info(f"Beatmap Set {mapsetid} is deleted!")
+                for beatmap in mapset.beatmaps:
+                    beatmap._beatmapset = mapset
+                    if not exists(f"{beatmaps.base_path}/{beatmap.id}.json.gz"):
+                        logger.info(f"Found new akatsuki beatmap {beatmap.id}")
+                        beatmaps.save_beatmap(
+                            {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
+                        )
                 time.sleep(1)
+            except Exception:
+                logger.error(f"Skipping {mapsetid}", exc_info=True)
+                continue
+
         last_checked_file.data = {"last_checked": datetime_to_str(datetime.now())}
         last_checked_file.save_data()

@@ -288,7 +288,7 @@ class TrackUserPlaytime(Task):
                                 + score["count_50"]
                                 + score["count_miss"]
                             )
-                            if not map['attributes']['max_combo']:
+                            if not map["attributes"]["max_combo"]:
                                 logger.warn(f"Bugged map {map['beatmap_id']}")
                                 continue
                             multiplier = total_hits / map["attributes"]["max_combo"]
