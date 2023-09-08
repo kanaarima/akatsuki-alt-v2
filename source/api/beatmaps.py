@@ -94,10 +94,10 @@ def process_beatmap(beatmap: Beatmap) -> Beatmap:
             fix_metadata(beatmap)
             return beatmap
     try:
+        fix_metadata(beatmap)
         file = BinaryFile(path)
         file.load_data()
         calc_map = calc_beatmap(bytes=file.data)
-        fix_metadata(beatmap)
         if "attributes" in beatmap and beatmap["attributes"]["mode"] == 0:
             beatmap["difficulty"] = get_difficulties(calc_map)
     except Exception as e:
