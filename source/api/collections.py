@@ -72,7 +72,6 @@ def generate_collection(beatmaps: List[Beatmap], collection_name, filename):
     temp_bytes += struct.pack("i", 0)
     temp_bytes += format_str("By Piotrekol")
 
-    f = open(filename, "wb")
-    f.write(format_str("o!dm8"))
-    f.write(gzip.compress(temp_bytes))
-    f.close()
+    with open(filename, "wb") as f:
+        f.write(format_str("o!dm8"))
+        f.write(gzip.compress(temp_bytes))

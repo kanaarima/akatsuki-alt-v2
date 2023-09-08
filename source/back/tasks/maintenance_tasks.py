@@ -233,8 +233,7 @@ class FixAkatsukiBeatmapRankings(Task):
                     datetime.now() - str_to_datetime(beatmap["status"]["checked"])
                 ) < timedelta(weeks=2):
                     continue
-            info = akatsuki.get_map_info(beatmap_id)
-            if info:
+            if info := akatsuki.get_map_info(beatmap_id):
                 beatmap["status"]["akatsuki"] = info["ranked"] - 1  # offset by 1
             beatmap["status"]["checked"] = datetime_to_str(datetime.now())
             beatmaps.save_beatmap(beatmap, overwrite=True, trustable=True)
@@ -401,9 +400,7 @@ class CheckAkatsukiBeatmapsChannel(Task):
                 except:
                     logger.warn(f"cant process message ID {message['id']}")
         logger.info(f"potentially found {len(mapsetids)} beatmap sets")
-        i = 0
-        for mapsetid in mapsetids:
-            i += 1
+        for i, mapsetid in enumerate(mapsetids, start=1):
             logger.debug(f"Remaining: {i} out of {len(mapsetids)} (ID: {mapsetid})")
             if self.suspended:
                 return self._finish()
@@ -421,7 +418,5 @@ class CheckAkatsukiBeatmapsChannel(Task):
                 time.sleep(1)
             except Exception:
                 logger.error(f"Skipping {mapsetid}", exc_info=True)
-                continue
-
         last_checked_file.data = {"last_checked": datetime_to_str(datetime.now())}
         last_checked_file.save_data()

@@ -5,13 +5,13 @@ import discord
 
 async def check_beatmap_type(full: str, split: list[str], message: discord.Message):
     if not farmer.futures:
-        await message.reply(f"Farm maps are still being calculated!")
+        await message.reply("Farm maps are still being calculated!")
         return
     if len(split) < 2:
-        await message.reply(f"Wrong syntax! Usage: show_beatmap_type beatmap_id mods")
+        await message.reply("Wrong syntax! Usage: show_beatmap_type beatmap_id mods")
         return
     if not split[0].isnumeric():
-        await message.reply(f"Wrong syntax! Usage: show_beatmap_type beatmap_id mods")
+        await message.reply("Wrong syntax! Usage: show_beatmap_type beatmap_id mods")
         return
     beatmap_id = int(split[0])
     mods = mods_from_string(split[1])
@@ -26,4 +26,4 @@ async def check_beatmap_type(full: str, split: list[str], message: discord.Messa
                 embed.add_field(name=model_name, value=f"{likely*100:.2f}%")
             await message.reply(embed=embed)
             return
-    await message.reply(f"Beatmap has no matches.")
+    await message.reply("Beatmap has no matches.")
