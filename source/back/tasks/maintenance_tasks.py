@@ -416,7 +416,7 @@ class CheckAkatsukiBeatmapsChannel(Task):
                             {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
                         )
                 time.sleep(1)
-            except Exception:
+            except Exception or BaseException:
                 logger.error(f"Skipping {mapsetid}", exc_info=True)
         last_checked_file.data = {"last_checked": datetime_to_str(datetime.now())}
         last_checked_file.save_data()
