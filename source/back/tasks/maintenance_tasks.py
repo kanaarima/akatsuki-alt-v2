@@ -116,7 +116,7 @@ class BuildBeatmapCache(Task):
                 cache[key]["ar"][ar].append(beatmap_id)
             else:
                 cache[key]["ar"][ar] = [beatmap_id]
-            if not beatmap["attributes"]['od']:  # Odd bug causes OD to be null
+            if not beatmap["attributes"]["od"]:  # Odd bug causes OD to be null
                 continue
             od = str(int(beatmap["attributes"]["od"]))
             if od in cache[key]["od"]:
@@ -326,18 +326,18 @@ class CheckAkatsukiNominationChannel(Task):
                 return self._finish()
             try:
                 mapset = beatmaps.client.beatmapset(beatmapset_id=mapsetid)
-            except Exception:
-                logger.warn(f"Skipping {mapsetid}")
-                continue
-            if not mapset:  # Sometimes they're deleted
-                logger.info(f"Beatmap Set {mapsetid} is deleted!")
-            for beatmap in mapset.beatmaps:
                 beatmap._beatmapset = mapset
                 if not exists(f"{beatmaps.base_path}/{beatmap.id}.json.gz"):
                     logger.info(f"Found new akatsuki beatmap {beatmap.id}")
                     beatmaps.save_beatmap(
                         {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
                     )
+            except Exception:
+                logger.warn(f"Skipping {mapsetid}")
+                continue
+            if not mapset:  # Sometimes they're deleted
+                logger.info(f"Beatmap Set {mapsetid} is deleted!")
+            for beatmap in mapset.beatmaps:
                 time.sleep(1)
         last_checked_file.data = {"last_checked": datetime_to_str(datetime.now())}
         last_checked_file.save_data()
