@@ -400,7 +400,7 @@ class CheckAkatsukiBeatmapsChannel(Task):
                 except:
                     logger.warn(f"cant process message ID {message['id']}")
         logger.info(f"potentially found {len(mapsetids)} beatmap sets")
-        for i, mapsetid in enumerate(mapsetids, start=1):
+        for i, mapsetid in enumerate(mapsetids, start=1)[2700:]:
             logger.debug(f"Remaining: {i} out of {len(mapsetids)} (ID: {mapsetid})")
             if self.suspended:
                 return self._finish()
@@ -416,7 +416,7 @@ class CheckAkatsukiBeatmapsChannel(Task):
                             {"beatmap_id": beatmap.id, "raw_beatmap": beatmap}
                         )
                 time.sleep(1)
-            except Exception or BaseException:
+            except BaseException:
                 logger.error(f"Skipping {mapsetid}", exc_info=True)
         last_checked_file.data = {"last_checked": datetime_to_str(datetime.now())}
         last_checked_file.save_data()
