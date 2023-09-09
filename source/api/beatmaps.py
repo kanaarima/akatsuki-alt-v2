@@ -64,12 +64,13 @@ def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatma
     cur = database.conn.cursor()
     query = "SELECT * FROM beatmaps WHERE beatmap_id = ?"
     check = cur.execute(query, (beatmap_id,))
-    map = check.fetchall()[0]
+    map = check.fetchall()
     cur.close()
     if not map:
         new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
         _insert_beatmap(database.conn.cursor(), new)
         return new
+    map = map[0]
     beatmap = Beatmap(
         beatmap_id=map[0],
         beatmap_set_id=map[1],
