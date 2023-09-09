@@ -30,12 +30,12 @@ def create_beatmap_table(conn):
 	"spinners"	INTEGER NOT NULL,
 	"mode"	INTEGER NOT NULL,
 	"tags"	TEXT NOT NULL,
-    "stars_nm"	REAL,
-    "stars_ez"	REAL,
-    "stars_hr"	REAL,
-    "stars_dt"	REAL,
-    "stars_dtez"	REAL,
-    "stars_dthr"	REAL,
+    "stars_nm"	REAL DEFAULT "0" NOT NULL,
+    "stars_ez"	REAL DEFAULT "0" NOT NULL,
+    "stars_hr"	REAL DEFAULT "0" NOT NULL,
+    "stars_dt"	REAL DEFAULT "0" NOT NULL,
+    "stars_dtez"	REAL DEFAULT "0" NOT NULL,
+    "stars_dthr"	REAL DEFAULT "0" NOT NULL,
 	PRIMARY KEY("beatmap_id")
 )"""
     c.execute(query)
