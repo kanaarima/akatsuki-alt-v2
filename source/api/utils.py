@@ -163,6 +163,10 @@ def convert_mods(magic_number):
     return new
 
 
+def non_null(val):
+    return 0 if not val else val
+
+
 def calculate_max_score(attributes: objects.BeatmapAttributes):
     return (
         (attributes["circles"] * 300)

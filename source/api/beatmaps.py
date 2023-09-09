@@ -146,10 +146,16 @@ def process_beatmap(beatmap: Beatmap, skip_metadata=False) -> Beatmap:
                 fix_metadata(beatmap)
             return beatmap
     try:
-        if not skip_metadata:
-            fix_metadata(beatmap)
         file = BinaryFile(path)
         file.load_data()
+        if not skip_metadata:
+            fix_metadata(beatmap)
+            beatmap_raw = file.data.decode("utf-8")
+            for line in beatmap_raw.split("\n"):
+                if line.startswith("Tags:"):
+                    tags = ",".join(line[5:].split())
+                    beatmap["tags"] = tags
+                    break
         calc_map = calc_beatmap(bytes=file.data)
         if "attributes" in beatmap and beatmap["attributes"]["mode"] == 0:
             beatmap["difficulty"] = get_difficulties(calc_map)
@@ -214,9 +220,10 @@ def fix_metadata(beatmap: Beatmap):
     beatmap["title"] = b._beatmapset.title
     beatmap["beatmap_set_id"] = b._beatmapset.id
     beatmap["beatmap_id"] = b.id  # prolly not needed
+    beatmap["md5"] = b.checksum
     beatmap["difficulty_name"] = b.version
     beatmap["mapper"] = b._beatmapset.creator
-
+    beatmap["tags"] = ""
     if "attributes" in beatmap:
         beatmap["attributes"]["length"] = b.hit_length
     else:
