@@ -72,23 +72,8 @@ def _insert_beatmap(db, beatmap: Beatmap):
     database.conn.commit()
 
 
-def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatmap:
-    if force_fetch:
-        new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
-        if len(new.keys()) == 1:
-            return
-        return new
-    cur = database.conn.cursor()
-    query = "SELECT * FROM beatmaps WHERE beatmap_id = ?"
-    check = cur.execute(query, (beatmap_id,))
-    map = check.fetchall()
-    cur.close()
-    if not map:
-        new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
-        _insert_beatmap(database.conn.cursor(), new)
-        return new
-    map = map[0]
-    beatmap = Beatmap(
+def _get_beatmap(map):
+    return Beatmap(
         beatmap_id=map[0],
         beatmap_set_id=map[1],
         md5=map[2],
@@ -119,6 +104,25 @@ def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatma
             },
         ),
     )
+
+
+def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatmap:
+    if force_fetch:
+        new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
+        if len(new.keys()) == 1:
+            return
+        return new
+    cur = database.conn.cursor()
+    query = "SELECT * FROM beatmaps WHERE beatmap_id = ?"
+    check = cur.execute(query, (beatmap_id,))
+    map = check.fetchall()
+    cur.close()
+    if not map:
+        new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
+        _insert_beatmap(database.conn.cursor(), new)
+        return new
+    map = map[0]
+    beatmap = _get_beatmap(map)
     if difficulty_info:
         process_beatmap(beatmap, skip_metadata=True)
     return beatmap
@@ -363,3 +367,37 @@ def get_difficulties(beatmap: calc_beatmap) -> Dict[int, BeatmapDifficulty]:
             res[str(mods)] = get_difficulty(beatmap, mods)
             res[str(mods + utils.Relax)] = get_difficulty(beatmap, mods + utils.Relax)
     return res
+
+
+def get_by_leaderboard(leaderboards=[], mode=0):
+    result = dict()
+    queries = dict()
+    queries[
+        "ranked_bancho"
+    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status BETWEEN 1 AND 2 AND mode = ?"
+    queries[
+        "loved_bancho"
+    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status = 4 AND mode = ?"
+    queries[
+        "qualified_bancho"
+    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status = 3 AND mode = ?"
+    queries[
+        "unranked"
+    ] = "SELECT beatmap_id FROM beatmaps WHERE akatsuki_status < 1 AND mode = ?"
+    queries[
+        "ranked_akatsuki"
+    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status != 1 AND akatsuki_status = 1 AND mode = ?"
+    queries[
+        "loved_akatsuki"
+    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status != 4 AND akatsuki_status = 4 AND mode = ?"
+
+    for query in queries:
+        if leaderboards and query not in leaderboards:
+            continue
+        result[query] = list()
+        cur = database.conn.cursor()
+        check = cur.execute(queries[query], (mode,))
+        for map in check.fetchall():
+            result[query] += map
+        cur.close()
+    return result
