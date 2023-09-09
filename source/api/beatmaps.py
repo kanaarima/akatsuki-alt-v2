@@ -401,3 +401,37 @@ def get_by_leaderboard(leaderboards=[], mode=0):
             result[query] += map
         cur.close()
     return result
+
+
+def get_by_range(entry, min, max, leaderboards=[], mode=0):
+    result = dict()
+    queries = dict()
+    queries[
+        "ranked_bancho"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status BETWEEN 1 AND 2 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "loved_bancho"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status = 4 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "qualified_bancho"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status = 3 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "unranked"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE akatsuki_status < 1 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "ranked_akatsuki"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status != 1 AND akatsuki_status = 1 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "loved_akatsuki"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status != 4 AND akatsuki_status = 4 AND {entry} BETWEEN ? AND ? AND mode = ?"
+
+    for query in queries:
+        if leaderboards and query not in leaderboards:
+            continue
+        result[query] = list()
+        cur = database.conn.cursor()
+        check = cur.execute(queries[query], [min, max, mode])
+        for map in check.fetchall():
+            result[query] += map
+        cur.close()
+    return result
