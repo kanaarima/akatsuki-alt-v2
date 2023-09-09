@@ -50,7 +50,7 @@ def insert_beatmap(db, beatmap: Beatmap):
         non_null(beatmap["attributes"]["mode"]),
         beatmap["tags"],
     ]
-    if "stars" in beatmap["attributes"]:
+    if "difficulty" in beatmap:
         args.append(beatmap["difficulty"]["0"]["star_rating"])
         args.append(beatmap["difficulty"][str(utils.Easy)]["star_rating"])
         args.append(beatmap["difficulty"][str(utils.HardRock)]["star_rating"])
