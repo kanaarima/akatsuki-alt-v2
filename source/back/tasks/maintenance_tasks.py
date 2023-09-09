@@ -379,7 +379,7 @@ class CheckAkatsukiBeatmapsChannel(Task):
         code = res.wait()
         if code != 0:
             logger.warning(f"Selfbot returned code {code}")
-        mapsetids = []
+        mapsetids = {}
         with open(f"{config['common']['cache_directory']}/messages_2.json") as f:
             data = json.load(f)
             for message in data["messages"]:
@@ -395,12 +395,12 @@ class CheckAkatsukiBeatmapsChannel(Task):
                         continue
                     for string in text.split("/"):
                         if string.isnumeric():
-                            mapsetids.append(int(string))
+                            mapsetids[int(string)] = 0
                             break
                 except:
                     logger.warn(f"cant process message ID {message['id']}")
         logger.info(f"potentially found {len(mapsetids)} beatmap sets")
-        for i, mapsetid in enumerate(mapsetids, start=2700):
+        for i, mapsetid in enumerate(list(mapsetids.keys()), start=1):
             logger.debug(f"Remaining: {i} out of {len(mapsetids)} (ID: {mapsetid})")
             if self.suspended:
                 return self._finish()
