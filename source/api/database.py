@@ -3,7 +3,9 @@ from config import config
 import sqlite3
 
 logger = get_logger("api.database")
-conn = sqlite3.connect(config["database"])
+conn = sqlite3.connect(
+    config["database"], isolation_level=None, check_same_thread=False
+)
 
 
 def create_beatmap_table(conn):
@@ -48,6 +50,8 @@ def create_tables(conn):
         """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='beatmaps' """
     )
     if c.fetchone()[0] != 1:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.commit()
         create_beatmap_table(conn)
 
 
