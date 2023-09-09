@@ -33,9 +33,7 @@ def _insert_beatmap(db, beatmap: Beatmap):
     if "last_checked" in beatmap["status"]:
         last_checked = beatmap["status"]["last_checked"]
     else:
-        last_checked = utils.datetime_to_str(
-            datetime.datetime(year=1984, month=1, day=1)
-        )
+        last_checked = utils.datetime_to_str(datetime(year=1984, month=1, day=1))
     args = [
         beatmap["beatmap_id"],
         beatmap["beatmap_set_id"],
