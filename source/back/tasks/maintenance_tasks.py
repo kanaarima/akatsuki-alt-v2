@@ -400,7 +400,7 @@ class CheckAkatsukiBeatmapsChannel(Task):
                 except:
                     logger.warn(f"cant process message ID {message['id']}")
         logger.info(f"potentially found {len(mapsetids)} beatmap sets")
-        for i, mapsetid in enumerate(mapsetids, start=1)[2700:]:
+        for i, mapsetid in enumerate(mapsetids, start=2700):
             logger.debug(f"Remaining: {i} out of {len(mapsetids)} (ID: {mapsetid})")
             if self.suspended:
                 return self._finish()
