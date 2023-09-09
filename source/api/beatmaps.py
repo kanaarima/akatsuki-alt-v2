@@ -27,8 +27,16 @@ logger = get_logger("api.beatmaps")
 
 
 def _insert_beatmap(db, beatmap: Beatmap):
-    query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
-    args = (
+    query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags", "stars_nm", "stars_ez", "stars_hr", "stars_dt", "stars_dtez", "stars_dthr") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);"""
+    query_nodiff = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?);"""
+    last_checked = None
+    if "last_checked" in beatmap["status"]:
+        last_checked = beatmap["status"]["last_checked"]
+    else:
+        last_checked = utils.datetime_to_str(
+            datetime.datetime(year=1984, month=1, day=1)
+        )
+    args = [
         beatmap["beatmap_id"],
         beatmap["beatmap_set_id"],
         beatmap["md5"],
@@ -38,6 +46,7 @@ def _insert_beatmap(db, beatmap: Beatmap):
         beatmap["mapper"],
         beatmap["status"]["bancho"],
         beatmap["status"]["akatsuki"],
+        last_checked,
         utils.non_null(beatmap["attributes"]["ar"]),
         utils.non_null(beatmap["attributes"]["od"]),
         utils.non_null(beatmap["attributes"]["cs"]),
@@ -49,8 +58,18 @@ def _insert_beatmap(db, beatmap: Beatmap):
         utils.non_null(beatmap["attributes"]["spinners"]),
         utils.non_null(beatmap["attributes"]["mode"]),
         beatmap["tags"],
-    )
-    db.execute(query, args)
+    ]
+    if "stars" in beatmap["attributes"]:
+        args.append(beatmap["attributes"]["stars"][0])
+        args.append(beatmap["attributes"]["stars"][utils.Easy])
+        args.append(beatmap["attributes"]["stars"][utils.HardRock])
+        args.append(beatmap["attributes"]["stars"][utils.DoubleTime])
+        args.append(beatmap["difficulty"]["stars"][utils.Easy + utils.DoubleTime])
+        args.append(beatmap["difficulty"]["stars"][utils.HardRock + utils.DoubleTime])
+        db.execute(query, args)
+    else:
+        db.execute(query_nodiff, args)
+
     db.close()
     database.conn.commit()
 
@@ -92,6 +111,14 @@ def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatma
             spinners=map[17],
             mode=map[18],
             tags=map[19],
+            stars={
+                0: map[20],
+                2: map[21],
+                16: map[22],
+                64: map[23],
+                66: map[24],
+                80: map[25],
+            },
         ),
     )
     if difficulty_info:

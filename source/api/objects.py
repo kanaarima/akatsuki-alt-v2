@@ -36,6 +36,7 @@ class BeatmapAttributes(TypedDict):
     circles: int
     sliders: int
     spinners: int
+    stars: dict[int, float]
     mode: int
 
 
@@ -60,6 +61,7 @@ class BeatmapDifficulty(TypedDict):
 class RankedStatus(TypedDict):
     bancho: int
     akatsuki: int
+    last_checked: str
 
 
 class Beatmap(TypedDict):
@@ -74,7 +76,6 @@ class Beatmap(TypedDict):
     status: Optional[RankedStatus]
     attributes: Optional[BeatmapAttributes]
     difficulty: Optional[Dict[int, BeatmapDifficulty]]
-
 
 class Clan(TypedDict):
     clan_id: int

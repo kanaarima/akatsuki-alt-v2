@@ -18,6 +18,7 @@ def create_beatmap_table(conn):
 	"mapper"	TEXT NOT NULL,
 	"bancho_status"	INTEGER NOT NULL,
 	"akatsuki_status"	INTEGER NOT NULL,
+    "last_checked"	TEXT NOT NULL,
 	"ar"	REAL NOT NULL,
 	"od"	REAL NOT NULL,
 	"cs"	REAL NOT NULL,
@@ -29,6 +30,12 @@ def create_beatmap_table(conn):
 	"spinners"	INTEGER NOT NULL,
 	"mode"	INTEGER NOT NULL,
 	"tags"	TEXT NOT NULL,
+    "stars_nm"	REAL,
+    "stars_ez"	REAL,
+    "stars_hr"	REAL,
+    "stars_dt"	REAL,
+    "stars_dtez"	REAL,
+    "stars_dthr"	REAL,
 	PRIMARY KEY("beatmap_id")
 )"""
     c.execute(query)

@@ -278,7 +278,8 @@ def random_choices(data, weights, samples):
 
 
 futures: List[FutureBeatmap] = None
-models: List[Tuple[str,str]] = []
+models: List[Tuple[str, str]] = []
+
 
 def calculate_ratio(beatmap: Beatmap, mods: int) -> MapRatios:
     difficulty = beatmap["difficulty"][str(mods)]
@@ -336,7 +337,7 @@ def process_models(models: Dict[str, Model]):
     for beatmap_file in glob.glob(f"{base_path}/*.json.gz"):
         try:
             id = beatmap_file.replace(f"{base_path}/", "").replace(".json.gz", "")
-            beatmap = load_beatmap(int(id))
+            beatmap = load_beatmap(int(id), difficulty_info=True)
             if (
                 not beatmap
                 or "attributes" not in beatmap
@@ -406,7 +407,7 @@ def load_models():
                 data["min_sr"],
                 data["max_sr"],
                 [
-                    (load_beatmap(entry["beatmap_id"]), entry["mods"])
+                    (load_beatmap(entry["beatmap_id"], difficulty_info=True), entry["mods"])
                     for entry in data["entries"]
                 ],
             )
@@ -414,7 +415,6 @@ def load_models():
             logger.warn(f"Could not load model {file}", exc_info=True)
             continue
     return models
-
 
 
 def load_farm():
@@ -427,13 +427,13 @@ def load_farm():
             data = json.load(f)
         name = ""
         description = "No description."
-        if 'name' in data:
-            name = data['name']
+        if "name" in data:
+            name = data["name"]
         else:
             continue
-        if 'description' in data:
-            description = data['description']
-        models.append((name,description))
+        if "description" in data:
+            description = data["description"]
+        models.append((name, description))
     if not futures_file.exists():
         models = load_models()
         if not models:

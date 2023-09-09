@@ -94,7 +94,7 @@ async def show_recent(full: str, split: list[str], message: discord.Message):
     map = map[0]
     # Process map
     beatmaps.save_beatmap(map)
-    map = beatmaps.load_beatmap(map["beatmap_id"])
+    map = beatmaps.load_beatmap(map["beatmap_id"], difficulty_info=True)
     await message.reply(embed=get_score_embed(player=player, beatmap=map, score=score))
 
 
