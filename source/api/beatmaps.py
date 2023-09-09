@@ -89,8 +89,9 @@ def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatma
             max_combo=map[14],
             circles=map[15],
             sliders=map[16],
-            mode=map[17],
-            tags=map[18],
+            spinners=map[17]
+            mode=map[18],
+            tags=map[19],
         ),
     )
     if difficulty_info:
