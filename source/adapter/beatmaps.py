@@ -21,8 +21,8 @@ def insert_beatmap(db, beatmap: Beatmap):
     query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags", "stars_nm", "stars_ez", "stars_hr", "stars_dt", "stars_dtez", "stars_dthr") VALUES (?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);"""
     query_nodiff = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags") VALUES (?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
     last_checked = None
-    if "last_checked" in beatmap["status"]:
-        last_checked = beatmap["status"]["last_checked"]
+    if "checked" in beatmap["status"]:
+        last_checked = beatmap["status"]["checked"]
     else:
         last_checked = utils.datetime_to_str(
             datetime.datetime(year=1984, month=1, day=1)
@@ -71,7 +71,7 @@ def insert_beatmap(db, beatmap: Beatmap):
 
 
 def main():
-    for file in glob.glob(f"{base_path}/*.json.gz"):
+    for file in glob.glob(f"/home/akatsukialt/datav2/beatmaps/*.json.gz"):
         beatmap = DataFile(file)
         beatmap.load_data()
         beatmap = beatmap.data
