@@ -62,8 +62,8 @@ def _insert_beatmap(db, beatmap: Beatmap):
         args.append(beatmap["attributes"]["stars"][utils.Easy])
         args.append(beatmap["attributes"]["stars"][utils.HardRock])
         args.append(beatmap["attributes"]["stars"][utils.DoubleTime])
-        args.append(beatmap["difficulty"]["stars"][utils.Easy + utils.DoubleTime])
-        args.append(beatmap["difficulty"]["stars"][utils.HardRock + utils.DoubleTime])
+        args.append(beatmap["attributes"]["stars"][utils.Easy + utils.DoubleTime])
+        args.append(beatmap["attributes"]["stars"][utils.HardRock + utils.DoubleTime])
         db.execute(query, args)
     else:
         db.execute(query_nodiff, args)
@@ -127,9 +127,9 @@ def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatma
 def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
     cur = database.conn.cursor()
     query = "select exists(select 1 from beatmaps where beatmap_id=? collate nocase) limit 1"
-    check = cur.execute(query, beatmap["beatmap_id"])
+    check = cur.execute(query, (beatmap["beatmap_id"],)).fetchone()[0]
     cur.close()
-    if check.fetchone()[0] and not overwrite:
+    if check and not overwrite:
         return
     if not trustable:
         process_beatmap(beatmap)
@@ -185,6 +185,26 @@ def process_beatmap(beatmap: Beatmap, skip_metadata=False) -> Beatmap:
         calc_map = calc_beatmap(bytes=file.data)
         if "attributes" in beatmap and beatmap["attributes"]["mode"] == 0:
             beatmap["difficulty"] = get_difficulties(calc_map)
+            beatmap["attributes"]["stars"] = {}
+            beatmap["attributes"]["stars"][0] = beatmap["difficulty"]["0"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][2] = beatmap["difficulty"]["2"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][16] = beatmap["difficulty"]["16"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][64] = beatmap["difficulty"]["64"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][66] = beatmap["difficulty"]["66"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][80] = beatmap["difficulty"]["80"][
+                "star_rating"
+            ]
+
     except Exception as e:
         logger.error("Error occurred while processing map!", exc_info=True)
     return beatmap
