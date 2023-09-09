@@ -5,14 +5,13 @@ from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
 from api.akatsuki import get_map_info
 from api.logging import get_logger
-from api.utils import non_null
+import api.database as database
 from typing import List, Dict
 from datetime import datetime
 from config import config
 import api.utils as utils
 from time import sleep
 import itertools
-import database
 import requests
 import ossapi
 
@@ -39,16 +38,16 @@ def _insert_beatmap(db, beatmap: Beatmap):
         beatmap["mapper"],
         beatmap["status"]["bancho"],
         beatmap["status"]["akatsuki"],
-        non_null(beatmap["attributes"]["ar"]),
-        non_null(beatmap["attributes"]["od"]),
-        non_null(beatmap["attributes"]["cs"]),
-        non_null(beatmap["attributes"]["length"]),
-        non_null(beatmap["attributes"]["bpm"]),
-        non_null(beatmap["attributes"]["max_combo"]),
-        non_null(beatmap["attributes"]["circles"]),
-        non_null(beatmap["attributes"]["sliders"]),
-        non_null(beatmap["attributes"]["spinners"]),
-        non_null(beatmap["attributes"]["mode"]),
+        utils.non_null(beatmap["attributes"]["ar"]),
+        utils.non_null(beatmap["attributes"]["od"]),
+        utils.non_null(beatmap["attributes"]["cs"]),
+        utils.non_null(beatmap["attributes"]["length"]),
+        utils.non_null(beatmap["attributes"]["bpm"]),
+        utils.non_null(beatmap["attributes"]["max_combo"]),
+        utils.non_null(beatmap["attributes"]["circles"]),
+        utils.non_null(beatmap["attributes"]["sliders"]),
+        utils.non_null(beatmap["attributes"]["spinners"]),
+        utils.non_null(beatmap["attributes"]["mode"]),
         beatmap["tags"],
     )
     db.execute(query, args)

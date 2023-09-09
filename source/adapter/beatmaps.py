@@ -40,6 +40,7 @@ def insert_beatmap(db, beatmap: Beatmap):
         beatmap["tags"],
     )
     db.execute(query, args)
+    db.close()
 
 
 def main():
