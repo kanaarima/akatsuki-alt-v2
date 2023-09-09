@@ -5,12 +5,14 @@ from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
 from api.akatsuki import get_map_info
 from api.logging import get_logger
+from api.utils import non_null
 from typing import List, Dict
 from datetime import datetime
 from config import config
 import api.utils as utils
 from time import sleep
 import itertools
+import database
 import requests
 import ossapi
 
@@ -25,41 +27,89 @@ cache_enabled = False
 logger = get_logger("api.beatmaps")
 
 
-def load_beatmap(beatmap_id, force_fetch=False) -> Beatmap:
-    global cache, cache_last_refresh
-    if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
-        "cache"
-    ]:
-        cache = {}
-        cache_last_refresh = datetime.now()
-    if beatmap_id in cache and cache_enabled:
-        return cache[beatmap_id]
-    path = f"{base_path}/{beatmap_id}.json.gz"
-    new = None
-    if not exists(path) or force_fetch:
+def _insert_beatmap(db, beatmap: Beatmap):
+    query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+    args = (
+        beatmap["beatmap_id"],
+        beatmap["beatmap_set_id"],
+        beatmap["md5"],
+        beatmap["artist"],
+        beatmap["title"],
+        beatmap["difficulty_name"],
+        beatmap["mapper"],
+        beatmap["status"]["bancho"],
+        beatmap["status"]["akatsuki"],
+        non_null(beatmap["attributes"]["ar"]),
+        non_null(beatmap["attributes"]["od"]),
+        non_null(beatmap["attributes"]["cs"]),
+        non_null(beatmap["attributes"]["length"]),
+        non_null(beatmap["attributes"]["bpm"]),
+        non_null(beatmap["attributes"]["max_combo"]),
+        non_null(beatmap["attributes"]["circles"]),
+        non_null(beatmap["attributes"]["sliders"]),
+        non_null(beatmap["attributes"]["spinners"]),
+        non_null(beatmap["attributes"]["mode"]),
+        beatmap["tags"],
+    )
+    db.execute(query, args)
+    db.close()
+    database.conn.commit()
+
+
+def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatmap:
+    if force_fetch:
         new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
         if len(new.keys()) == 1:
             return
-        if cache_enabled:
-            cache[beatmap_id] = new
-    file = DataFile(path)
-    file.load_data()
-    if new:
-        file.data = new
-    if (
-        "attributes" not in file.data
-        or "difficulty" not in file.data
-        and file.data["attributes"]["mode"] == 0
-    ):
-        file.data = {"beatmap_id": beatmap_id}
-        process_beatmap(file.data)
-    if cache_enabled:
-        cache[beatmap_id] = file.data
-    file.save_data()
-    return file.data
+        return new
+    cur = database.conn.cursor()
+    query = "SELECT * FROM beatmaps WHERE beatmap_id = ?"
+    check = cur.execute(query, beatmap_id)
+    map = check.fetchone()[0]
+    cur.close()
+    if not map:
+        new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
+        _insert_beatmap(database.conn.cursor(), new)
+        return new
+    beatmap = Beatmap(
+        beatmap_id=map[0],
+        beatmap_set_id=map[1],
+        md5=map[2],
+        artist=map[3],
+        title=map[3],
+        difficulty_name=map[4],
+        mapper=map[5],
+        status=RankedStatus(bancho=map[6], akatsuki=map[7]),
+        attributes=BeatmapAttributes(
+            ar=map[8],
+            od=map[9],
+            cs=map[10],
+            length=map[11],
+            bpm=map[12],
+            max_combo=map[13],
+            circles=map[14],
+            sliders=map[15],
+            mode=map[16],
+            tags=map[17],
+        ),
+    )
+    if difficulty_info:
+        process_beatmap(beatmap, skip_metadata=True)
 
 
 def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
+    cur = database.conn.cursor()
+    query = "select exists(select 1 from beatmaps where beatmap_id=? collate nocase) limit 1"
+    check = cur.execute(query, beatmap["beatmap_id"])
+    cur.close()
+    if check.fetchone()[0] and not overwrite:
+        return
+    if not trustable:
+        process_beatmap(beatmap)
+    _insert_beatmap(database.conn.cursor(), beatmap)
+
+
+def save_beatmap_old(beatmap: Beatmap, overwrite=False, trustable=False):
     global cache, cache_last_refresh
     path = f"{base_path}/{beatmap['beatmap_id']}.json.gz"
     if exists(path) and not overwrite:
@@ -86,15 +136,17 @@ def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
         save_beatmap(beatmap, overwrite, trustable)
 
 
-def process_beatmap(beatmap: Beatmap) -> Beatmap:
+def process_beatmap(beatmap: Beatmap, skip_metadata=False) -> Beatmap:
     path = f"{base_path}/{beatmap['beatmap_id']}.osu.gz"
     if not exists(path):
         if not download_beatmap(beatmap["beatmap_id"]):
             logger.warn(f"Map {beatmap['beatmap_id']} can't be downloaded!")
-            fix_metadata(beatmap)
+            if not skip_metadata:
+                fix_metadata(beatmap)
             return beatmap
     try:
-        fix_metadata(beatmap)
+        if not skip_metadata:
+            fix_metadata(beatmap)
         file = BinaryFile(path)
         file.load_data()
         calc_map = calc_beatmap(bytes=file.data)
