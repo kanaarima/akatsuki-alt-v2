@@ -6,6 +6,9 @@ logger = get_logger("api.database")
 conn = sqlite3.connect(
     config["database"], isolation_level=None, check_same_thread=False
 )
+conn_uri = sqlite3.connect(
+    config["database"], isolation_level=None, check_same_thread=False, uri=True
+)
 
 
 def create_beatmap_table(conn):
