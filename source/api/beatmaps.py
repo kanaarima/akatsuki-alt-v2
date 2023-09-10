@@ -5,6 +5,7 @@ from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
 from api.akatsuki import get_map_info
 from api.logging import get_logger
+from itertools import zip_longest
 import api.database as database
 from typing import List, Dict
 from datetime import datetime
@@ -369,27 +370,27 @@ def get_difficulties(beatmap: calc_beatmap) -> Dict[int, BeatmapDifficulty]:
     return res
 
 
-def get_by_leaderboard(leaderboards=[], mode=0):
+def get_by_leaderboard(leaderboards=[], columns="beatmap_id", mode=0):
     result = dict()
     queries = dict()
     queries[
         "ranked_bancho"
-    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status BETWEEN 1 AND 2 AND mode = ?"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status BETWEEN 1 AND 2 AND mode = ?"
     queries[
         "loved_bancho"
-    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status = 4 AND mode = ?"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status = 4 AND mode = ?"
     queries[
         "qualified_bancho"
-    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status = 3 AND mode = ?"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status = 3 AND mode = ?"
     queries[
         "unranked"
-    ] = "SELECT beatmap_id FROM beatmaps WHERE akatsuki_status < 1 AND mode = ?"
+    ] = f"SELECT {columns} FROM beatmaps WHERE akatsuki_status < 1 AND mode = ?"
     queries[
         "ranked_akatsuki"
-    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status != 1 AND akatsuki_status = 1 AND mode = ?"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status != 1 AND akatsuki_status = 1 AND mode = ?"
     queries[
         "loved_akatsuki"
-    ] = "SELECT beatmap_id FROM beatmaps WHERE bancho_status != 4 AND akatsuki_status = 4 AND mode = ?"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status != 4 AND akatsuki_status = 4 AND mode = ?"
 
     for query in queries:
         if leaderboards and query not in leaderboards:
@@ -399,6 +400,12 @@ def get_by_leaderboard(leaderboards=[], mode=0):
         check = cur.execute(queries[query], (mode,))
         for map in check.fetchall():
             result[query] += map
+        length = len(columns.split(","))
+        if length != 1:
+            old = result[query]
+            result[query] = [
+                item for item in zip_longest(*[iter(old)] * length, fillvalue="")
+            ]
         cur.close()
     return result
 
@@ -424,7 +431,6 @@ def get_by_range(entry, min, max, leaderboards=[], mode=0):
     queries[
         "loved_akatsuki"
     ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status != 4 AND akatsuki_status = 4 AND {entry} BETWEEN ? AND ? AND mode = ?"
-
     for query in queries:
         if leaderboards and query not in leaderboards:
             continue
@@ -435,3 +441,63 @@ def get_by_range(entry, min, max, leaderboards=[], mode=0):
             result[query] += map
         cur.close()
     return result
+
+
+def get_completion_cache(
+    mode=0,
+    leaderboards=["ranked_bancho", "ranked_akatsuki", "loved_bancho", "loved_akatsuki"],
+):
+    data = {
+        "Completion": get_by_leaderboard(
+            columns="beatmap_id,mapper,artist,tags",
+            leaderboards=leaderboards,
+            mode=mode,
+        )
+    }
+    for leaderboard in leaderboards:
+        data[leaderboard] = {"stars": {}, "ar": {}, "od": {}, "cs": {}}
+        for x in range(0, 11):
+            data[leaderboard]["stars"][x] = get_by_range(
+                "stars_nm", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+            data[leaderboard]["ar"][x] = get_by_range(
+                "ar", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+            data[leaderboard]["od"][x] = get_by_range(
+                "od", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+            data[leaderboard]["cs"][x] = get_by_range(
+                "cs", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+
+    def add(dict, key, value):
+        if key in dict:
+            dict[key].append(value)
+        else:
+            dict[key] = [value]
+
+    def sort_dict(dikt, key, reverse):
+        return dict(sorted(dikt.items(), key=key, reverse=reverse))
+
+    for key in data["Completion"]:
+        data[key]["mappers"] = {}
+        data[key]["artists"] = {}
+        data[key]["tags"] = {}
+        data[key]["total"] = list()
+        for beatmap_id, mapper, artist, tags in data["Completion"][key]:
+            data[key]["total"].append(beatmap_id)
+            for tag in tags.split(","):
+                add(data[key]["tags"], tag, beatmap_id)
+            add(data[key]["mappers"], mapper, beatmap_id)
+            add(data[key]["artists"], artist, beatmap_id)
+        data[key]["mappers"] = sort_dict(
+            data[key]["mappers"], lambda x: len(x[1]), reverse=True
+        )
+        data[key]["artists"] = sort_dict(
+            data[key]["artists"], lambda x: len(x[1]), reverse=True
+        )
+        data[key]["tags"] = sort_dict(
+            data[key]["tags"], lambda x: len(x[1]), reverse=True
+        )
+
+    return data
