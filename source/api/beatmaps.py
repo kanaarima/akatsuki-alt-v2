@@ -31,6 +31,11 @@ def _insert_beatmap(db, beatmap: Beatmap):
     query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags", "stars_nm", "stars_ez", "stars_hr", "stars_dt", "stars_dtez", "stars_dthr") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);"""
     query_nodiff = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?);"""
     last_checked = None
+    if "status" not in beatmap:
+        logger.warn(f"Dropping {beatmap['beatmap_id']}")
+        return
+    if "tags" not in beatmap:
+        beatmap["tags"] = ""
     if "last_checked" in beatmap["status"]:
         last_checked = beatmap["status"]["last_checked"]
     else:
