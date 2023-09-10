@@ -405,9 +405,9 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         await _link_warning(message)
         return
     args = _parse_args(split, nodefault=True)
-    type = "ranked"
+    type = "ranked_bancho"
     viewtype = "info"
-    valid_types = ["ranked", "ranked_akatsuki", "loved", "loved_akatsuki", "unranked"]
+    valid_types = ["ranked_bancho", "ranked_akatsuki", "loved_bancho", "loved_akatsuki"]
     include_all = "all" in args
     tags = None
     artists = None
@@ -430,15 +430,10 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     if "mappers" in args:
         mappers = args["mappers"].split(",")
     path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
-    path_cache = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
     if not exists(path):
         await message.reply("Your statistics aren't fetched yet. Please wait!")
         return
-    if not exists(path_cache):
-        await message.reply("Beatmaps cache is still being built. Please wait!")
-        return
-    cache = DataFile(path_cache)
-    cache.load_data()
+    cache = beatmaps.get_completion_cache(leaderboards=valid_types)
     file = DataFile(path)
     file.load_data()
     lists = {}
@@ -450,21 +445,21 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     if tags:
         filters += 1
         for key in valid_types:
-            for tag in cache.data[key]["tags"]:
+            for tag in cache[key]["tags"]:
                 if tag.lower() in tags:
-                    filtered.extend(cache.data[key]["tags"][tag])
+                    filtered.extend(cache[key]["tags"][tag])
     if artists:
         filters += 1
         for key in valid_types:
-            for artist in cache.data[key]["artists"]:
+            for artist in cache[key]["artists"]:
                 if artist.lower() in artists:
-                    filtered.extend(cache.data[key]["artists"][artist])
+                    filtered.extend(cache[key]["artists"][artist])
     if mappers:
         filters += 1
         for key in valid_types:
-            for mapper in cache.data[key]["mappers"]:
+            for mapper in cache[key]["mappers"]:
                 if mapper.lower() in mappers:
-                    filtered.extend(cache.data[key]["mappers"][mapper])
+                    filtered.extend(cache[key]["mappers"][mapper])
     if filters > 1:
         found = {}
         for id in filtered:
@@ -526,24 +521,22 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     elif viewtype == "info":
         lists["Completion"] = []
         for key in valid_types:
-            total = len(cache.data[key]["total"])
-            found = sum(1 for id in cache.data[key]["total"] if str(id) in scores)
+            total = len(cache[key]["total"])
+            found = sum(1 for id in cache[key]["total"] if str(id) in scores)
             lists["Completion"].append(f"{key}: {found}/{total}")
-        for key in cache.data[type].keys():
+        for key in cache[type].keys():
             if not is_key_allowed(key):
                 continue
             lists[key] = []
-            for list_key in cache.data[type][key].keys():
+            for list_key in cache[type][key].keys():
                 if tags and key == "tags" and list_key.lower() not in tags:
                     continue
                 if artists and key == "artists" and list_key.lower() not in artists:
                     continue
                 if mappers and key == "mappers" and list_key.lower() not in mappers:
                     continue
-                all = len(cache.data[type][key][list_key])
-                found = sum(
-                    1 for id in cache.data[type][key][list_key] if str(id) in scores
-                )
+                all = len(cache[type][key][list_key])
+                found = sum(1 for id in cache[type][key][list_key] if str(id) in scores)
                 if include_all or found == all:
                     lists[key].append(f"{list_key}: {found}/{all}")
             if not lists[key]:
@@ -555,13 +548,13 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         title = f"Clears {'missing' if missing else ''}"
         for key in valid_types:
             lists[key] = []
-            for id in cache.data[key]["total"]:
+            for id in cache[key]["total"]:
                 if not is_allowed(int(id)):
                     continue
                 if (str(id) not in scores and missing) or (
                     str(id) in scores and not missing
                 ):
-                    beatmap = cache.data["metadata"][str(id)]
+                    beatmap = beatmaps.load_beatmap(id)
                     lists[key].append(
                         f"{id} | {beatmap['artist']} - {beatmap['title']} [{beatmap['difficulty_name']}]"
                     )
