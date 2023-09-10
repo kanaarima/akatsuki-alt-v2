@@ -361,9 +361,10 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
     view = "all"
     if "view" in args:
         valid_types = [
-            "ranked",
+            "ranked_bancho",
             "ranked_akatsuki",
-            "loved",
+            "qualified_bancho",
+            "loved_bancho",
             "loved_akatsuki",
             "unranked",
         ]
@@ -379,16 +380,11 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
     file.load_data()
     scores = list(file.data[gamemode].values())
     if view != "all":
-        cachepath = f"{config['common']['data_directory']}/beatmap_cache.json.gz"
-        if not exists(cachepath):
-            await message.reply("Beatmaps cache is still being built. Please wait!")
-            return
-        cache = DataFile(cachepath)
-        cache.load_data()
+        cache = beatmaps.get_by_leaderboard(leaderboards=[view])[view]
         new_scores = [
             score
             for score in scores
-            if int(score["beatmap_id"]) in cache.data[view]["total"]
+            if int(score["beatmap_id"]) in cache
         ]
         scores = new_scores
     view = ScoresView(
