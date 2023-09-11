@@ -1,3 +1,5 @@
+from front.commands.user_commands import _parse_args
+import api.beatmaps as beatmaps
 from config import config
 import discord
 
@@ -7,7 +9,16 @@ PRIVILEDGES = {"dev": 0, "trusted": 1, "user": 2}
 async def insert_beatmap(full: str, split: list[str], message: discord.Message):
     if not await authorized(message, auth_level=1):
         return
-    await message.reply("pong")
+    args = _parse_args(split)
+    if "default" not in args or not args["default"].isnumeric():
+        await message.reply("specify a beatmap id.")
+        return
+    beatmap = beatmaps.load_beatmap(beatmap_id=int(args["default"]))
+    beatmaps.process_beatmap(beatmap)
+    if "status" not in beatmap:
+        await message.reply(f"map cant be found.")
+        return
+    await message.reply(f"Force updated {beatmap['beatmap_id']} ({beatmap['title']})")
 
 
 async def authorized(message: discord.Message, auth_level=0):
