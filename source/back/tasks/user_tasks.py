@@ -4,7 +4,7 @@ from api.utils import (
     datetime_to_str,
     str_to_datetime,
 )
-from api.beatmaps import save_beatmaps, save_beatmap, load_beatmap
+from api.beatmaps import save_beatmaps, save_beatmap, load_beatmap, get_by_leaderboard
 from api.utils import str_to_datetime, datetime_to_str
 from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
@@ -417,11 +417,8 @@ class CrawlLovedMaps(Task):
         last_run.load_data()
         last_run.data["last_run"] = datetime_to_str(datetime.datetime.now())
         last_run.save_data()
-        cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
-        cache.load_data()
-        loved_maps = (
-            cache.data["loved"]["total"] + cache.data["loved_akatsuki"]["total"]
-        )
+        leaderboards = get_by_leaderboard(["loved_bancho", "loved_akatsuki"])
+        loved_maps = leaderboards["loved_bancho"] + leaderboards["loved_akatsuki"]
         logger.info(f"Crawling {len(loved_maps)} maps")
         path = f"{config['common']['data_directory']}/users_statistics/scores/"
         userid = {

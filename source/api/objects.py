@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, Dict
+from typing import TypedDict, Optional, Dict, List
 
 
 class Player(TypedDict):
@@ -36,6 +36,7 @@ class BeatmapAttributes(TypedDict):
     circles: int
     sliders: int
     spinners: int
+    stars: dict[int, float]
     mode: int
 
 
@@ -60,19 +61,21 @@ class BeatmapDifficulty(TypedDict):
 class RankedStatus(TypedDict):
     bancho: int
     akatsuki: int
+    last_checked: str
 
 
 class Beatmap(TypedDict):
     beatmap_id: int
     beatmap_set_id: int
+    md5: str
     artist: str
     title: str
     difficulty_name: str
     mapper: str
+    tags: List[str]
     status: Optional[RankedStatus]
     attributes: Optional[BeatmapAttributes]
     difficulty: Optional[Dict[int, BeatmapDifficulty]]
-
 
 class Clan(TypedDict):
     clan_id: int

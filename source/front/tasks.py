@@ -146,7 +146,9 @@ async def handle_events():
                     ).send(content=message_event["message"], suppress_embeds=True)
             elif event["name"] == "TopPlayEvent":
                 top_play_event: api.events.TopPlayEvent = event
-                beatmap = beatmaps.load_beatmap(top_play_event["beatmap_id"])
+                beatmap = beatmaps.load_beatmap(
+                    top_play_event["beatmap_id"], difficulty_info=True
+                )
                 if not beatmap:  # should be unnecessary
                     continue
                 top_play_event["play_type"]

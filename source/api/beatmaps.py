@@ -5,6 +5,8 @@ from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
 from api.akatsuki import get_map_info
 from api.logging import get_logger
+from itertools import zip_longest
+import api.database as database
 from typing import List, Dict
 from datetime import datetime
 from config import config
@@ -25,41 +27,126 @@ cache_enabled = False
 logger = get_logger("api.beatmaps")
 
 
-def load_beatmap(beatmap_id, force_fetch=False) -> Beatmap:
-    global cache, cache_last_refresh
-    if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
-        "cache"
-    ]:
-        cache = {}
-        cache_last_refresh = datetime.now()
-    if beatmap_id in cache and cache_enabled:
-        return cache[beatmap_id]
-    path = f"{base_path}/{beatmap_id}.json.gz"
-    new = None
-    if not exists(path) or force_fetch:
+def _insert_beatmap(db, beatmap: Beatmap):
+    query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags", "stars_nm", "stars_ez", "stars_hr", "stars_dt", "stars_dtez", "stars_dthr") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);"""
+    query_nodiff = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?);"""
+    last_checked = None
+    if "status" not in beatmap:
+        logger.warn(f"Dropping {beatmap['beatmap_id']}")
+        return
+    if "tags" not in beatmap:
+        beatmap["tags"] = ""
+    if "last_checked" in beatmap["status"]:
+        last_checked = beatmap["status"]["last_checked"]
+    else:
+        last_checked = utils.datetime_to_str(datetime(year=1984, month=1, day=1))
+    args = [
+        beatmap["beatmap_id"],
+        beatmap["beatmap_set_id"],
+        beatmap["md5"],
+        beatmap["artist"],
+        beatmap["title"],
+        beatmap["difficulty_name"],
+        beatmap["mapper"],
+        beatmap["status"]["bancho"],
+        beatmap["status"]["akatsuki"],
+        last_checked,
+        utils.non_null(beatmap["attributes"]["ar"]),
+        utils.non_null(beatmap["attributes"]["od"]),
+        utils.non_null(beatmap["attributes"]["cs"]),
+        utils.non_null(beatmap["attributes"]["length"]),
+        utils.non_null(beatmap["attributes"]["bpm"]),
+        utils.non_null(beatmap["attributes"]["max_combo"]),
+        utils.non_null(beatmap["attributes"]["circles"]),
+        utils.non_null(beatmap["attributes"]["sliders"]),
+        utils.non_null(beatmap["attributes"]["spinners"]),
+        utils.non_null(beatmap["attributes"]["mode"]),
+        beatmap["tags"],
+    ]
+    if "stars" in beatmap["attributes"]:
+        args.append(beatmap["attributes"]["stars"][0])
+        args.append(beatmap["attributes"]["stars"][utils.Easy])
+        args.append(beatmap["attributes"]["stars"][utils.HardRock])
+        args.append(beatmap["attributes"]["stars"][utils.DoubleTime])
+        args.append(beatmap["attributes"]["stars"][utils.Easy + utils.DoubleTime])
+        args.append(beatmap["attributes"]["stars"][utils.HardRock + utils.DoubleTime])
+        db.execute(query, args)
+    else:
+        db.execute(query_nodiff, args)
+
+    db.close()
+    database.conn.commit()
+
+
+def _get_beatmap(map):
+    return Beatmap(
+        beatmap_id=map[0],
+        beatmap_set_id=map[1],
+        md5=map[2],
+        artist=map[3],
+        title=map[4],
+        difficulty_name=map[5],
+        mapper=map[6],
+        status=RankedStatus(bancho=map[7], akatsuki=map[8], last_checked=map[9]),
+        attributes=BeatmapAttributes(
+            ar=map[10],
+            od=map[11],
+            cs=map[12],
+            length=map[13],
+            bpm=map[14],
+            max_combo=map[15],
+            circles=map[16],
+            sliders=map[17],
+            spinners=map[18],
+            mode=map[19],
+            tags=map[20],
+            stars={
+                0: map[21],
+                2: map[22],
+                16: map[23],
+                64: map[24],
+                66: map[25],
+                80: map[26],
+            },
+        ),
+    )
+
+
+def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatmap:
+    if force_fetch:
         new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
         if len(new.keys()) == 1:
             return
-        if cache_enabled:
-            cache[beatmap_id] = new
-    file = DataFile(path)
-    file.load_data()
-    if new:
-        file.data = new
-    if (
-        "attributes" not in file.data
-        or "difficulty" not in file.data
-        and file.data["attributes"]["mode"] == 0
-    ):
-        file.data = {"beatmap_id": beatmap_id}
-        process_beatmap(file.data)
-    if cache_enabled:
-        cache[beatmap_id] = file.data
-    file.save_data()
-    return file.data
+        return new
+    cur = database.conn.cursor()
+    query = "SELECT * FROM beatmaps WHERE beatmap_id = ?"
+    check = cur.execute(query, (beatmap_id,))
+    map = check.fetchall()
+    cur.close()
+    if not map:
+        new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
+        _insert_beatmap(database.conn.cursor(), new)
+        return new
+    map = map[0]
+    beatmap = _get_beatmap(map)
+    if difficulty_info:
+        process_beatmap(beatmap, skip_metadata=True)
+    return beatmap
 
 
 def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
+    cur = database.conn.cursor()
+    query = "select exists(select 1 from beatmaps where beatmap_id=? collate nocase) limit 1"
+    check = cur.execute(query, (beatmap["beatmap_id"],)).fetchone()[0]
+    cur.close()
+    if check and not overwrite:
+        return
+    if not trustable:
+        process_beatmap(beatmap)
+    _insert_beatmap(database.conn.cursor(), beatmap)
+
+
+def save_beatmap_old(beatmap: Beatmap, overwrite=False, trustable=False):
     global cache, cache_last_refresh
     path = f"{base_path}/{beatmap['beatmap_id']}.json.gz"
     if exists(path) and not overwrite:
@@ -86,20 +173,48 @@ def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
         save_beatmap(beatmap, overwrite, trustable)
 
 
-def process_beatmap(beatmap: Beatmap) -> Beatmap:
+def process_beatmap(beatmap: Beatmap, skip_metadata=False) -> Beatmap:
     path = f"{base_path}/{beatmap['beatmap_id']}.osu.gz"
     if not exists(path):
         if not download_beatmap(beatmap["beatmap_id"]):
             logger.warn(f"Map {beatmap['beatmap_id']} can't be downloaded!")
-            fix_metadata(beatmap)
+            if not skip_metadata:
+                fix_metadata(beatmap)
             return beatmap
     try:
-        fix_metadata(beatmap)
         file = BinaryFile(path)
         file.load_data()
+        if not skip_metadata:
+            fix_metadata(beatmap)
+            beatmap_raw = file.data.decode("utf-8")
+            for line in beatmap_raw.split("\n"):
+                if line.startswith("Tags:"):
+                    tags = ",".join(line[5:].split())
+                    beatmap["tags"] = tags
+                    break
         calc_map = calc_beatmap(bytes=file.data)
         if "attributes" in beatmap and beatmap["attributes"]["mode"] == 0:
             beatmap["difficulty"] = get_difficulties(calc_map)
+            beatmap["attributes"]["stars"] = {}
+            beatmap["attributes"]["stars"][0] = beatmap["difficulty"]["0"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][2] = beatmap["difficulty"]["2"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][16] = beatmap["difficulty"]["16"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][64] = beatmap["difficulty"]["64"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][66] = beatmap["difficulty"]["66"][
+                "star_rating"
+            ]
+            beatmap["attributes"]["stars"][80] = beatmap["difficulty"]["80"][
+                "star_rating"
+            ]
+
     except Exception as e:
         logger.error("Error occurred while processing map!", exc_info=True)
     return beatmap
@@ -161,9 +276,10 @@ def fix_metadata(beatmap: Beatmap):
     beatmap["title"] = b._beatmapset.title
     beatmap["beatmap_set_id"] = b._beatmapset.id
     beatmap["beatmap_id"] = b.id  # prolly not needed
+    beatmap["md5"] = b.checksum
     beatmap["difficulty_name"] = b.version
     beatmap["mapper"] = b._beatmapset.creator
-
+    beatmap["tags"] = ""
     if "attributes" in beatmap:
         beatmap["attributes"]["length"] = b.hit_length
     else:
@@ -257,3 +373,136 @@ def get_difficulties(beatmap: calc_beatmap) -> Dict[int, BeatmapDifficulty]:
             res[str(mods)] = get_difficulty(beatmap, mods)
             res[str(mods + utils.Relax)] = get_difficulty(beatmap, mods + utils.Relax)
     return res
+
+
+def get_by_leaderboard(leaderboards=[], columns="beatmap_id", mode=0):
+    result = dict()
+    queries = dict()
+    queries[
+        "ranked_bancho"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status BETWEEN 1 AND 2 AND mode = ?"
+    queries[
+        "loved_bancho"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status = 4 AND mode = ?"
+    queries[
+        "qualified_bancho"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status = 3 AND mode = ?"
+    queries[
+        "unranked"
+    ] = f"SELECT {columns} FROM beatmaps WHERE akatsuki_status < 1 AND mode = ?"
+    queries[
+        "ranked_akatsuki"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status != 1 AND akatsuki_status = 1 AND mode = ?"
+    queries[
+        "loved_akatsuki"
+    ] = f"SELECT {columns} FROM beatmaps WHERE bancho_status != 4 AND akatsuki_status = 4 AND mode = ?"
+
+    for query in queries:
+        if leaderboards and query not in leaderboards:
+            continue
+        result[query] = list()
+        cur = database.conn.cursor()
+        check = cur.execute(queries[query], (mode,))
+        for map in check.fetchall():
+            result[query] += map
+        length = len(columns.split(","))
+        if length != 1:
+            old = result[query]
+            result[query] = [
+                item for item in zip_longest(*[iter(old)] * length, fillvalue="")
+            ]
+        cur.close()
+    return result
+
+
+def get_by_range(entry, min, max, leaderboards=[], mode=0):
+    result = dict()
+    queries = dict()
+    queries[
+        "ranked_bancho"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status BETWEEN 1 AND 2 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "loved_bancho"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status = 4 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "qualified_bancho"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status = 3 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "unranked"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE akatsuki_status < 1 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "ranked_akatsuki"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status != 1 AND akatsuki_status = 1 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    queries[
+        "loved_akatsuki"
+    ] = f"SELECT beatmap_id FROM beatmaps WHERE bancho_status != 4 AND akatsuki_status = 4 AND {entry} BETWEEN ? AND ? AND mode = ?"
+    for query in queries:
+        if leaderboards and query not in leaderboards:
+            continue
+        result[query] = list()
+        cur = database.conn.cursor()
+        check = cur.execute(queries[query], [min, max, mode])
+        for map in check.fetchall():
+            result[query] += map
+        cur.close()
+    return result
+
+
+def get_completion_cache(
+    mode=0,
+    leaderboards=["ranked_bancho", "ranked_akatsuki", "loved_bancho", "loved_akatsuki"],
+):
+    data = {
+        "Completion": get_by_leaderboard(
+            columns="beatmap_id,mapper,artist,tags",
+            leaderboards=leaderboards,
+            mode=mode,
+        )
+    }
+    for leaderboard in leaderboards:
+        data[leaderboard] = {"stars": {}, "ar": {}, "od": {}, "cs": {}}
+        for x in range(0, 11):
+            data[leaderboard]["stars"][x] = get_by_range(
+                "stars_nm", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+            data[leaderboard]["ar"][x] = get_by_range(
+                "ar", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+            data[leaderboard]["od"][x] = get_by_range(
+                "od", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+            data[leaderboard]["cs"][x] = get_by_range(
+                "cs", x, x + 0.9, [leaderboard], mode=mode
+            )[leaderboard]
+
+    def add(dict, key, value):
+        if key in dict:
+            dict[key].append(value)
+        else:
+            dict[key] = [value]
+
+    def sort_dict(dikt, key, reverse):
+        return dict(sorted(dikt.items(), key=key, reverse=reverse))
+
+    for key in data["Completion"]:
+        data[key]["mappers"] = {}
+        data[key]["artists"] = {}
+        data[key]["tags"] = {}
+        data[key]["total"] = list()
+        for beatmap_id, mapper, artist, tags in data["Completion"][key]:
+            data[key]["total"].append(beatmap_id)
+            for tag in tags.split(","):
+                add(data[key]["tags"], tag, beatmap_id)
+            add(data[key]["mappers"], mapper, beatmap_id)
+            add(data[key]["artists"], artist, beatmap_id)
+        data[key]["mappers"] = sort_dict(
+            data[key]["mappers"], lambda x: len(x[1]), reverse=True
+        )
+        data[key]["artists"] = sort_dict(
+            data[key]["artists"], lambda x: len(x[1]), reverse=True
+        )
+        data[key]["tags"] = sort_dict(
+            data[key]["tags"], lambda x: len(x[1]), reverse=True
+        )
+
+    return data
