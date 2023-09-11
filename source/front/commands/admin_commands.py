@@ -24,7 +24,7 @@ async def insert_beatmap(full: str, split: list[str], message: discord.Message):
 
 
 async def query(full: str, split: list[str], message: discord.Message):
-    if not await authorized(message, auth_level=1):
+    if not await authorized(message, auth_level=0):
         return
     query = " ".join(split)
     cur = database.conn_uri.cursor()
