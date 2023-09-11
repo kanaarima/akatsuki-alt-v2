@@ -1,11 +1,12 @@
 from api.utils import str_to_datetime, datetime_to_str, yesterday, other_yesterday
 from front.leaderboards import clan_leaderboards, user_leaderboards
+from front.views import get_score_embed, get_mapset_embed
 from api.objects import gamemodes_full
-from front.views import get_score_embed
 from api.files import DataFile
 from api.logging import get_logger
 import api.akatsuki as akatsuki
 import api.beatmaps as beatmaps
+import api.database as database
 from datetime import datetime
 from discord.ext import tasks
 from config import config
@@ -16,6 +17,7 @@ import requests
 import discord
 import asyncio
 import glob
+import time
 import io
 
 logger = get_logger("discord.bot")
@@ -208,6 +210,66 @@ async def cleanup_render_channel():
             continue
 
 
+@tasks.loop(minutes=120)
+async def post_beatmaps():
+    forum: discord.ForumChannel = bot.client.get_channel(
+        config["discord"]["beatmap_forum"]
+    )
+    ranked = None
+    loved = None
+    wasloved = None
+    gamemodes = {}
+    for tag in forum.available_tags:
+        if tag.name.lower() == "ranked":
+            ranked = tag
+        elif tag.name.lower() == "loved":
+            loved = tag
+        elif "was" in tag.name.lower():
+            wasloved = tag
+        elif tag.name.lower() == "standard":
+            gamemodes[0] = tag
+        elif tag.name.lower() == "taiko":
+            gamemodes[1] = tag
+        elif tag.name.lower() == "catch the beat":
+            gamemodes[2] = tag
+        elif tag.name.lower() == "mania":
+            gamemodes[3] = tag
+
+    cur = database.conn.cursor()
+    print("fetching")
+    loved_to_ranked_sets = cur.execute(
+        "SELECT DISTINCT	beatmap_set_id FROM beatmaps WHERE bancho_status = 4 and akatsuki_status = 1"
+    ).fetchall()
+    custom_sets = cur.execute(
+        "SELECT DISTINCT	beatmap_set_id FROM beatmaps WHERE bancho_status BETWEEN -2 and 0 and akatsuki_status BETWEEN 1 and 4"
+    ).fetchall()
+    print(f"found {len(loved_to_ranked_sets)}")
+    for _setid in custom_sets + loved_to_ranked_sets:
+        try:
+            setid = _setid[0]
+            query = "SELECT beatmap_set_id FROM beatmaps_posts WHERE beatmap_set_id = ?"
+            check = cur.execute(query, (setid,)).fetchall()
+            if check:  # TODO: Update post if change
+                print(f"skipping {setid}")
+                continue
+            embed, title, modes, status = get_mapset_embed(setid)
+            tags = [wasloved]
+            if _setid in custom_sets:
+                tags = [ranked] if status == 1 else [loved]
+            for mode in modes:
+                tags.append(gamemodes[mode])
+            message = await forum.create_thread(
+                name=title[:95], embed=embed, applied_tags=tags
+            )
+            query = "INSERT INTO beatmaps_posts VALUES (?, ?, ?)"
+            cur.execute(query, (setid, message.thread.id, int(time.time())))
+            database.conn.commit()
+            await asyncio.sleep(3)
+        except:
+            logger.error(f"Can't post {_setid}!", exc_info=True)
+            await asyncio.sleep(3)
+
+
 def get_replay(scoreid):
     req = requests.get(
         f"https://akatsuki.gg/web/replays/{scoreid}", allow_redirects=True
@@ -222,3 +284,4 @@ def init_tasks():
     refresh_status.start()
     handle_events.start()
     cleanup_render_channel.start()
+    post_beatmaps.start()

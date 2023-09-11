@@ -50,6 +50,18 @@ def create_beatmap_table(conn):
     conn.commit()
 
 
+def create_map_post_table(conn):
+    c = conn.cursor()
+    query = """CREATE TABLE "beatmaps_posts" (
+	"beatmap_set_id"	INTEGER NOT NULL UNIQUE,
+	"message_id"	INTEGER NOT NULL UNIQUE,
+	"last_updated"	INTEGER NOT NULL,
+	PRIMARY KEY("beatmap_set_id")
+);"""
+    c.execute(query)
+    conn.commit()
+
+
 def create_tables(conn):
     c = conn.cursor()
     c.execute(
@@ -59,6 +71,11 @@ def create_tables(conn):
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.commit()
         create_beatmap_table(conn)
+    c.execute(
+        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='beatmaps_posts' """
+    )
+    if c.fetchone()[0] != 1:
+        create_map_post_table(conn)
 
 
 create_tables(conn)

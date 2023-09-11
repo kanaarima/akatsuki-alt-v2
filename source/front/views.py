@@ -3,6 +3,8 @@ from api.objects import Player, Score, Beatmap
 from api.beatmaps import load_beatmap
 from datetime import datetime
 from typing import List, Dict
+
+import api.database as database
 import discord
 
 
@@ -306,3 +308,39 @@ def get_score_embed(
     text = f"➤**{rank} {score['combo']}{combo} {score['accuracy']:.2f}% [{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}] {score['pp']}pp {score['score']:,}**"
     embed.description = text
     return embed
+
+
+def get_mapset_embed(mapsetid):
+    beatmap_ids = database.conn.execute(
+        "SELECT beatmap_id FROM beatmaps WHERE beatmap_set_id = ?", (mapsetid,)
+    ).fetchall()
+    beatmaps = list()
+    min_sr = 1000
+    max_sr = 0
+    modes = {}
+    for id in beatmap_ids:
+        beatmap = load_beatmap(id[0])
+        if not beatmap:
+            continue
+        min_sr = min(min_sr, beatmap["attributes"]["stars"][0])
+        max_sr = max(max_sr, beatmap["attributes"]["stars"][0])
+        modes[beatmap["attributes"]["mode"]] = 1
+        beatmaps.append(beatmap)
+    beatmaps.sort(key=lambda beatmap: beatmap["attributes"]["stars"][0])
+    text = "\n".join(
+        [
+            f"{beatmap['attributes']['stars'][0]:.2f}* {beatmap['difficulty_name']}"
+            for beatmap in beatmaps
+        ]
+    )
+    beatmap = beatmaps[0]
+    title = f"{beatmap['artist']} - {beatmap['title']} ({min_sr:.2f}-{max_sr:.2f}*)"
+    embed = discord.Embed(title=title, description=text[:1000])
+    embed.set_image(
+        url=f"https://assets.ppy.sh/beatmaps/{mapsetid}/covers/cover@2x.jpg"
+    )
+    embed.add_field(
+        name="Downloads",
+        value=f"[Chimu](https://api.chimu.moe/v1/download/{mapsetid}?n=1)\n[Bancho](https://osu.ppy.sh/beatmapsets/{mapsetid})\n[Osu! Direct](https://kanaarima.github.io/osu/osudl-set.html?beatmap={mapsetid})",
+    )
+    return embed, title, list(modes.keys()), beatmaps[-1]['status']['akatsuki']
