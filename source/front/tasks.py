@@ -281,4 +281,4 @@ def init_tasks():
     refresh_status.start()
     handle_events.start()
     cleanup_render_channel.start()
-    post_beatmaps.start()
+    #post_beatmaps.start() # ty discord
