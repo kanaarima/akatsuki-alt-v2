@@ -71,7 +71,8 @@ def insert_beatmap(db, beatmap: Beatmap):
 
 
 def main():
-    for file in glob.glob(f"{base_path}/beatmaps/*.json.gz"):
+    for file in glob.glob(f"{base_path}/*.json.gz"):
+        print(file)
         beatmap = DataFile(file)
         beatmap.load_data()
         beatmap = beatmap.data
