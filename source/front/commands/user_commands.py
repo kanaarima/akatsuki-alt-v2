@@ -381,11 +381,7 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
     scores = list(file.data[gamemode].values())
     if view != "all":
         cache = beatmaps.get_by_leaderboard(leaderboards=[view])[view]
-        new_scores = [
-            score
-            for score in scores
-            if int(score["beatmap_id"]) in cache
-        ]
+        new_scores = [score for score in scores if int(score["beatmap_id"]) in cache]
         scores = new_scores
     view = ScoresView(
         f"{player['name']}'s {gamemodes_full[gamemode]} scores ({len(scores):,})",
@@ -519,7 +515,9 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         for key in valid_types:
             total = len(cache[key]["total"])
             found = sum(1 for id in cache[key]["total"] if str(id) in scores)
-            lists["Completion"].append(f"{key}: {found}/{total} ({(found/total)*100:.2f}%)")
+            lists["Completion"].append(
+                f"{key}: {found}/{total} ({(found/total)*100:.2f}%)"
+            )
         for key in cache[type].keys():
             if not is_key_allowed(key):
                 continue
