@@ -6,7 +6,6 @@ import discord
 import shlex
 
 logger = get_logger("discord.bot")
-PRIVILEDGES = {"dev": 0, "trusted": 1, "user": 2}
 
 
 async def handle_command(message: discord.Message):
@@ -25,25 +24,6 @@ async def handle_command(message: discord.Message):
 
 async def ping(full: str, split: list[str], message: discord.Message):
     await message.channel.send(content="pong!")
-
-
-async def authorized(message: discord.Message, auth_level=0):
-    if check_priviledges(message.author.roles) > auth_level:
-        await message.reply("You don't have permissions to do that.")
-        return False
-    return True
-
-
-def check_priviledges(roles: list[discord.Role]):
-    priviledge = 4
-    for role in roles:
-        if role.id in config["discord"]["dev_roles"]:
-            priviledge = 0
-        elif role.id in config["discord"]["trusted_roles"]:
-            priviledge = min(priviledge, 1)
-        elif role.id in config["discord"]["members"]:
-            priviledge = min(priviledge, 2)
-    return priviledge
 
 
 commands = {
