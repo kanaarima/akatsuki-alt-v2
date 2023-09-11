@@ -519,7 +519,7 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
         for key in valid_types:
             total = len(cache[key]["total"])
             found = sum(1 for id in cache[key]["total"] if str(id) in scores)
-            lists["Completion"].append(f"{key}: {found}/{total} ({found/total:.2f}%)")
+            lists["Completion"].append(f"{key}: {found}/{total} ({(found/total)*100:.2f}%)")
         for key in cache[type].keys():
             if not is_key_allowed(key):
                 continue
