@@ -10,11 +10,13 @@ from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
 from api import objects, akatsuki
 from api.logging import get_logger
+import api.database as database
 import api.events as events
 from config import config
 from typing import List
 import datetime
 import glob
+import time
 
 logger = get_logger("tasks.users")
 
@@ -438,4 +440,76 @@ class CrawlLovedMaps(Task):
                     logger.info(f"Found score on {loved_map} by {player['id']}")
                     scorefile.data["std_rx"][str(score["beatmap_id"])] = score
                     scorefile.save_data()
+        return self._finish()
+
+
+class CrawlMaps(Task):
+    def __init__(self) -> None:
+        super().__init__(asynchronous=True)
+
+    def can_run(self) -> bool:
+        return True
+
+    def run(self):
+        cur = database.conn.cursor()
+        beatmap_ids = cur.execute(
+            "SELECT beatmap_id FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND MODE = 0"
+        ).fetchall()
+        for beatmap_id in beatmap_ids:
+            beatmap_id = beatmap_id[0]
+            if self.suspended:
+                return self._finish()
+            check = cur.execute(
+                "SELECT beatmap_id FROM beatmaps_leaderboard WHERE beatmap_id = ?",
+                (beatmap_id,),
+            ).fetchall()
+            if check:  # TODO: check later
+                continue
+            logger.info(f"crawling {beatmap_id}")
+            leaderboard = akatsuki.get_map_leaderboard(
+                beatmap_id, gamemode=objects.gamemodes["std_rx"]
+            )
+            if len(leaderboard) > 2:  # workaround for akatsuki weirdness
+                if leaderboard[0][1]["pp"] == leaderboard[1][1]["pp"]:
+                    new = list()
+                    pp = leaderboard[0][1]["pp"]
+                    for player, score in leaderboard:
+                        if score["pp"] != pp:
+                            break
+                        score["date"]
+                        new.append((player, score))
+                    new.sort(key=lambda x: x[1]["date"])
+                    for player, score in leaderboard:
+                        if score["pp"] == pp:
+                            continue
+                        new.append((player, score))
+                    leaderboard = new
+            if not leaderboard:
+                logger.info(f"Empty leaderboard: {beatmap_id}")
+                continue
+            i = 0
+            for player, score in leaderboard[:50]:
+                i += 1
+                query = """INSERT OR REPLACE into "main"."beatmaps_leaderboard"("beatmap_id", "mode", "relax", "last_update", "position", "user_id", "accuracy", "mods", "rank", "count_300", "count_100", "count_50", "count_miss", "date") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); """
+                cur.execute(
+                    query,
+                    (
+                        beatmap_id,
+                        0,
+                        1,
+                        int(time.time()),
+                        i,
+                        player["id"],
+                        score["accuracy"],
+                        score["mods"],
+                        score["rank"],
+                        score["count_300"],
+                        score["count_100"],
+                        score["count_50"],
+                        score["count_miss"],
+                        score["date"],
+                    ),
+                )
+                database.conn.commit()
+            time.sleep(4)
         return self._finish()

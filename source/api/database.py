@@ -62,6 +62,29 @@ def create_map_post_table(conn):
     conn.commit()
 
 
+def create_map_leaderboard_table(conn):
+    c = conn.cursor()
+    query = """CREATE TABLE "beatmaps_leaderboard" (
+	"beatmap_id"	INTEGER NOT NULL,
+	"mode"	INTEGER NOT NULL,
+    "relax"	INTEGER NOT NULL,
+    "last_update" INTEGER NOT NULL,
+	"position"	INTEGER NOT NULL,
+	"user_id"	INTEGER NOT NULL,
+	"accuracy"	REAL NOT NULL,
+	"mods"	INTEGER NOT NULL,
+	"rank"	TEXT NOT NULL,
+	"count_300"	INTEGER NOT NULL,
+	"count_100"	INTEGER NOT NULL,
+	"count_50"	INTEGER NOT NULL,
+	"count_miss"	INTEGER NOT NULL,
+    "date"		INTEGER NOT NULL,
+    PRIMARY KEY("beatmap_id", "mode", "relax", "position")
+);"""
+    c.execute(query)
+    conn.commit()
+
+
 def create_tables(conn):
     c = conn.cursor()
     c.execute(
@@ -76,6 +99,11 @@ def create_tables(conn):
     )
     if c.fetchone()[0] != 1:
         create_map_post_table(conn)
+    c.execute(
+        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='beatmaps_leaderboard' """
+    )
+    if c.fetchone()[0] != 1:
+        create_map_leaderboard_table(conn)
 
 
 create_tables(conn)
