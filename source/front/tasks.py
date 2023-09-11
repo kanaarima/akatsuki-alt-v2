@@ -236,21 +236,18 @@ async def post_beatmaps():
             gamemodes[3] = tag
 
     cur = database.conn.cursor()
-    print("fetching")
     loved_to_ranked_sets = cur.execute(
         "SELECT DISTINCT	beatmap_set_id FROM beatmaps WHERE bancho_status = 4 and akatsuki_status = 1"
     ).fetchall()
     custom_sets = cur.execute(
         "SELECT DISTINCT	beatmap_set_id FROM beatmaps WHERE bancho_status BETWEEN -2 and 0 and akatsuki_status BETWEEN 1 and 4"
     ).fetchall()
-    print(f"found {len(loved_to_ranked_sets)}")
     for _setid in custom_sets + loved_to_ranked_sets:
         try:
             setid = _setid[0]
             query = "SELECT beatmap_set_id FROM beatmaps_posts WHERE beatmap_set_id = ?"
             check = cur.execute(query, (setid,)).fetchall()
             if check:  # TODO: Update post if change
-                print(f"skipping {setid}")
                 continue
             embed, title, modes, status = get_mapset_embed(setid)
             tags = [wasloved]
@@ -264,10 +261,10 @@ async def post_beatmaps():
             query = "INSERT INTO beatmaps_posts VALUES (?, ?, ?)"
             cur.execute(query, (setid, message.thread.id, int(time.time())))
             database.conn.commit()
-            await asyncio.sleep(3)
+            await asyncio.sleep(6)
         except:
             logger.error(f"Can't post {_setid}!", exc_info=True)
-            await asyncio.sleep(3)
+            await asyncio.sleep(6)
 
 
 def get_replay(scoreid):
