@@ -38,4 +38,5 @@ commands = {
     "showcompletion": user_commands.show_scores_completion,
     "checkbeatmaptype": debug_commands.check_beatmap_type,
     "insertbeatmap": admin_commands.insert_beatmap,
+    "query": admin_commands.query,
 }

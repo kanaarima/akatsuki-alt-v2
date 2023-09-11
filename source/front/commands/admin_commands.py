@@ -1,7 +1,9 @@
 from front.commands.user_commands import _parse_args
 import api.beatmaps as beatmaps
+import api.database as database
 from config import config
 import discord
+import io
 
 PRIVILEDGES = {"dev": 0, "trusted": 1, "user": 2}
 
@@ -19,6 +21,19 @@ async def insert_beatmap(full: str, split: list[str], message: discord.Message):
         await message.reply(f"map cant be found.")
         return
     await message.reply(f"Force updated {beatmap['beatmap_id']} ({beatmap['title']})")
+
+
+async def query(full: str, split: list[str], message: discord.Message):
+    if not await authorized(message, auth_level=1):
+        return
+    query = " ".join(split)
+    cur = database.conn_uri.cursor()
+    check = cur.execute(query)
+    string = "\n".join([repr(item) for item in check.fetchall()])
+    cur.close()
+    await message.reply(
+        file=discord.File(io.BytesIO(bytes(string, "utf-8")), filename="query.txt")
+    )
 
 
 async def authorized(message: discord.Message, auth_level=0):
