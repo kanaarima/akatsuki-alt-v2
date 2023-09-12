@@ -41,4 +41,5 @@ commands = {
     "query": admin_commands.query,
     "show1slb": user_commands.show_1s_leaderboard,
     "showsnipes": admin_commands.show_snipes,
+    "getfile": user_commands.get_file,
 }

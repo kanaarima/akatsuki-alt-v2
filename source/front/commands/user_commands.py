@@ -577,6 +577,47 @@ async def show_1s_leaderboard(full: str, split: list[str], message: discord.Mess
     await message.reply(content=str)
 
 
+async def get_file(full: str, split: list[str], message: discord.Message):
+    args = _parse_args(split)
+    if len(args) == 0 or "default" not in args:
+        await message.reply(f"Provide a file type!")
+        return
+    if args["default"] == "beatmaps":
+        type = "akatsuki"
+        if "type" in args:
+            if args["type"] != "akatsuki_ranked" and args["type"] != "akatsuki_loved":
+                await message.reply(
+                    f"Type needs to be akatsuki/akatsuki_ranked/akatsuki_loved!"
+                )
+                return
+            type = args["type"]
+        mode = 0
+        if "mode" in args:
+            if args["mode"] not in gamemodes:
+                await _wrong_gamemode_warning(message)
+                return
+            mode = gamemodes[args["mode"]]["mode"]
+        csv = ""
+        cur = database.conn_uri.cursor()
+        for field in cur.execute("PRAGMA table_info(beatmaps)").fetchall():
+            csv += field[1] + ","
+        csv = csv[:-1] + "\n"
+        query = "SELECT * FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0 and mode = ?"
+        if type == "akatsuki_loved":
+            query = "SELECT * FROM beatmaps WHERE akatsuki_status = 4 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
+        elif type == "akatsuki_ranked":
+            query = "SELECT * FROM beatmaps WHERE akatsuki_status = 1 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
+        for values in cur.execute(query, (mode,)):
+            csv += ",".join([str(value) for value in values]) + "\n"
+        await message.reply(
+            file=discord.File(
+                fp=io.BytesIO(bytes(csv, "utf-8")), filename="beatmaps.txt"
+            )
+        )
+    else:
+        await message.reply("Valid file types: beatmaps")
+
+
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     file_links = DataFile(
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
