@@ -39,4 +39,5 @@ commands = {
     "checkbeatmaptype": debug_commands.check_beatmap_type,
     "insertbeatmap": admin_commands.insert_beatmap,
     "query": admin_commands.query,
+    "show1slb": user_commands.show_1s_leaderboard,
 }

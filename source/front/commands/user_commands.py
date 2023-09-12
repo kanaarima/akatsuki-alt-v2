@@ -11,6 +11,7 @@ from api.files import DataFile, exists
 from typing import List, Tuple, Dict
 import api.beatmaps as beatmaps
 import api.akatsuki as akatsuki
+import api.database as database
 from config import config
 from api.objects import *
 import datetime
@@ -554,6 +555,26 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
                     )
     view = StringListView(title, lists, size=15)
     await view.reply(message)
+
+
+async def show_1s_leaderboard(full: str, split: list[str], message: discord.Message):
+    positions = database.conn.execute(
+        "SELECT user_id FROM beatmaps_leaderboard WHERE position = 1"
+    ).fetchall()
+    user_ids = {}
+    for user_id in positions:
+        user_id = user_id[0]
+        if user_id in user_ids:
+            user_ids[user_id] += 1
+        else:
+            user_ids[user_id] = 1
+    user_ids = sorted(user_ids.items(), key=lambda x: x[1], reverse=True)[:10]
+    str = "```"
+    for user_id in user_ids:
+        player = akatsuki.get_user_info(user_id[0])
+        str += f"{player['name']}: {user_id[1]}\n"
+    str += "```"
+    await message.reply(content=str)
 
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
