@@ -585,7 +585,11 @@ async def get_file(full: str, split: list[str], message: discord.Message):
     if args["default"] == "beatmaps":
         type = "akatsuki"
         if "type" in args:
-            if args["type"] != "akatsuki_ranked" and args["type"] != "akatsuki_loved":
+            if (
+                args["type"] != "akatsuki_ranked"
+                and args["type"] != "akatsuki_loved"
+                and args["type"] != "akatsuki"
+            ):
                 await message.reply(
                     f"Type needs to be akatsuki/akatsuki_ranked/akatsuki_loved!"
                 )
@@ -612,6 +616,40 @@ async def get_file(full: str, split: list[str], message: discord.Message):
         await message.reply(
             file=discord.File(
                 fp=io.BytesIO(bytes(csv, "utf-8")), filename="beatmaps.txt"
+            )
+        )
+    elif args["default"] == "beatmapsets":
+        type = "akatsuki"
+        if "type" in args:
+            if (
+                args["type"] != "akatsuki_ranked"
+                and args["type"] != "akatsuki_loved"
+                and args["type"] != "akatsuki"
+            ):
+                await message.reply(
+                    f"Type needs to be akatsuki/akatsuki_ranked/akatsuki_loved!"
+                )
+                return
+            type = args["type"]
+        mode = 0
+        if "mode" in args:
+            if args["mode"] not in gamemodes:
+                await _wrong_gamemode_warning(message)
+                return
+            mode = gamemodes[args["mode"]]["mode"]
+        csv = "beatmap_set_id,artist,title"
+        cur = database.conn_uri.cursor()
+        csv = csv[:-1] + "\n"
+        query = "SELECT DINSTICT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0 and mode = ?"
+        if type == "akatsuki_loved":
+            query = "SELECT DINSTICT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status = 4 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
+        elif type == "akatsuki_ranked":
+            query = "SELECT DINSTICT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status = 1 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
+        for values in cur.execute(query, (mode,)):
+            csv += ",".join([str(value) for value in values]) + "\n"
+        await message.reply(
+            file=discord.File(
+                fp=io.BytesIO(bytes(csv, "utf-8")), filename="beatmapsets.txt"
             )
         )
     else:
