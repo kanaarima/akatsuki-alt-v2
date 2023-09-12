@@ -6,6 +6,7 @@ from api.utils import (
     datetime_to_str,
 )
 from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed
+from front.commands.help import help
 from api.collections import generate_collection
 from api.files import DataFile, exists
 from typing import List, Tuple, Dict
@@ -401,7 +402,7 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
     type = "ranked_bancho"
     viewtype = "info"
     valid_types = ["ranked_bancho", "ranked_akatsuki", "loved_bancho", "loved_akatsuki"]
-    include_all = "all" in args
+    include_all = "completed" not in args
     tags = None
     artists = None
     mappers = None
@@ -655,6 +656,8 @@ async def get_file(full: str, split: list[str], message: discord.Message):
     else:
         await message.reply("Valid file types: beatmaps, beatmapsets")
 
+async def get_help(full: str, split: list[str], message: discord.Message):
+    await message.reply(f"```{help}```")
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     file_links = DataFile(
