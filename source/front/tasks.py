@@ -126,10 +126,10 @@ async def refresh_status():
             maps_downloaded = len(glob.glob(f"{maps_path}/*.osu.gz"))
             count_akatsuki = database.conn.execute(
                 "SELECT count(beatmap_id) FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0"
-            ).fetchall()[0]
+            ).fetchall()[0][0]
             count_bancho = database.conn.execute(
                 "SELECT count(beatmap_id) FROM beatmaps WHERE bancho_status BETWEEN 1 AND 4"
-            ).fetchall()[0]
+            ).fetchall()[0][0]
 
             update_embed.add_field(
                 name="Maps info",
