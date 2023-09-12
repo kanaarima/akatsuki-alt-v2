@@ -640,11 +640,11 @@ async def get_file(full: str, split: list[str], message: discord.Message):
         csv = "beatmap_set_id,artist,title"
         cur = database.conn_uri.cursor()
         csv = csv[:-1] + "\n"
-        query = "SELECT DINSTICT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0 and mode = ?"
+        query = "SELECT DISTINCT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0 and mode = ?"
         if type == "akatsuki_loved":
-            query = "SELECT DINSTICT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status = 4 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
+            query = "SELECT DISTINCT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status = 4 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
         elif type == "akatsuki_ranked":
-            query = "SELECT DINSTICT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status = 1 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
+            query = "SELECT DISTINCT beatmap_set_id, title, artist FROM beatmaps WHERE akatsuki_status = 1 AND bancho_status BETWEEN -2 AND 0 AND mode = ?"
         for values in cur.execute(query, (mode,)):
             csv += ",".join([str(value) for value in values]) + "\n"
         await message.reply(
@@ -653,7 +653,7 @@ async def get_file(full: str, split: list[str], message: discord.Message):
             )
         )
     else:
-        await message.reply("Valid file types: beatmaps")
+        await message.reply("Valid file types: beatmaps, beatmapsets")
 
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
