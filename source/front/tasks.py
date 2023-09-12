@@ -123,11 +123,17 @@ async def refresh_status():
                 .split()[0]
                 .decode("utf-8")
             )
-            maps_processed = len(glob.glob(f"{maps_path}/*.json.gz"))
             maps_downloaded = len(glob.glob(f"{maps_path}/*.osu.gz"))
+            count_akatsuki = database.conn.execute(
+                "SELECT count(beatmap_id) FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0"
+            ).fetchall()[0]
+            count_bancho = database.conn.execute(
+                "SELECT count(beatmap_id) FROM beatmaps WHERE bancho_status BETWEEN 1 AND 4"
+            ).fetchall()[0]
+
             update_embed.add_field(
                 name="Maps info",
-                value=f"Processed: {maps_processed}\nDownloaded: {maps_downloaded}\nSize: {size}",
+                value=f"Bancho: {count_bancho}\nAkatsuki: {count_akatsuki}\nDownloaded: {maps_downloaded}\nSize: {size}",
             )
             update_embed.set_footer(text=f"Last updated: {datetime.now()}")
             await msg.edit(content="", embed=update_embed)
