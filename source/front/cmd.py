@@ -40,4 +40,5 @@ commands = {
     "insertbeatmap": admin_commands.insert_beatmap,
     "query": admin_commands.query,
     "show1slb": user_commands.show_1s_leaderboard,
+    "showsnipes": admin_commands.show_snipes,
 }
