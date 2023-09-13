@@ -130,11 +130,14 @@ async def refresh_status():
             count_bancho = database.conn.execute(
                 "SELECT count(beatmap_id) FROM beatmaps WHERE bancho_status BETWEEN 1 AND 4"
             ).fetchall()[0][0]
-
+            count_requests = database.conn.execute(
+                "SELECT requests FROM metrics WHERE endpoint = global"
+            ).fetchall()[0][0]
             update_embed.add_field(
                 name="Maps info",
                 value=f"Bancho: {count_bancho}\nAkatsuki: {count_akatsuki}\nDownloaded: {maps_downloaded}\nSize: {size}",
             )
+            update_embed.add_field(name="Requests sent", value=count_requests)
             update_embed.set_footer(text=f"Last updated: {datetime.now()}")
             await msg.edit(content="", embed=update_embed)
     except:
