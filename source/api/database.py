@@ -85,6 +85,18 @@ def create_map_leaderboard_table(conn):
     conn.commit()
 
 
+def create_metrics_table(conn):
+    c = conn.cursor()
+    query = """CREATE TABLE "metrics" (
+	"endpoint"	TEXT NOT NULL UNIQUE,
+	"requests"	INTEGER NOT NULL,
+	"errors"	INTEGER NOT NULL,
+	PRIMARY KEY("endpoint")
+)"""
+    c.execute(query)
+    conn.commit()
+
+
 def create_tables(conn):
     c = conn.cursor()
     c.execute(
@@ -104,6 +116,11 @@ def create_tables(conn):
     )
     if c.fetchone()[0] != 1:
         create_map_leaderboard_table(conn)
+    c.execute(
+        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='metrics' """
+    )
+    if c.fetchone()[0] != 1:
+        create_metrics_table(conn)
 
 
 create_tables(conn)
