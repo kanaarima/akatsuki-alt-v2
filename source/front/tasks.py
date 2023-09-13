@@ -145,7 +145,7 @@ async def refresh_status():
             )
             update_embed.add_field(
                 name="Requests sent",
-                value=rows[:1023],
+                value=requests[:1023],
             )
             update_embed.set_footer(text=f"Last updated: {datetime.now()}")
             await msg.edit(content="", embed=update_embed)
