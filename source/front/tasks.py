@@ -141,7 +141,7 @@ async def refresh_status():
             update_embed.set_footer(text=f"Last updated: {datetime.now()}")
             await msg.edit(content="", embed=update_embed)
     except:
-        pass
+        logger.warn("can't update status!", exc_info=True)
 
 
 @tasks.loop(seconds=10)
