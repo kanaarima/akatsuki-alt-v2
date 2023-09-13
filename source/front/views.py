@@ -85,7 +85,7 @@ class ScoresView(discord.ui.View):
 
     def get_embed(self):
         embed = discord.Embed(
-            title=f"{self.title} ({self.index}/{int(len(self.scores) / self.size)})"
+            title=f"{self.title} ({self.index+1}/{int(len(self.scores) / self.size)-1})"
         )
         i = self.index * self.size
         for score in self.scores[i : i + self.size]:
@@ -243,7 +243,7 @@ class StringListView(discord.ui.View):
     def get_embed(self):
         current_list = self.lists[list(self.lists.keys())[self.list_index]]
         embed = discord.Embed(
-            title=f"{self.title} ({self.index}/{int(len(current_list) / self.size)})"
+            title=f"{self.title} ({self.index+1}/{int(len(current_list) / self.size)-1})"
         )
         i = self.index * self.size
         str = "".join(
@@ -343,4 +343,4 @@ def get_mapset_embed(mapsetid):
         name="Downloads",
         value=f"[Chimu](https://api.chimu.moe/v1/download/{mapsetid}?n=1)\n[Bancho](https://osu.ppy.sh/beatmapsets/{mapsetid})\n[Osu! Direct](https://kanaarima.github.io/osu/osudl-set.html?beatmap={mapsetid})",
     )
-    return embed, title, list(modes.keys()), beatmaps[-1]['status']['akatsuki']
+    return embed, title, list(modes.keys()), beatmaps[-1]["status"]["akatsuki"]
