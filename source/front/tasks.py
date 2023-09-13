@@ -21,6 +21,7 @@ import time
 import io
 
 logger = get_logger("discord.bot")
+last_request_count = 0
 
 
 async def post_list(channel_id, strings):
@@ -101,6 +102,7 @@ async def post_lb_updates():
 
 @tasks.loop(minutes=2)
 async def refresh_status():
+    global last_request_count
     try:
         msg = await bot.client.get_channel(
             config["discord"]["status_update"]["channel_id"]
@@ -136,16 +138,15 @@ async def refresh_status():
             count_errors = database.conn.execute(
                 'SELECT errors FROM metrics WHERE endpoint = "global"'
             ).fetchall()[0][0]
-            requests = ""
-            for rows in database.conn.execute("SELECT * FROM metrics").fetchall():
-                requests += f"{rows[0].split('/')[-1]}: {rows[1]}, (err: {rows[2]})\n"
+            req_min = (count_requests - last_request_count) / 2
+            last_request_count = count_requests
             update_embed.add_field(
                 name="Maps info",
                 value=f"Bancho: {count_bancho}\nAkatsuki: {count_akatsuki}\nDownloaded: {maps_downloaded}\nSize: {size}",
             )
             update_embed.add_field(
                 name="Requests sent",
-                value=requests[:1023],
+                value=f"Success: {count_requests}\nError: {count_errors}\nRequests/Minute: {req_min}",
             )
             update_embed.set_footer(text=f"Last updated: {datetime.now()}")
             await msg.edit(content="", embed=update_embed)
