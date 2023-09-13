@@ -17,6 +17,7 @@ class MapRatios(TypedDict):
     speed_aim_pp: float
     speed_notes: float
     circles_object: float
+    density: float
 
 
 class Model(TypedDict):
@@ -407,7 +408,10 @@ def load_models():
                 data["min_sr"],
                 data["max_sr"],
                 [
-                    (load_beatmap(entry["beatmap_id"], difficulty_info=True), entry["mods"])
+                    (
+                        load_beatmap(entry["beatmap_id"], difficulty_info=True),
+                        entry["mods"],
+                    )
                     for entry in data["entries"]
                 ],
             )
