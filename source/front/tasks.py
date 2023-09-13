@@ -131,7 +131,7 @@ async def refresh_status():
                 "SELECT count(beatmap_id) FROM beatmaps WHERE bancho_status BETWEEN 1 AND 4"
             ).fetchall()[0][0]
             count_requests = database.conn.execute(
-                "SELECT requests FROM metrics WHERE endpoint = global"
+                'SELECT requests FROM metrics WHERE endpoint = "global"'
             ).fetchall()[0][0]
             update_embed.add_field(
                 name="Maps info",
