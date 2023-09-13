@@ -272,6 +272,7 @@ class TrackUserPlaytime(Task):
                         #    continue
                         divisor = 1.5 if (score["mods"] & 64) else 1
                         if score["completed"] == 3:  # personal best
+                            new = str(score["beatmap_id"]) not in scoredata.data[name]
                             scoredata.data[name][str(score["beatmap_id"])] = score
                             if "attributes" in map:
                                 userpt.data[name]["submitted_plays"] += (
@@ -282,6 +283,7 @@ class TrackUserPlaytime(Task):
                                 scores=scoredata.data[name],
                                 score=score,
                                 gamemode=name,
+                                new=new,
                             )
                         elif "attributes" in map:
                             total_hits = (
@@ -333,10 +335,11 @@ class TrackUserPlaytime(Task):
         scores: List[objects.Score],
         score: objects.Score,
         gamemode: str,
+        new: bool,
     ):
         logger.info(f"{user_id} set play {score['id']}")
         ranked_scores = 0
-        if len(scores) % 100 == 0:
+        if len(scores) % 100 == 0 and new:
             event = events.top_play_event(
                 user_id=user_id,
                 beatmap_id=score["beatmap_id"],
