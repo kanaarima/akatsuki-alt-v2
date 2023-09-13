@@ -136,13 +136,16 @@ async def refresh_status():
             count_errors = database.conn.execute(
                 'SELECT errors FROM metrics WHERE endpoint = "global"'
             ).fetchall()[0][0]
+            requests = ""
+            for rows in database.conn.execute("SELECT * FROM metrics").fetchall():
+                requests += f"{rows[0].split('/')[-1]}: {rows[1]}, (err: {rows[2]})\n"
             update_embed.add_field(
                 name="Maps info",
                 value=f"Bancho: {count_bancho}\nAkatsuki: {count_akatsuki}\nDownloaded: {maps_downloaded}\nSize: {size}",
             )
             update_embed.add_field(
                 name="Requests sent",
-                value=f"Success: {count_requests}\nError: {count_errors}",
+                value=rows[:1023],
             )
             update_embed.set_footer(text=f"Last updated: {datetime.now()}")
             await msg.edit(content="", embed=update_embed)
