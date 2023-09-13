@@ -35,20 +35,20 @@ def log_request(request, post=False):
         )
     if error:
         database.conn.execute(
-            f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = "?" """,
+            f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = ? """,
             (method,),
         )
         database.conn.execute(
-            f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = "?" """,
+            f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = ? """,
             ("global",),
         )
     else:
         database.conn.execute(
-            f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = "?" """,
+            f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = ? """,
             (method,),
         )
         database.conn.execute(
-            f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = "?" """,
+            f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = ? """,
             ("global",),
         )
     database.conn.commit()
