@@ -97,6 +97,19 @@ def create_metrics_table(conn):
     conn.commit()
 
 
+def create_user_daily_1s_table(conn):
+    c = conn.cursor()
+    query = """CREATE TABLE "leaderboard_user_daily1s" (
+	"user_id"	INTEGER NOT NULL UNIQUE,
+	"date"	TEXT NOT NULL,
+	"gamemode"	TEXT NOT NULL,
+	"amount"	INTEGER,
+	PRIMARY KEY("gamemode","date","user_id")
+);"""
+    c.execute(query)
+    conn.commit()
+
+
 def create_tables(conn):
     c = conn.cursor()
     c.execute(
@@ -121,6 +134,11 @@ def create_tables(conn):
     )
     if c.fetchone()[0] != 1:
         create_metrics_table(conn)
+    c.execute(
+        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='leaderboard_user_daily1s' """
+    )
+    if c.fetchone()[0] != 1:
+        create_user_daily_1s_table(conn)
 
 
 create_tables(conn)

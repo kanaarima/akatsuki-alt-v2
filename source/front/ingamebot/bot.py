@@ -2,6 +2,7 @@ from api.objects import gamemodes, Player as AkatsukiPlayer
 from api.events import send_event, channel_message_event
 from api.beatmaps import load_beatmap
 from api.logging import get_logger
+from api.database import conn
 from api.files import DataFile
 from api.utils import today
 
@@ -100,10 +101,6 @@ def handle_announce(message: str) -> None:
         logger.info(f"{user_id} set a #1 on {beatmap_id} ({gamemode_type})")
 
         # Save to today's #1's
-        file = DataFile(
-            f"{config['common']['data_directory']}/leaderboards/users/{today()}_1s.json.gz"
-        )
-        file.load_data()
         beatmap = load_beatmap(beatmap_id)
         if not beatmap:
             return
@@ -112,10 +109,6 @@ def handle_announce(message: str) -> None:
         if beatmap["attributes"]["mode"] == 0:
             player = game.bancho.players.by_id(user_id)
             mode = player.mode.value
-        if str(user_id) not in file.data:
-            file.data[str(user_id)] = {}
-            for gamemode in gamemodes:
-                file.data[str(user_id)][gamemode] = list()
         if gamemode_type == "VN":
             relax = 0
         elif gamemode_type == "RX":
@@ -126,8 +119,22 @@ def handle_announce(message: str) -> None:
         for gamemode in gamemodes:
             if gamemodes[gamemode] == {"mode": mode, "relax": relax}:
                 break
-        file.data[str(user_id)][gamemode].append(beatmap_id)
-        file.save_data()
+        cur = conn.cursor()
+        exists = cur.execute(
+            "SELECT * FROM leaderboard_user_daily1s WHERE user_id = ? AND date = ? AND gamemode = ?",
+            (user_id, str(today()), gamemode),
+        ).fetchall()
+        if not exists:
+            cur.execute(
+                "INSERT INTO leaderboard_user_daily1s VALUES (?,?,?,?)",
+                (user_id, str(today()), gamemode, 1),
+            )
+        else:
+            cur.execute(
+                """UPDATE leaderboard_user_daily1s SET "amount" = amount + 1   WHERE user_id = ? AND date = ? AND gamemode = ?""",
+                (user_id, str(today), gamemode),
+            )
+        conn.commit()
     else:
         logger.warning(f"Can't handle announce: {message}")
 
