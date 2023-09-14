@@ -109,8 +109,6 @@ def handle_announce(message: str) -> None:
         relax = 0
         if beatmap["attributes"]["mode"] == 0:
             player = game.bancho.players.by_id(user_id)
-            player.request_stats()
-            sleep(1)
             mode = player.mode.value
         if gamemode_type == "VN":
             relax = 0
