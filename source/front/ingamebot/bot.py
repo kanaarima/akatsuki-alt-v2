@@ -15,6 +15,7 @@ from front.ingamebot import commands
 from config import config
 from typing import Union
 from osu import Game
+from time import sleep
 
 game = Game(
     config["bot_account"]["username"],
@@ -53,7 +54,7 @@ def stats_update(player: Player):
     pass
 
 
-@game.tasks.register(seconds=5, loop=True, threaded=True)
+@game.tasks.register(seconds=5, loop=True, threaded=False)
 def reload_stats():
     # Load linked discord users
     discord_users = DataFile(
@@ -108,6 +109,8 @@ def handle_announce(message: str) -> None:
         relax = 0
         if beatmap["attributes"]["mode"] == 0:
             player = game.bancho.players.by_id(user_id)
+            sleep(1)
+            player.request_stats()
             mode = player.mode.value
         if gamemode_type == "VN":
             relax = 0
@@ -121,18 +124,18 @@ def handle_announce(message: str) -> None:
                 break
         cur = conn.cursor()
         exists = cur.execute(
-            "SELECT * FROM leaderboard_user_daily1s WHERE user_id = ? AND date = ? AND gamemode = ?",
+            "SELECT amount FROM leaderboard_user_daily1s WHERE user_id = ? AND date = ? AND gamemode = ?",
             (user_id, str(today()), gamemode),
         ).fetchall()
         if not exists:
-            cur.execute(
+            conn.execute(
                 "INSERT INTO leaderboard_user_daily1s VALUES (?,?,?,?)",
                 (user_id, str(today()), gamemode, 1),
             )
         else:
-            cur.execute(
-                """UPDATE leaderboard_user_daily1s SET "amount" = amount + 1   WHERE user_id = ? AND date = ? AND gamemode = ?""",
-                (user_id, str(today), gamemode),
+            conn.execute(
+                """UPDATE leaderboard_user_daily1s SET amount = amount+1 WHERE user_id = ? AND date = ? AND gamemode = ?""",
+                (user_id, str(today()), gamemode),
             )
         conn.commit()
     else:

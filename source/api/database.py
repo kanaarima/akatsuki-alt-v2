@@ -100,7 +100,7 @@ def create_metrics_table(conn):
 def create_user_daily_1s_table(conn):
     c = conn.cursor()
     query = """CREATE TABLE "leaderboard_user_daily1s" (
-	"user_id"	INTEGER NOT NULL UNIQUE,
+	"user_id"	INTEGER NOT NULL,
 	"date"	TEXT NOT NULL,
 	"gamemode"	TEXT NOT NULL,
 	"amount"	INTEGER,
