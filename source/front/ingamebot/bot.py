@@ -1,5 +1,6 @@
+from api.objects import gamemodes, Player as AkatsukiPlayer
 from api.events import send_event, channel_message_event
-from api.objects import Player as AkatsukiPlayer
+from api.beatmaps import load_beatmap
 from api.logging import get_logger
 from api.files import DataFile
 from api.utils import today
@@ -66,7 +67,6 @@ def reload_stats():
         player = AkatsukiPlayer(**user[0])
         linked_players.append(player)
 
-
     # Try to find players that are currently online
     for player in linked_players:
         if bancho_player := game.bancho.players.by_id(player["id"]):
@@ -104,16 +104,29 @@ def handle_announce(message: str) -> None:
             f"{config['common']['data_directory']}/leaderboards/users/{today()}_1s.json.gz"
         )
         file.load_data()
-
+        beatmap = load_beatmap(beatmap_id)
+        if not beatmap:
+            return
+        mode = beatmap["attributes"]["mode"]
+        relax = 0
+        if beatmap["attributes"]["mode"] == 0:
+            player = game.bancho.players.by_id(user_id)
+            mode = player.mode.value
         if str(user_id) not in file.data:
-            file.data[str(user_id)] = {"VN": [], "RX": [], "AP": []}
+            file.data[str(user_id)] = {}
+            for gamemode in gamemodes:
+                file.data[str(user_id)][gamemode] = list()
         if gamemode_type == "VN":
-            file.data[str(user_id)]["VN"].append(beatmap_id)
+            relax = 0
         elif gamemode_type == "RX":
-            file.data[str(user_id)]["RX"].append(beatmap_id)
+            relax = 1
         elif gamemode_type == "AP":
-            file.data[str(user_id)]["AP"].append(beatmap_id)
-
+            relax = 2
+        gamemode = ""
+        for gamemode in gamemodes:
+            if gamemodes[gamemode] == {"mode": mode, "relax": relax}:
+                break
+        file.data[str(user_id)][gamemode].append(beatmap_id)
         file.save_data()
     else:
         logger.warning(f"Can't handle announce: {message}")

@@ -656,8 +656,10 @@ async def get_file(full: str, split: list[str], message: discord.Message):
     else:
         await message.reply("Valid file types: beatmaps, beatmapsets")
 
+
 async def get_help(full: str, split: list[str], message: discord.Message):
     await message.reply(f"```{help}```")
+
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     file_links = DataFile(
