@@ -228,14 +228,14 @@ class FixAkatsukiBeatmapRankings(Task):
             bancho_status = beatmap["status"]["bancho"]
             if bancho_status in [1, 2]:
                 continue
-            if "checked" in beatmap["status"]:
+            if "last_checked" in beatmap["status"]:
                 if (
-                    datetime.now() - str_to_datetime(beatmap["status"]["checked"])
+                    datetime.now() - str_to_datetime(beatmap["status"]["last_checked"])
                 ) < timedelta(weeks=2):
                     continue
             if info := akatsuki.get_map_info(beatmap_id):
                 beatmap["status"]["akatsuki"] = info["ranked"] - 1  # offset by 1
-            beatmap["status"]["checked"] = datetime_to_str(datetime.now())
+            beatmap["status"]["last_checked"] = datetime_to_str(datetime.now())
             beatmaps.save_beatmap(beatmap, overwrite=True, trustable=True)
             logger.info(
                 f"Changed beatmap {beatmap_id} status from {bancho_status} to {beatmap['status']['akatsuki']}"
