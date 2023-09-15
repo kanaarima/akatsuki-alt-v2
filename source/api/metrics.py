@@ -1,7 +1,5 @@
 from api.logging import get_logger, type
 import api.database as database
-from api.files import DataFile
-from config import config
 
 logger = get_logger("api.metrics")
 

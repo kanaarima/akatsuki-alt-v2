@@ -3,7 +3,6 @@ from api.events import send_event, channel_message_event
 from api.beatmaps import load_beatmap
 from api.logging import get_logger
 from api.database import conn
-from api.files import DataFile
 from api.utils import today
 
 from osu.bancho.constants import ServerPackets
