@@ -532,7 +532,7 @@ class CrawlMaps(Task):
             i = 0
             for player, score in leaderboard[:50]:
                 i += 1
-                query = """INSERT OR REPLACE into "main"."beatmaps_leaderboard"("beatmap_id", "mode", "last_update", "position", "user_id", "accuracy", "mods", "pp", "score", "combo", "rank", "count_300", "count_100", "count_50", "count_miss", "date") VALUES (?, ?, ?,  ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?); """
+                query = """INSERT OR REPLACE into "main"."beatmaps_leaderboard"("beatmap_id", "mode", "last_update", "position", "user_id", "accuracy", "mods", "pp", "score", "combo", "rank", "count_300", "count_100", "count_50", "count_miss", "date") VALUES (?, ?, ?,  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); """
                 cur.execute(
                     query,
                     (
