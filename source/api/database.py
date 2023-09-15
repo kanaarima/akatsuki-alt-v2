@@ -146,6 +146,20 @@ def create_tasks_table(conn):
     conn.commit()
 
 
+def create_users_table(conn):
+    c = conn.cursor()
+    query = """CREATE TABLE "users" (
+	"user_id"	INTEGER NOT NULL UNIQUE,
+	"name"	INTEGER,
+	"country"	TEXT,
+	"discord_id"	INTEGER NOT NULL UNIQUE,
+	"default_mode"	INTEGER,
+	PRIMARY KEY("user_id")
+);"""
+    c.execute(query)
+    conn.commit()
+
+
 def create_tables(conn):
     if not table_exists("beatmaps"):
         conn.execute("PRAGMA journal_mode=WAL;")
@@ -159,6 +173,8 @@ def create_tables(conn):
         create_user_daily_1s_table(conn)
     if not table_exists("tasks"):
         create_tasks_table(conn)
+    if not table_exists("users"):
+        create_users_table(conn)
 
 
 create_tables(conn)
