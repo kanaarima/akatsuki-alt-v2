@@ -4,6 +4,7 @@ from api.utils import (
     other_yesterday,
     convert_mods,
     datetime_to_str,
+    today,
 )
 from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed
 from front.commands.help import help
@@ -36,44 +37,39 @@ async def link(full: str, split: list[str], message: discord.Message):
     if not info:
         await message.reply("No user matching found. Perhaps use UserID?")
         return
-    file_tracking = DataFile(
-        filepath=f"{config['common']['data_directory']}/users_statistics/users.json.gz"
-    )
-    file_links = DataFile(
-        filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
-    )
-    file_tracking.load_data(default=[])
-    file_links.load_data(default={})
-    for user in file_tracking.data:
-        if user["user_id"] == userid:
-            user["full_tracking"] = True
-            break
+    c = database.conn.cursor()
+    check = c.execute(
+        "SELECT user_id FROM users WHERE discord_id = ?", (message.author.id,)
+    ).fetchone()
+    if check:
+        await message.reply("You can't link twice!")
     else:
-        file_tracking.data.append(LinkedPlayer(user_id=userid, full_tracking=True))
-    file_links.data[str(message.author.id)] = (info, "std")
-    file_tracking.save_data()
-    file_links.save_data()
-    await message.reply("Linked successfully.")
+        c.execute(
+            "INSERT INTO users VALUES(?,?,?,?,?)",
+            (info["id"], info["name"], info["country"], message.author.id, "std"),
+        )
+        await message.reply("Linked successfully.")
 
 
 async def set_default_gamemode(full: str, split: list[str], message: discord.Message):
     if not split:
         await message.reply("!setdefault gamemode")
         return
-    discord_id = str(message.author.id)
-    file_links = DataFile(
-        filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
-    )
-    file_links.load_data(default={})
-    if discord_id not in file_links.data:
+    c = database.conn.cursor()
+    check = c.execute(
+        "SELECT user_id FROM users WHERE discord_id = ?", (message.author.id,)
+    ).fetchone()
+    if not check:
         await _link_warning(message)
         return
     mode = split[0].lower()
     if mode not in gamemodes:
         await _wrong_gamemode_warning(message)
         return
-    file_links.data[discord_id][1] = mode
-    file_links.save_data()
+    c.execute(
+        """UPDATE users SET "default_mode" = ? WHERE discord_id = ?""",
+        (mode, message.author.id),
+    )
     await message.reply(f"Default gamemode set to {gamemodes_full[mode]}")
 
 
@@ -662,13 +658,13 @@ async def get_help(full: str, split: list[str], message: discord.Message):
 
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
-    file_links = DataFile(
-        filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
-    )
-    file_links.load_data(default={})
-    if discord_id not in file_links.data:
+    c = database.conn.cursor()
+    check = c.execute(
+        "SELECT * FROM users WHERE discord_id = ?", (int(discord_id),)
+    ).fetchall()
+    if not check:
         return None, None
-    return file_links.data[discord_id]
+    return Player(id=check[0][0], name=check[0][1], country=check[0][2]), check[0][4]
 
 
 async def _link_warning(message: discord.Message):
