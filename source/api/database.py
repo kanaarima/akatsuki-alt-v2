@@ -107,7 +107,7 @@ def create_map_leaderboard_table(conn):
 	"count_50"	INTEGER NOT NULL,
 	"count_miss"	INTEGER NOT NULL,
     "date"		INTEGER NOT NULL,
-    PRIMARY KEY("beatmap_id", "mode", "relax", "position")
+    PRIMARY KEY("beatmap_id", "mode", "position")
 );"""
     c.execute(query)
     conn.commit()
