@@ -435,7 +435,7 @@ class CrawlMaps(Task):
                 "SELECT last_update FROM beatmaps_leaderboard WHERE beatmap_id = ?",
                 (beatmap_id,),
             ).fetchall()
-            if check:  # TODO: check later
+            if check:
                 if (
                     datetime.datetime.now()
                     - datetime.datetime.fromtimestamp(check[0][0])

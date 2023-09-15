@@ -151,6 +151,17 @@ def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
         save_beatmap(beatmap, overwrite, trustable)
 
 
+def get_calc_beatmap(beatmap_id):
+    path = f"{base_path}/{beatmap_id}.osu.gz"
+    if not exists(path):
+        if not download_beatmap(beatmap_id):
+            logger.warn(f"Map {beatmap_id} can't be downloaded!")
+            return
+    file = BinaryFile(path)
+    file.load_data()
+    return calc_beatmap(bytes=file.data)
+
+
 def process_beatmap(beatmap: Beatmap, skip_metadata=False) -> Beatmap:
     path = f"{base_path}/{beatmap['beatmap_id']}.osu.gz"
     if not exists(path):

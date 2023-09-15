@@ -1,9 +1,9 @@
 from api.utils import get_mods_simple, datetime_to_str, convert_mods
+from api.beatmaps import load_beatmap, get_calc_beatmap
+from akatsuki_pp_py import Beatmap, Calculator
 from api.objects import Player, Score, Beatmap
-from api.beatmaps import load_beatmap
 from datetime import datetime
 from typing import List, Dict
-
 import api.database as database
 import discord
 
@@ -305,7 +305,16 @@ def get_score_embed(
             )
             run = f" ({int((total/total_map)*100)}%)"
         rank = f"F{run}"
-    text = f"➤**{rank} {score['combo']}{combo} {score['accuracy']:.2f}% [{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}] {score['pp']}pp {score['score']:,}**"
+    if_fc = ""
+    if (
+        score["count_miss"] > 0
+        or beatmap["attributes"]["max_combo"] - score["combo"] > 10
+    ):
+        calc_beatmap = get_calc_beatmap(beatmap["beatmap_id"])
+        calc = Calculator(mods=score["mods"])
+        calc.set_acc(score["accuracy"])
+        if_fc += f" ({int(calc.performance(calc_beatmap).pp)}pp if FC)"
+    text = f"➤**{rank} {score['combo']}{combo} {score['accuracy']:.2f}% [{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}] {score['pp']}pp {score['score']:,}{if_fc}**"
     embed.description = text
     return embed
 
