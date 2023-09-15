@@ -15,7 +15,7 @@ def convert_users():
             "INSERT OR REPLACE INTO users VALUES(?,?,?,?,?)",
             (
                 data[0]["id"],
-                data[0]["clan_id"],
+                data[0]["clan_id"] if "clan_id" in data[0] else 0,
                 data[0]["name"],
                 data[0]["country"],
                 discord_id,
