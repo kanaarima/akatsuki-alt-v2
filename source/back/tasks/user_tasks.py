@@ -432,11 +432,15 @@ class CrawlMaps(Task):
             if self.suspended:
                 return self._finish()
             check = cur.execute(
-                "SELECT beatmap_id FROM beatmaps_leaderboard WHERE beatmap_id = ?",
+                "SELECT last_update FROM beatmaps_leaderboard WHERE beatmap_id = ?",
                 (beatmap_id,),
             ).fetchall()
             if check:  # TODO: check later
-                continue
+                if (
+                    datetime.datetime.now()
+                    - datetime.datetime.fromtimestamp(check[0][0])
+                ) < datetime.timedelta(days=7):
+                    continue
             logger.info(f"crawling {beatmap_id}")
             leaderboard = akatsuki.get_map_leaderboard(
                 beatmap_id, gamemode=objects.gamemodes["std_rx"]
