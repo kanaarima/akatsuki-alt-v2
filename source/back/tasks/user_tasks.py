@@ -151,15 +151,17 @@ class StorePlayerScores(Task):
                 c = database.conn.cursor()
                 for score in scores:
                     c.execute(
-                        "INSERT INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        "INSERT INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (
                             score["beatmap_id"],
                             name,
                             score["id"],
+                            user_id,
                             score["accuracy"],
                             score["mods"],
                             score["pp"],
                             score["score"],
+                            score["combo"],
                             score["rank"],
                             score["count_300"],
                             score["count_100"],
@@ -260,15 +262,17 @@ class TrackUserPlaytime(Task):
                                 (user_id, name, score["beatmap_id"]),
                             ).fetchone()
                             database.conn.execute(
-                                "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                 (
                                     score["beatmap_id"],
                                     name,
                                     score["id"],
+                                    user_id,
                                     score["accuracy"],
                                     score["mods"],
                                     score["pp"],
                                     score["score"],
+                                    score["combo"],
                                     score["rank"],
                                     score["count_300"],
                                     score["count_100"],
@@ -455,15 +459,17 @@ class CrawlLovedMaps(Task):
                         continue
                     logger.info(f"Found score on {loved_map} by {player['id']}")
                     database.conn.execute(
-                        "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (
                             score["beatmap_id"],
                             "std_rx",
                             score["id"],
+                            player["id"],
                             score["accuracy"],
                             score["mods"],
                             score["pp"],
                             score["score"],
+                            score["combo"],
                             score["rank"],
                             score["count_300"],
                             score["count_100"],
@@ -526,7 +532,7 @@ class CrawlMaps(Task):
             i = 0
             for player, score in leaderboard[:50]:
                 i += 1
-                query = """INSERT OR REPLACE into "main"."beatmaps_leaderboard"("beatmap_id", "mode", "last_update", "position", "user_id", "accuracy", "mods", "pp", "score", "rank", "count_300", "count_100", "count_50", "count_miss", "date") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); """
+                query = """INSERT OR REPLACE into "main"."beatmaps_leaderboard"("beatmap_id", "mode", "last_update", "position", "user_id", "accuracy", "mods", "pp", "score", "combo", "rank", "count_300", "count_100", "count_50", "count_miss", "date") VALUES (?, ?, ?,  ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?); """
                 cur.execute(
                     query,
                     (
@@ -539,6 +545,7 @@ class CrawlMaps(Task):
                         score["mods"],
                         score["pp"],
                         score["score"],
+                        score["combo"],
                         score["rank"],
                         score["count_300"],
                         score["count_100"],

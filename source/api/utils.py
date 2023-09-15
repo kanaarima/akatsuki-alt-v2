@@ -59,12 +59,13 @@ def score_from_db(rows):
         mods=rows[5],
         pp=rows[6],
         score=rows[7],
-        rank=rows[8],
-        count_300=rows[9],
-        count_100=rows[10],
-        count_50=rows[11],
-        count_miss=rows[12],
-        date=rows[13],
+        combo=rows[8],
+        rank=rows[9],
+        count_300=rows[10],
+        count_100=rows[11],
+        count_50=rows[12],
+        count_miss=rows[13],
+        date=rows[14],
     )
 
 
