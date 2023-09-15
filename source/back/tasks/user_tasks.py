@@ -186,26 +186,21 @@ class TrackUserPlaytime(Task):
 
     def run(self) -> TaskStatus:
         self.last_fetch = datetime.datetime.now()
-        userfile = DataFile(self._get_path_users())
-        userfile.load_data(default=[])
         scorefile = DataFile(f"{self._get_path()}/scores.json.gz")
         scorefile.load_data(default={})
 
-        users: List[objects.LinkedPlayer] = userfile.data
-
-        for user in users:
+        for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
+            user_id = user_id[0]
             if self.suspended:
                 return TaskStatus.SUSPENDED
-            if not user["full_tracking"]:
+            if str(user_id) not in scorefile.data:
                 continue
-            if str(user["user_id"]) not in scorefile.data:
-                continue
-            path = f"{self._get_path()}/scores/{user['user_id']}.json.gz"
+            path = f"{self._get_path()}/scores/{user_id}.json.gz"
             if not exists(path):
                 continue
             scoredata = DataFile(path)
             scoredata.load_data(default={})
-            userpt = DataFile(f"{self._get_path()}/playtime/{user['user_id']}.json.gz")
+            userpt = DataFile(f"{self._get_path()}/playtime/{user_id}.json.gz")
             userpt.load_data(default={})
             if not userpt.data:
                 for name, gamemode in objects.gamemodes.items():
@@ -223,20 +218,18 @@ class TrackUserPlaytime(Task):
                             pt["submitted_plays"] += (
                                 beatmap["attributes"]["length"] / divisor
                             )
-                    self._add_most_played(user["user_id"], pt, name, gamemode)
+                    self._add_most_played(user_id, pt, name, gamemode)
                     userpt.data[name] = pt
             for name, gamemode in objects.gamemodes.items():
                 if "last_score_id" not in userpt.data[name]:
                     userpt.data[name]["last_score_id"] = 0
                 if "most_played" not in userpt.data[name]:
-                    self._add_most_played(
-                        user["user_id"], userpt.data[name], name, gamemode
-                    )
+                    self._add_most_played(user_id, userpt.data[name], name, gamemode)
                 skip = 0
                 old_id = userpt.data[name]["last_score_id"]
                 while True:
                     _scores, beatmaps = akatsuki.get_user_recent(
-                        user["user_id"], gamemode, skip=skip, length=50
+                        user_id, gamemode, skip=skip, length=50
                     )
                     if not _scores:
                         break
@@ -258,7 +251,7 @@ class TrackUserPlaytime(Task):
                                     map["attributes"]["length"] / divisor
                                 )
                             self._check_if_top_play(
-                                user_id=user["user_id"],
+                                user_id=user_id,
                                 scores=scoredata.data[name],
                                 score=score,
                                 gamemode=name,
@@ -370,9 +363,6 @@ class TrackUserPlaytime(Task):
 
     def _get_path(self):
         return f"{config['common']['data_directory']}/users_statistics/"
-
-    def _get_path_users(self) -> str:
-        return f"{config['common']['data_directory']}/users_statistics/users.json.gz"
 
 
 class CrawlLovedMaps(Task):
