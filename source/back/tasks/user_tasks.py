@@ -365,7 +365,8 @@ class TrackUserPlaytime(Task):
         # TODO: Fix this hack someday
         scores = list()
         for score in database.conn.execute(
-            "SELECT beatmap_id, score_id, score, pp FROM users_scores WHERE user_id = ? AND mode = ?"
+            "SELECT beatmap_id, score_id, score, pp FROM users_scores WHERE user_id = ? AND mode = ?",
+            (user_id, gamemode),
         ):
             scores.append(
                 {
