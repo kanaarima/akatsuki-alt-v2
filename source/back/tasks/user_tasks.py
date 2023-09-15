@@ -405,9 +405,7 @@ class TrackUserPlaytime(Task):
             if ranked_scores == 120:
                 break
         ranked_scores = 0
-        for user_score in sorted(
-            list(scores.values()), key=lambda x: x["score"], reverse=True
-        ):
+        for user_score in sorted(scores, key=lambda x: x["score"], reverse=True):
             beatmap = load_beatmap(user_score["beatmap_id"])
             if not beatmap or "status" not in beatmap:
                 continue
