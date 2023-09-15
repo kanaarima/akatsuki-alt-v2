@@ -22,6 +22,8 @@ def main():
                     datafile.data[mode]["most_played"]
                     if "most_played" in datafile.data[mode]
                     else 0,  # very old usecase, only needed on dev env with outdated fetch
-                    datafile.data[mode]["last_play_id"],
+                    datafile.data[mode]["last_play_id"]
+                    if "last_play_id" in datafile.data[mode]
+                    else 0,
                 ),
             )
