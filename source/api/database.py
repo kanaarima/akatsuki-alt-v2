@@ -87,7 +87,6 @@ def create_map_post_table(conn):
     conn.commit()
 
 
-# TODO FIX SHIT PP MISSING
 def create_map_leaderboard_table(conn):
     c = conn.cursor()
     query = """CREATE TABLE "beatmaps_leaderboard" (
@@ -182,7 +181,7 @@ def create_users_score_table(conn):
 	"count_50"	INTEGER NOT NULL,
 	"count_miss"	INTEGER NOT NULL,
     "date"		INTEGER NOT NULL,
-    PRIMARY KEY("mode", "beatmap_id")
+    PRIMARY KEY("mode", "beatmap_id", "user_id")
 )"""
     c.execute(query)
     conn.commit()
