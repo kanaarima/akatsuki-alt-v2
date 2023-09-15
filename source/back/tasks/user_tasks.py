@@ -364,16 +364,16 @@ class TrackUserPlaytime(Task):
         logger.info(f"{user_id} set play {score['id']}")
         # TODO: Fix this hack someday
         scores = list()
-        for score in database.conn.execute(
+        for _score in database.conn.execute(
             "SELECT beatmap_id, score_id, score, pp FROM users_scores WHERE user_id = ? AND mode = ?",
             (user_id, gamemode),
         ):
             scores.append(
                 {
-                    "beatmap_id": score[0],
-                    "id": score[1],
-                    "score": score[2],
-                    "pp": score[3],
+                    "beatmap_id": _score[0],
+                    "id": _score[1],
+                    "score": _score[2],
+                    "pp": _score[3],
                 }
             )
         ranked_scores = 0
