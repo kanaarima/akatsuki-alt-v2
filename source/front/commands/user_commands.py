@@ -693,11 +693,6 @@ def _get_download_link(beatmap_id: int):
 
 def _update_fetch(player: Player, user_file: DataFile):
     user_file.load_data(default=[])
-    playtime = DataFile(
-        f"{config['common']['data_directory']}/users_statistics/playtime/{player['id']}.json.gz"
-    )
-    playtime.load_data(default=None)
-    playtime = playtime.data
     scores = DataFile(
         f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
     )
@@ -711,7 +706,7 @@ def _update_fetch(player: Player, user_file: DataFile):
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                _add_extra(playtime, scores, akatsuki.get_user_stats(player["id"])[1]),
+                _add_extra(player, scores, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
     date = datetime.datetime.strptime(user_file.data[-1][0], "%d/%m/%Y %H:%M:%S")
@@ -719,25 +714,26 @@ def _update_fetch(player: Player, user_file: DataFile):
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                _add_extra(playtime, scores, akatsuki.get_user_stats(player["id"])[1]),
+                _add_extra(player, scores, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
 
 
-def _add_extra(pt, scores, fetch):
+def _add_extra(player: Player, scores, fetch):
     for name in gamemodes.keys():
         stats = fetch[name][0]
         stats["clears"] = len(scores[name]) if scores else "-1"
         if "rx" not in name and "ap" not in name:
             continue
-        if not pt:
+        if not database.conn.execute(
+            "SELECT * FROM users_playtime WHERE user_id = ?", (player["id"],)
+        ).fetchall():
             continue
-        if "most_played" in pt[name]:
-            stats["play_time"] = (
-                pt[name]["most_played"]
-                + pt[name]["unsubmitted_plays"]
-                + pt[name]["submitted_plays"]
-            )
+        submitted_plays, unsubmitted_plays, most_played = database.conn.execute(
+            "SELECT submitted_plays, unsubmitted_plays, most_played FROM users_playtime WHERE user_id = ? AND mode = ?",
+            (player["id"], name),
+        )
+        stats["play_time"] = submitted_plays + unsubmitted_plays + most_played
     return fetch
 
 

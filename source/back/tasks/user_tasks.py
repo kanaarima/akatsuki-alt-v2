@@ -89,22 +89,21 @@ class StorePlayerStats(Task):
             user_id = user_id
             userfile = DataFile(filepath=f"{self._get_path()}{user_id}.json.gz")
             userfile.data = {}
-            playtime = DataFile(
-                f"{config['common']['data_directory']}/users_statistics/playtime/{user_id}.json.gz"
-            )
             clears = DataFile(
                 f"{config['common']['data_directory']}/users_statistics/scores/{user_id}.json.gz"
             )
             clears.load_data(default=None)
-            playtime.load_data(default=None)
-            playtime = playtime.data
             player, stats = akatsuki.get_user_stats(user_id)
             first_places = {}
             for name, gamemode in objects.gamemodes.items():
-                if playtime and "most_played" in playtime:
-                    stats[name][0]["play_time"] = playtime[name]["most_played"]
-                +playtime[name]["unsubmitted_plays"]
-                +playtime[name]["submitted_plays"]
+                playtime = database.conn.execute(
+                    "SELECT submitted_plays, unsubmitted_plays, most_played FROM users_playtime WHERE user_id = ? AND mode = ?",
+                    (user_id, name),
+                ).fetchall()
+                if playtime:
+                    stats[name][0]["play_time"] = (
+                        playtime[0][0] + playtime[0][1] + playtime[0][2]
+                    )
                 if clears.data:
                     stats[name][0]["clears"] = len(clears.data[name])
                 _, first_places[name], beatmaps = akatsuki.get_user_1s(
@@ -200,9 +199,11 @@ class TrackUserPlaytime(Task):
                 continue
             scoredata = DataFile(path)
             scoredata.load_data(default={})
-            userpt = DataFile(f"{self._get_path()}/playtime/{user_id}.json.gz")
-            userpt.load_data(default={})
-            if not userpt.data:
+            playtime = database.conn.execute(
+                "SELECT * FROM users_playtime WHERE user_id = ?",
+                (user_id,),
+            ).fetchall()
+            if not playtime:
                 for name, gamemode in objects.gamemodes.items():
                     pt = {
                         "submitted_plays": 0,
@@ -219,14 +220,24 @@ class TrackUserPlaytime(Task):
                                 beatmap["attributes"]["length"] / divisor
                             )
                     self._add_most_played(user_id, pt, name, gamemode)
-                    userpt.data[name] = pt
+                    database.conn.execute(
+                        "INSERT INTO users_playtime VALUES(?,?,?,?,?,?)",
+                        (
+                            user_id,
+                            name,
+                            pt["submitted_plays"],
+                            pt["unsubmitted_plays"],
+                            pt["most_played"],
+                        ),
+                    )
+                    database.conn.commit()
             for name, gamemode in objects.gamemodes.items():
-                if "last_score_id" not in userpt.data[name]:
-                    userpt.data[name]["last_score_id"] = 0
-                if "most_played" not in userpt.data[name]:
-                    self._add_most_played(user_id, userpt.data[name], name, gamemode)
+                last_score_id = database.conn.execute(
+                    "SELECT last_score_id FROM users_playtime WHERE user_id = ? and mode = ?",
+                    (user_id, name),
+                ).fetchall()[0][0]
                 skip = 0
-                old_id = userpt.data[name]["last_score_id"]
+                old_id = last_score_id
                 while True:
                     _scores, beatmaps = akatsuki.get_user_recent(
                         user_id, gamemode, skip=skip, length=50
@@ -247,9 +258,15 @@ class TrackUserPlaytime(Task):
                             new = str(score["beatmap_id"]) not in scoredata.data[name]
                             scoredata.data[name][str(score["beatmap_id"])] = score
                             if "attributes" in map:
-                                userpt.data[name]["submitted_plays"] += (
-                                    map["attributes"]["length"] / divisor
+                                database.conn.execute(
+                                    """UPDATE users_playtime SET "submitted_plays" = submitted_plays+? WHERE user_id = ? AND mode = ?""",
+                                    (
+                                        map["attributes"]["length"] / divisor,
+                                        user_id,
+                                        name,
+                                    ),
                                 )
+                                database.conn.commit()
                             self._check_if_top_play(
                                 user_id=user_id,
                                 scores=scoredata.data[name],
@@ -268,16 +285,30 @@ class TrackUserPlaytime(Task):
                                 logger.warn(f"Bugged map {map['beatmap_id']}")
                                 continue
                             multiplier = total_hits / map["attributes"]["max_combo"]
-                            userpt.data[name]["unsubmitted_plays"] += (
-                                map["attributes"]["length"] / divisor
-                            ) * multiplier
+                            database.conn.execute(
+                                """UPDATE users_playtime SET "unsubmitted_plays" = unsubmitted_plays+? WHERE user_id = ? AND mode = ?""",
+                                (
+                                    (map["attributes"]["length"] / divisor)
+                                    * multiplier,
+                                    user_id,
+                                    name,
+                                ),
+                            )
+                            database.conn.commit()
                     if skip == 0:
-                        userpt.data[name]["last_score_id"] = int(_scores[0]["id"])
+                        database.conn.execute(
+                            """UPDATE users_playtime SET "last_score_id" = ? WHERE user_id = ? AND mode = ?""",
+                            (
+                                int(_scores[0]["id"]),
+                                user_id,
+                                name,
+                            ),
+                        )
                     if exit:
                         break
                     else:
                         skip += 1
-            userpt.save_data()
+            database.conn.commit()
             scoredata.save_data()
         return self._finish()
 
