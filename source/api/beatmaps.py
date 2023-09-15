@@ -1,5 +1,5 @@
 from api.objects import Beatmap, BeatmapAttributes, BeatmapDifficulty, RankedStatus
-from api.files import DataFile, BinaryFile, exists
+from api.files import BinaryFile, exists
 from akatsuki_pp_py import Beatmap as calc_beatmap
 from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
@@ -144,28 +144,6 @@ def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
     if not trustable:
         process_beatmap(beatmap)
     _insert_beatmap(database.conn.cursor(), beatmap)
-
-
-def save_beatmap_old(beatmap: Beatmap, overwrite=False, trustable=False):
-    global cache, cache_last_refresh
-    path = f"{base_path}/{beatmap['beatmap_id']}.json.gz"
-    if exists(path) and not overwrite:
-        return
-    if not trustable:
-        process_beatmap(beatmap)
-    if "raw_beatmap" in beatmap:
-        del beatmap["raw_beatmap"]
-    file = DataFile(path)
-    file.load_data()
-    file.data = beatmap
-    file.save_data()
-    if (datetime.now() - cache_last_refresh).total_seconds() > config["common"][
-        "cache"
-    ]:
-        cache = {}
-        cache_last_refresh = datetime.now()
-    if cache_enabled:
-        cache[beatmap["beatmap_id"]] = beatmap
 
 
 def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
