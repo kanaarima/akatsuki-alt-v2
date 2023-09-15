@@ -205,8 +205,6 @@ def create_users_playtime_table(conn):
 
 def create_tables(conn):
     if not table_exists("beatmaps"):
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.commit()
         create_beatmap_table(conn)
     if not table_exists("beatmaps_leaderboard"):
         create_map_leaderboard_table(conn)
@@ -222,6 +220,9 @@ def create_tables(conn):
         create_users_score_table(conn)
     if not table_exists("users_playtime"):
         create_users_playtime_table(conn)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=normal;")
+    conn.commit()
 
 
 create_tables(conn)
