@@ -258,7 +258,7 @@ class TrackUserPlaytime(Task):
                         divisor = 1.5 if (score["mods"] & 64) else 1
                         if score["completed"] == 3:  # personal best
                             new = not database.conn.execute(
-                                "SELECT beatmap_id FROM users_scores WHERE user_id = ?, mode = ?, beatmap_id = ?",
+                                "SELECT beatmap_id FROM users_scores WHERE user_id = ? AND mode = ? AND beatmap_id = ?",
                                 (user_id, name, score["beatmap_id"]),
                             ).fetchone()
                             database.conn.execute(
