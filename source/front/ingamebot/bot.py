@@ -56,17 +56,13 @@ def stats_update(player: Player):
 
 @game.tasks.register(seconds=5, loop=True, threaded=False)
 def reload_stats():
-    # Load linked discord users
-    discord_users = DataFile(
-        filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
-    )
-    discord_users.load_data(default={})
-
     linked_players = []
     ingame_players = set()
 
-    for user in discord_users.data.values():
-        player = AkatsukiPlayer(**user[0])
+    for user in conn.execute("SELECT * FROM users").fetchall():
+        player = AkatsukiPlayer(
+            id=user[0], clan_id=user[1], name=user[2], country=user[3]
+        )
         linked_players.append(player)
 
     # Try to find players that are currently online
