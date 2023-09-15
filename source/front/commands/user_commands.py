@@ -33,7 +33,7 @@ async def link(full: str, split: list[str], message: discord.Message):
         if not userid:
             await message.reply("No user matching found. Perhaps use UserID?")
             return
-    info = akatsuki.get_user_info(userid)
+    info = akatsuki.get_user_stats(userid, no_1s=True)[0]
     if not info:
         await message.reply("No user matching found. Perhaps use UserID?")
         return
@@ -45,7 +45,7 @@ async def link(full: str, split: list[str], message: discord.Message):
         await message.reply("You can't link twice!")
     else:
         c.execute(
-            "INSERT INTO users VALUES(?,?,?,?,?)",
+            "INSERT INTO users VALUES(?,?,?,?,?,?)",
             (
                 info["id"],
                 info["clan_id"],
