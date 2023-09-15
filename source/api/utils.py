@@ -51,6 +51,23 @@ def str_to_datetime(str) -> datetime.datetime:
     return datetime.datetime.strptime(str, "%d/%m/%Y %H:%M:%S")
 
 
+def score_from_db(rows):
+    return objects.Score(
+        beatmap_id=rows[0],
+        id=rows[2],
+        accuracy=rows[4],
+        mods=rows[5],
+        pp=rows[6],
+        score=rows[7],
+        rank=rows[8],
+        count_300=rows[9],
+        count_100=rows[10],
+        count_50=rows[11],
+        count_miss=rows[12],
+        date=rows[13],
+    )
+
+
 NoMod = 0
 NoFail = 1
 Easy = 2

@@ -150,18 +150,15 @@ def recommend(player: Player, message, args):
 def recommend_score(player: Player, message, args):
     """- Recommends a score farm map"""
     skip_id = []
-    scores = DataFile(
-        f"{config['common']['data_directory']}/users_statistics/scores/{player.id}.json.gz"
-    )
-
-    if scores.exists():
-        scores.load_data()
-        skip_id.extend(
-            int(beatmapid) for beatmapid in list(scores.data["std_rx"].keys())
-        )
+    # TODO: FIX THIS
+    # if scores.exists():
+    #     scores.load_data()
+    #     skip_id.extend(
+    #         int(beatmapid) for beatmapid in list(scores.data["std_rx"].keys())
+    #     )
 
     beatmap_metadata = farmer.recommend_score(skip_id, 1)[0]
-    beatmap = beatmaps.load_beatmap(beatmap_metadata['beatmap_id'])
+    beatmap = beatmaps.load_beatmap(beatmap_metadata["beatmap_id"])
     link = f"osu://b/{beatmap['beatmap_id']}"
     title = f"{beatmap['title']} [{beatmap['difficulty_name']}] {int(beatmap_metadata['max_score']):,} (score/minute: {int(beatmap_metadata['score_minute']):,})"
     player.send_message(f"[{link} {title}]")

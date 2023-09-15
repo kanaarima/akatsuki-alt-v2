@@ -5,6 +5,7 @@ from api.utils import (
     convert_mods,
     datetime_to_str,
     today,
+    score_from_db,
 )
 from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed
 from front.commands.help import help
@@ -377,13 +378,14 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
             await message.reply(f"Invalid view! {','.join(valid_types)}")
             return
         view = args["view"]
-    path = f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
-    if not exists(path):
+    scores = database.conn.execute(
+        "SELECT * FROM users_scores WHERE user_id = ?, mode = ?",
+        (player["id"], gamemode),
+    ).fetchall()
+    if not scores:
         await message.reply("Your statistics aren't fetched yet. Please wait!")
         return
-    file = DataFile(path)
-    file.load_data()
-    scores = list(file.data[gamemode].values())
+    scores = [score_from_db(score) for score in scores]
     if view != "all":
         cache = beatmaps.get_by_leaderboard(leaderboards=[view])[view]
         new_scores = [score for score in scores if int(score["beatmap_id"]) in cache]
@@ -693,11 +695,6 @@ def _get_download_link(beatmap_id: int):
 
 def _update_fetch(player: Player, user_file: DataFile):
     user_file.load_data(default=[])
-    scores = DataFile(
-        f"{config['common']['data_directory']}/users_statistics/scores/{player['id']}.json.gz"
-    )
-    scores.load_data(default=None)
-    scores = scores.data
     for fetch in user_file.data:
         date = datetime.datetime.strptime(fetch[0], "%d/%m/%Y %H:%M:%S")
         if (datetime.datetime.now() - date) > datetime.timedelta(hours=24):
@@ -706,7 +703,7 @@ def _update_fetch(player: Player, user_file: DataFile):
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                _add_extra(player, scores, akatsuki.get_user_stats(player["id"])[1]),
+                _add_extra(player, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
     date = datetime.datetime.strptime(user_file.data[-1][0], "%d/%m/%Y %H:%M:%S")
@@ -714,15 +711,23 @@ def _update_fetch(player: Player, user_file: DataFile):
         user_file.data.append(
             (
                 datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                _add_extra(player, scores, akatsuki.get_user_stats(player["id"])[1]),
+                _add_extra(player, akatsuki.get_user_stats(player["id"])[1]),
             )
         )
 
 
-def _add_extra(player: Player, scores, fetch):
+def _add_extra(player: Player, fetch):
     for name in gamemodes.keys():
         stats = fetch[name][0]
-        stats["clears"] = len(scores[name]) if scores else "-1"
+        if database.conn.execute(
+            "SELECT * FROM users_scores WHERE user_id = ? LIMIT 1", (player["id"],)
+        ).fetchall():
+            stats["clears"] = database.conn.execute(
+                "SELECT COUNT(score_id) FROM users_scores WHERE user_id = ? AND mode = ?",
+                (player["id"], name),
+            ).fetchall()[0][0]
+        else:
+            stats["clears"] = -1
         if "rx" not in name and "ap" not in name:
             continue
         if not database.conn.execute(

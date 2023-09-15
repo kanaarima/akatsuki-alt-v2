@@ -89,10 +89,6 @@ class StorePlayerStats(Task):
             user_id = user_id
             userfile = DataFile(filepath=f"{self._get_path()}{user_id}.json.gz")
             userfile.data = {}
-            clears = DataFile(
-                f"{config['common']['data_directory']}/users_statistics/scores/{user_id}.json.gz"
-            )
-            clears.load_data(default=None)
             player, stats = akatsuki.get_user_stats(user_id)
             first_places = {}
             for name, gamemode in objects.gamemodes.items():
@@ -104,8 +100,12 @@ class StorePlayerStats(Task):
                     stats[name][0]["play_time"] = (
                         playtime[0][0] + playtime[0][1] + playtime[0][2]
                     )
-                if clears.data:
-                    stats[name][0]["clears"] = len(clears.data[name])
+                clears = database.conn.execute(
+                    "SELECT COUNT(score_id) FROM users_scores WHERE user_id = ?, mode = ?",
+                    (user_id, name),
+                ).fetchall()
+                if clears:
+                    stats[name][0]["clears"] = clears[0][0]
                 _, first_places[name], beatmaps = akatsuki.get_user_1s(
                     userid=user_id,
                     gamemode=gamemode,
@@ -127,46 +127,48 @@ class StorePlayerScores(Task):
         super().__init__(asynchronous=False)
 
     def can_run(self) -> bool:
-        infofile = DataFile(f"{self._get_path()}/scores.json.gz")
-        infofile.load_data(default={})
-
         for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
             user_id = user_id[0]
-            if not exists(f"{self._get_path()}/scores/{user_id}.json.gz"):
-                return True
-            if str(user_id) not in infofile.data:
-                return True
-            last_fetch = str_to_datetime(infofile.data[user_id])
-            if (datetime.datetime.now() - last_fetch) > datetime.timedelta(days=7):
+            if not database.conn.execute(
+                "SELECT user_id FROM users_scores WHERE user_id = ?", (user_id,)
+            ).fetchone():
                 return True
         return False
 
     def run(self) -> TaskStatus:
-        infofile = DataFile(f"{self._get_path()}/scores.json.gz")
-        infofile.load_data(default={})
-
         for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
             user_id = user_id[0]
             if self.suspended:
                 return TaskStatus.SUSPENDED
 
-            if str(user_id) in infofile.data:
-                last_fetch = str_to_datetime(infofile.data[str(user_id)])
-                if (datetime.datetime.now() - last_fetch) < datetime.timedelta(days=7):
-                    continue
-            path = f"{self._get_path()}/scores/{user_id}.json.gz"
-            scorefile = DataFile(path)
-            scorefile.load_data(default={})
+            if database.conn.execute(
+                "SELECT user_id FROM users_scores WHERE user_id = ?", (user_id,)
+            ).fetchone():
+                continue  # recent scores fetch is 100% accurate, no need
+
             for name, gamemode in objects.gamemodes.items():
                 scores, maps = akatsuki.get_user_best(user_id, gamemode, pages=1000)
-                if name not in scorefile.data or not scorefile.data[name]:
-                    scorefile.data[name] = {}
+                c = database.conn.cursor()
                 for score in scores:
-                    scorefile.data[name][score["beatmap_id"]] = score
+                    c.execute(
+                        "INSERT INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        (
+                            score["beatmap_id"],
+                            name,
+                            score["id"],
+                            score["accuracy"],
+                            score["mods"],
+                            score["pp"],
+                            score["score"],
+                            score["rank"],
+                            score["count_300"],
+                            score["count_100"],
+                            score["count_50"],
+                            score["count_miss"],
+                            score["date"],
+                        ),
+                    )
                 save_beatmaps(maps)
-            infofile.data[user_id] = datetime_to_str(datetime.datetime.now())
-            scorefile.save_data()
-            infofile.save_data()
         return self._finish()
 
     def _get_path(self):
@@ -185,20 +187,15 @@ class TrackUserPlaytime(Task):
 
     def run(self) -> TaskStatus:
         database.set_task("trackuserplaytime", time.time())
-        scorefile = DataFile(f"{self._get_path()}/scores.json.gz")
-        scorefile.load_data(default={})
 
         for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
             user_id = user_id[0]
             if self.suspended:
                 return TaskStatus.SUSPENDED
-            if str(user_id) not in scorefile.data:
+            if not database.conn.execute(
+                "SELECT user_id FROM users_scores WHERE user_id = ?", (user_id,)
+            ).fetchone():
                 continue
-            path = f"{self._get_path()}/scores/{user_id}.json.gz"
-            if not exists(path):
-                continue
-            scoredata = DataFile(path)
-            scoredata.load_data(default={})
             playtime = database.conn.execute(
                 "SELECT * FROM users_playtime WHERE user_id = ?",
                 (user_id,),
@@ -211,10 +208,13 @@ class TrackUserPlaytime(Task):
                         "most_played": 0,
                         "last_score_id": 0,
                     }
-                    scores: List[objects.Score] = scoredata.data[name].values()
+                    scores: database.conn.execute(
+                        "SELECT beatmap_id, mods FROM users_scores WHERE user_id = ? AND mode = ?",
+                        (user_id, name),
+                    ).fetchall()
                     for score in scores:
-                        divisor = 1.5 if (score["mods"] & 64) else 1
-                        beatmap = load_beatmap(score["beatmap_id"])
+                        divisor = 1.5 if (score[1] & 64) else 1
+                        beatmap = load_beatmap(score[0])
                         if "attributes" in beatmap:
                             pt["submitted_plays"] += (
                                 beatmap["attributes"]["length"] / divisor
@@ -255,8 +255,28 @@ class TrackUserPlaytime(Task):
                         #    continue
                         divisor = 1.5 if (score["mods"] & 64) else 1
                         if score["completed"] == 3:  # personal best
-                            new = str(score["beatmap_id"]) not in scoredata.data[name]
-                            scoredata.data[name][str(score["beatmap_id"])] = score
+                            new = not database.conn.execute(
+                                "SELECT beatmap_id FROM users_scores WHERE user_id = ?, mode = ?, beatmap_id = ?",
+                                (user_id, name, score["beatmap_id"]),
+                            ).fetchone()
+                            database.conn.execute(
+                                "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                (
+                                    score["beatmap_id"],
+                                    name,
+                                    score["id"],
+                                    score["accuracy"],
+                                    score["mods"],
+                                    score["pp"],
+                                    score["score"],
+                                    score["rank"],
+                                    score["count_300"],
+                                    score["count_100"],
+                                    score["count_50"],
+                                    score["count_miss"],
+                                    score["date"],
+                                ),
+                            )
                             if "attributes" in map:
                                 database.conn.execute(
                                     """UPDATE users_playtime SET "submitted_plays" = submitted_plays+? WHERE user_id = ? AND mode = ?""",
@@ -269,7 +289,6 @@ class TrackUserPlaytime(Task):
                                 database.conn.commit()
                             self._check_if_top_play(
                                 user_id=user_id,
-                                scores=scoredata.data[name],
                                 score=score,
                                 gamemode=name,
                                 new=new,
@@ -309,7 +328,6 @@ class TrackUserPlaytime(Task):
                     else:
                         skip += 1
             database.conn.commit()
-            scoredata.save_data()
         return self._finish()
 
     def _add_most_played(self, userid: int, pt, name, gamemode):
@@ -335,12 +353,24 @@ class TrackUserPlaytime(Task):
     def _check_if_top_play(
         self,
         user_id: int,
-        scores: List[objects.Score],
         score: objects.Score,
         gamemode: str,
         new: bool,
     ):
         logger.info(f"{user_id} set play {score['id']}")
+        # TODO: Fix this hack someday
+        scores = list()
+        for score in database.conn.execute(
+            "SELECT beatmap_id, score_id, score, pp FROM users_scores WHERE user_id = ? AND mode = ?"
+        ):
+            scores.append(
+                {
+                    "beatmap_id": score[0],
+                    "id": score[1],
+                    "score": score[2],
+                    "pp": score[3],
+                }
+            )
         ranked_scores = 0
         if len(scores) % 100 == 0 and new:
             event = events.top_play_event(
@@ -401,48 +431,47 @@ class CrawlLovedMaps(Task):
         super().__init__()
 
     def can_run(self) -> bool:
-        last_run = DataFile(
-            f"{config['common']['data_directory']}/loved_crawler.json.gz"
-        )
-        last_run.load_data(
-            default={
-                "last_run": datetime_to_str(
-                    datetime.datetime(year=2000, month=1, day=1)
-                )
-            }
-        )
-        return (
-            datetime.datetime.now() - str_to_datetime(last_run.data["last_run"])
-        ) > datetime.timedelta(days=3)
+        last_run = datetime.datetime.fromtimestamp(database.get_task("crawllovedmaps"))
+        return (datetime.datetime.now() - last_run) > datetime.timedelta(days=7)
 
     def run(self):
-        last_run = DataFile(
-            f"{config['common']['data_directory']}/loved_crawler.json.gz"
-        )
-        last_run.load_data()
-        last_run.data["last_run"] = datetime_to_str(datetime.datetime.now())
-        last_run.save_data()
+        database.set_task("crawllovedmaps", time.time())
         leaderboards = get_by_leaderboard(["loved_bancho", "loved_akatsuki"])
         loved_maps = leaderboards["loved_bancho"] + leaderboards["loved_akatsuki"]
         logger.info(f"Crawling {len(loved_maps)} maps")
-        path = f"{config['common']['data_directory']}/users_statistics/scores/"
-        userid = {
-            int(file.replace(path, "").replace(".json.gz", "")): file
-            for file in glob.glob(f"{path}*.json.gz")
-        }
+        userid = database.conn.execute(
+            "SELECT DISTINCT user_id FROM users_scores"
+        ).fetchall()[0]
         for loved_map in loved_maps:
             scores = akatsuki.get_map_leaderboard(
                 loved_map, objects.gamemodes["std_rx"], pages=10000
             )
             for player, score in scores:
                 if player["id"] in userid:
-                    scorefile = DataFile(userid[player["id"]])
-                    scorefile.load_data()
-                    if str(score["beatmap_id"]) in scorefile.data["std_rx"]:
+                    if database.conn.execute(
+                        "SELECT user_id FROM users_score WHERE score_id = ?",
+                        (score["id"],),
+                    ).fetchall():
                         continue
                     logger.info(f"Found score on {loved_map} by {player['id']}")
-                    scorefile.data["std_rx"][str(score["beatmap_id"])] = score
-                    scorefile.save_data()
+                    database.conn.execute(
+                        "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        (
+                            score["beatmap_id"],
+                            "std_rx",
+                            score["id"],
+                            score["accuracy"],
+                            score["mods"],
+                            score["pp"],
+                            score["score"],
+                            score["rank"],
+                            score["count_300"],
+                            score["count_100"],
+                            score["count_50"],
+                            score["count_miss"],
+                            score["date"],
+                        ),
+                    )
         return self._finish()
 
 
@@ -497,18 +526,19 @@ class CrawlMaps(Task):
             i = 0
             for player, score in leaderboard[:50]:
                 i += 1
-                query = """INSERT OR REPLACE into "main"."beatmaps_leaderboard"("beatmap_id", "mode", "relax", "last_update", "position", "user_id", "accuracy", "mods", "rank", "count_300", "count_100", "count_50", "count_miss", "date") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); """
+                query = """INSERT OR REPLACE into "main"."beatmaps_leaderboard"("beatmap_id", "mode", "last_update", "position", "user_id", "accuracy", "mods", "pp", "score", "rank", "count_300", "count_100", "count_50", "count_miss", "date") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); """
                 cur.execute(
                     query,
                     (
                         beatmap_id,
-                        0,
-                        1,
+                        "std_rx",
                         int(time.time()),
                         i,
                         player["id"],
                         score["accuracy"],
                         score["mods"],
+                        score["pp"],
+                        score["score"],
                         score["rank"],
                         score["count_300"],
                         score["count_100"],
