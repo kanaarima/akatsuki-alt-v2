@@ -161,6 +161,44 @@ def create_users_table(conn):
     conn.commit()
 
 
+def create_users_score_table(conn):
+    c = conn.cursor()
+    query = """CREATE TABLE "users_scores" (
+	"beatmap_id"	INTEGER NOT NULL,
+	"mode"	INTEGER NOT NULL,
+    "relax"	INTEGER NOT NULL,
+    "last_update" INTEGER NOT NULL,
+	"score_id"	INTEGER NOT NULL,
+	"user_id"	INTEGER NOT NULL,
+	"accuracy"	REAL NOT NULL,
+	"mods"	INTEGER NOT NULL,
+	"rank"	TEXT NOT NULL,
+	"count_300"	INTEGER NOT NULL,
+	"count_100"	INTEGER NOT NULL,
+	"count_50"	INTEGER NOT NULL,
+	"count_miss"	INTEGER NOT NULL,
+    "date"		INTEGER NOT NULL,
+    PRIMARY KEY("beatmap_id", "mode", "relax", "score_id")
+)"""
+    c.execute(query)
+    conn.commit()
+
+
+def create_users_playtime_table(conn):
+    c = conn.cursor()
+    query = """CREATE TABLE "users_playtime" (
+	"user_id"	INTEGER NOT NULL,
+	"mode"	TEXT NOT NULL,
+	"submitted_plays"	REAL NOT NULL,
+	"unsubmitted_plays"	INTEGER NOT NULL,
+	"most_played"	INTEGER NOT NULL,
+    "last_score_id" INTEGER NOT NULL,
+	PRIMARY KEY("user_id","mode")
+);"""
+    c.execute(query)
+    conn.commit()
+
+
 def create_tables(conn):
     if not table_exists("beatmaps"):
         conn.execute("PRAGMA journal_mode=WAL;")
@@ -176,6 +214,10 @@ def create_tables(conn):
         create_tasks_table(conn)
     if not table_exists("users"):
         create_users_table(conn)
+    if not table_exists("users_scores"):
+        create_users_score_table(conn)
+    if not table_exists("users_playtime"):
+        create_users_playtime_table(conn)
 
 
 create_tables(conn)
