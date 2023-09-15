@@ -82,27 +82,23 @@ class StorePlayerStats(Task):
         super().__init__(asynchronous=False)
 
     def can_run(self) -> bool:
-        return not exists(self._get_path()) and exists(self._get_path_users())
+        return not exists(self._get_path()) 
 
     def run(self) -> TaskStatus:
-        usersfile = DataFile(filepath=self._get_path_users())
-        usersfile.load_data(default=[])
-        users: List[objects.LinkedPlayer] = usersfile.data
-        for user in users:
-            if not user["full_tracking"]:
-                continue
-            userfile = DataFile(filepath=f"{self._get_path()}{user['user_id']}.json.gz")
+        for user_id in database.conn.execute("SELECT user_id FROM users"):
+            user_id = user_id
+            userfile = DataFile(filepath=f"{self._get_path()}{user_id}.json.gz")
             userfile.data = {}
             playtime = DataFile(
-                f"{config['common']['data_directory']}/users_statistics/playtime/{user['user_id']}.json.gz"
+                f"{config['common']['data_directory']}/users_statistics/playtime/{user_id}.json.gz"
             )
             clears = DataFile(
-                f"{config['common']['data_directory']}/users_statistics/scores/{user['user_id']}.json.gz"
+                f"{config['common']['data_directory']}/users_statistics/scores/{user_id}.json.gz"
             )
             clears.load_data(default=None)
             playtime.load_data(default=None)
             playtime = playtime.data
-            player, stats = akatsuki.get_user_stats(user["user_id"])
+            player, stats = akatsuki.get_user_stats(user_id)
             first_places = {}
             for name, gamemode in objects.gamemodes.items():
                 if playtime and "most_played" in playtime:
@@ -112,7 +108,7 @@ class StorePlayerStats(Task):
                 if clears.data:
                     stats[name][0]["clears"] = len(clears.data[name])
                 _, first_places[name], beatmaps = akatsuki.get_user_1s(
-                    userid=user["user_id"],
+                    userid=user_id,
                     gamemode=gamemode,
                     pages=1000,
                 )
@@ -125,9 +121,6 @@ class StorePlayerStats(Task):
 
     def _get_path(self) -> str:
         return f"{config['common']['data_directory']}/users_statistics/{yesterday()}/"
-
-    def _get_path_users(self) -> str:
-        return f"{config['common']['data_directory']}/users_statistics/users.json.gz"
 
 
 class StorePlayerScores(Task):
