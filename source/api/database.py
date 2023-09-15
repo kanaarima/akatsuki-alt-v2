@@ -168,7 +168,7 @@ def create_users_score_table(conn):
     c = conn.cursor()
     query = """CREATE TABLE "users_scores" (
 	"beatmap_id"	INTEGER NOT NULL,
-	"mode"	TEXT NOT NULL
+	"mode"	TEXT NOT NULL,
 	"score_id"	INTEGER NOT NULL,
 	"user_id"	INTEGER NOT NULL,
 	"accuracy"	REAL NOT NULL,
