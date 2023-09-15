@@ -12,7 +12,7 @@ def convert_users():
     for discord_id in file_links.data:
         data = file_links.data[discord_id]
         c.execute(
-            "INSERT OR REPLACE INTO users VALUES(?,?,?,?,?)",
+            "INSERT OR REPLACE INTO users VALUES(?,?,?,?,?,?)",
             (
                 data[0]["id"],
                 data[0]["clan_id"] if "clan_id" in data[0] else 0,
