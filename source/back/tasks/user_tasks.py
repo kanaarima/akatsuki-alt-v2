@@ -454,7 +454,7 @@ class CrawlLovedMaps(Task):
             for player, score in scores:
                 if player["id"] in userid:
                     if database.conn.execute(
-                        "SELECT user_id FROM users_score WHERE score_id = ?",
+                        "SELECT user_id FROM users_scores WHERE score_id = ?",
                         (score["id"],),
                     ).fetchall():
                         continue
@@ -556,5 +556,5 @@ class CrawlMaps(Task):
                     ),
                 )
                 database.conn.commit()
-            time.sleep(4)
+            time.sleep(1.5)
         return self._finish()
