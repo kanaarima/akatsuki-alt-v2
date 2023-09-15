@@ -554,5 +554,5 @@ class CrawlMaps(Task):
                     ),
                 )
                 database.conn.commit()
-            time.sleep(1.5)
+            time.sleep(0.8)
         return self._finish()
