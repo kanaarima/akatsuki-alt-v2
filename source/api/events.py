@@ -24,6 +24,13 @@ class TopPlayEvent(TypedDict):
     gamemode: str
 
 
+class FirstPlaceEvent(TypedDict):
+    name: str
+    user_id: int
+    beatmap_id: int
+    gamemode: str
+
+
 def channel_message_event(userid, channel, message) -> ChannelMessageEvent:
     return ChannelMessageEvent(
         name="ChannelMessageEvent", userid=userid, channel=channel, message=message
@@ -41,6 +48,15 @@ def top_play_event(
         index=index,
         gamemode=gamemode,
         play_type=play_type,
+    )
+
+
+def first_place_event(user_id, beatmap_id, gamemode) -> FirstPlaceEvent:
+    return FirstPlaceEvent(
+        name="FirstPlaceEvent",
+        user_id=user_id,
+        beatmap_id=beatmap_id,
+        gamemode=gamemode,
     )
 
 

@@ -1,5 +1,5 @@
 from api.objects import gamemodes, Player as AkatsukiPlayer
-from api.events import send_event, channel_message_event
+from api.events import send_event, first_place_event
 from api.beatmaps import load_beatmap
 from api.logging import get_logger
 from api.database import conn
@@ -76,12 +76,6 @@ def handle_announce(message: str) -> None:
         gamemode_type = message[1:3]
         user_id = 0
 
-        # Send event to discord bot
-        send_event(
-            target="frontend",
-            event=channel_message_event(user_id, "#announce", message),
-        )
-
         url_beatmap = "[https://osu.akatsuki.gg/beatmaps/"
         url_profile = "[https://akatsuki.gg/u/"
         beatmap_id = 0
@@ -131,6 +125,11 @@ def handle_announce(message: str) -> None:
                 (user_id, str(today()), gamemode),
             )
         conn.commit()
+        # Send event to discord bot
+        send_event(
+            target="frontend",
+            event=first_place_event(user_id, beatmap_id, gamemode),
+        )
     else:
         logger.warning(f"Can't handle announce: {message}")
 

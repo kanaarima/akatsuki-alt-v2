@@ -1,7 +1,7 @@
 from api.utils import str_to_datetime, datetime_to_str, yesterday, other_yesterday
 from front.leaderboards import clan_leaderboards, user_leaderboards
 from front.views import get_score_embed, get_mapset_embed
-from api.objects import gamemodes_full
+from api.objects import gamemodes_full, gamemodes
 from api.files import DataFile
 from api.logging import get_logger
 import api.akatsuki as akatsuki
@@ -207,6 +207,25 @@ async def handle_events():
                         )
                     )
                     await webhook.delete()
+            elif event["name"] == "FirstPlaceEvent":
+                first_place_event: api.events.FirstPlaceEvent = event
+                player = akatsuki.get_user_info(first_place_event["user_id"])
+                recent_play = akatsuki.get_user_recent(
+                    first_place_event["user_id"],
+                    gamemodes[first_place_event["gamemode"]],
+                )
+                title = f"{player['name']} set a new {gamemodes_full[first_place_event['gamemode']]} first place!)"
+
+                embed = get_score_embed(
+                    player=player,
+                    beatmap=beatmaps.load_beatmap(first_place_event["beatmap_id"]),
+                    score=recent_play[0][0],
+                    title_overwrite=title,
+                    use_thumbnail=False,
+                )
+                await bot.client.get_channel(
+                        config["discord"]["forward_channels"]["#announce"]
+                    ).send(embed=embed)
     except:
         logger.error("Could not handle events!", exc_info=True)
 
