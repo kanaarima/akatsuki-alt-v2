@@ -28,7 +28,6 @@ def main():
                 user_tasks.CrawlMaps(),
                 maintenance_tasks.FixAkatsukiBeatmapRankings(),
                 maintenance_tasks.CheckNewRankedBeatmaps(),
-                maintenance_tasks.BuildBeatmapCache(),
                 maintenance_tasks.StoreTopPlays(),
                 maintenance_tasks.CheckAkatsukiBeatmapsChannel(),
             ]
