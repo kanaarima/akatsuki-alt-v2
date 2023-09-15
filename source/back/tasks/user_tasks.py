@@ -4,7 +4,7 @@ from api.utils import (
     datetime_to_str,
     str_to_datetime,
 )
-from api.beatmaps import save_beatmaps, save_beatmap, load_beatmap, get_by_leaderboard
+from api.beatmaps import save_beatmaps, load_beatmap, get_by_leaderboard
 from api.utils import str_to_datetime, datetime_to_str
 from api.tasks import Task, TaskStatus
 from api.files import DataFile, exists
@@ -82,7 +82,7 @@ class StorePlayerStats(Task):
         super().__init__(asynchronous=False)
 
     def can_run(self) -> bool:
-        return not exists(self._get_path()) 
+        return not exists(self._get_path())
 
     def run(self) -> TaskStatus:
         for user_id in database.conn.execute("SELECT user_id FROM users"):
