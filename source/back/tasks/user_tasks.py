@@ -177,15 +177,15 @@ class StorePlayerScores(Task):
 class TrackUserPlaytime(Task):
     def __init__(self) -> None:
         super().__init__()
-        self.last_fetch = datetime.datetime(year=2000, month=1, day=1)
 
     def can_run(self) -> bool:
-        return (datetime.datetime.now() - self.last_fetch) > datetime.timedelta(
-            minutes=10
+        last_checked = datetime.datetime.fromtimestamp(
+            database.get_task("trackuserplaytime")
         )
+        return (datetime.datetime.now() - last_checked) > datetime.timedelta(minutes=10)
 
     def run(self) -> TaskStatus:
-        self.last_fetch = datetime.datetime.now()
+        database.set_task("trackuserplaytime", time.time())
         scorefile = DataFile(f"{self._get_path()}/scores.json.gz")
         scorefile.load_data(default={})
 

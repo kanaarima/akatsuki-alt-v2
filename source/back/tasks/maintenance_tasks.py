@@ -226,13 +226,12 @@ class CheckNewRankedBeatmaps(Task):
 class FixAkatsukiBeatmapRankings(Task):
     def __init__(self) -> None:
         super().__init__(asynchronous=True)
-        self.last = datetime(year=1984, month=1, day=1)
 
     def can_run(self) -> bool:
-        return (datetime.now() - self.last) > timedelta(days=1)
+        last = datetime.fromtimestamp(database.get_task("fixakatsukibeatmaprankings"))
+        return (datetime.now() - last) > timedelta(days=1)
 
     def run(self) -> TaskStatus:
-        self.last = datetime.now()
         path = f"{config['common']['data_directory']}/beatmaps/"
         for file in glob.glob(f"{path}*.json.gz"):
             if self.suspended:
@@ -256,6 +255,7 @@ class FixAkatsukiBeatmapRankings(Task):
             logger.info(
                 f"Changed beatmap {beatmap_id} status from {bancho_status} to {beatmap['status']['akatsuki']}"
             )
+        database.set_task("fixakatsukibeatmaprankings", time.time())
         return self._finish()
 
 
@@ -363,10 +363,8 @@ class CheckAkatsukiBeatmapsChannel(Task):
         super().__init__(asynchronous=True)
 
     def can_run(self) -> bool:
-        last_checked = database.get_task("checkbeatmapschannel")
-        return (datetime.now() - datetime.fromtimestamp(last_checked)) > timedelta(
-            days=1
-        )
+        last = datetime.fromtimestamp(database.get_task("checkbeatmapschannel"))
+        return (datetime.now() - last) > timedelta(days=1)
 
     def run(self):
         dce_path = f"{config['discord_crawler']['discord_chat_exporter_dll_path']}"
