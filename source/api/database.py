@@ -14,6 +14,31 @@ conn_uri = sqlite3.connect(
 )
 
 
+def table_exists(table_name):
+    c = conn.cursor()
+    c.execute(
+        f""" SELECT count(name) FROM sqlite_master WHERE type='table' AND name='{table_name}' """
+    )
+    return c.fetchone()[0] == 1
+
+
+def get_task(task_name) -> int:
+    c = conn.cursor()
+    check = c.execute(
+        "SELECT last_run FROM tasks WHERE name = ?", (task_name,)
+    ).fetchone()
+    if check:
+        return check[0]
+    else:
+        return 0
+
+
+def set_task(task_name, last_run):
+    c = conn.cursor()
+    c.execute("INSERT OR REPLACE INTO tasks VALUES(?, ?)", (task_name, last_run))
+    conn.commit()
+
+
 def create_beatmap_table(conn):
     c = conn.cursor()
     query = """CREATE TABLE "beatmaps" (
@@ -110,35 +135,30 @@ def create_user_daily_1s_table(conn):
     conn.commit()
 
 
-def create_tables(conn):
+def create_tasks_table(conn):
     c = conn.cursor()
-    c.execute(
-        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='beatmaps' """
-    )
-    if c.fetchone()[0] != 1:
+    query = """CREATE TABLE "tasks" (
+	"name"	TEXT UNIQUE,
+	"last_run"	INTEGER,
+	PRIMARY KEY("name")
+)"""
+    c.execute(query)
+    conn.commit()
+
+
+def create_tables(conn):
+    if not table_exists("beatmaps"):
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.commit()
         create_beatmap_table(conn)
-    c.execute(
-        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='beatmaps_posts' """
-    )
-    if c.fetchone()[0] != 1:
-        create_map_post_table(conn)
-    c.execute(
-        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='beatmaps_leaderboard' """
-    )
-    if c.fetchone()[0] != 1:
+    if not table_exists("beatmaps_leaderboard"):
         create_map_leaderboard_table(conn)
-    c.execute(
-        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='metrics' """
-    )
-    if c.fetchone()[0] != 1:
+    if not table_exists("metrics"):
         create_metrics_table(conn)
-    c.execute(
-        """ SELECT count(name) FROM sqlite_master WHERE type='table' AND name='leaderboard_user_daily1s' """
-    )
-    if c.fetchone()[0] != 1:
+    if not table_exists("leaderboard_user_daily1s"):
         create_user_daily_1s_table(conn)
+    if not table_exists("tasks"):
+        create_tasks_table(conn)
 
 
 create_tables(conn)
