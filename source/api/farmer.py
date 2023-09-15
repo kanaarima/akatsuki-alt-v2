@@ -1,5 +1,5 @@
 from api.utils import get_mods, Relax, HardRock, DoubleTime, Hidden, Easy
-from api.beatmaps import load_beatmap, base_path
+from api.beatmaps import load_beatmap, base_path, get_by_leaderboard
 from typing import List, Tuple, Dict, TypedDict
 from api.files import DataFile, exists
 from api.objects import Score, Beatmap
@@ -102,27 +102,25 @@ scorefarm = None
 
 def process_score_farm():
     global scorefarm
-    if not exists(f"{config['common']['data_directory']}/beatmap_cache.json.gz"):
-        return
+
     scorefarmfile = DataFile(f"{config['common']['data_directory']}/score_farm.json.gz")
     if exists(f"{config['common']['data_directory']}/score_farm.json.gz"):
         scorefarmfile.load_data()
         scorefarm = scorefarmfile.data
         return
 
-    cache = DataFile(f"{config['common']['data_directory']}/beatmap_cache.json.gz")
-    cache.load_data()
     beatmaps = []
     max_score = 0
-    for id in cache.data["metadata"].keys():
-        if (
-            int(id) not in cache.data["ranked"]["total"]
-            and int(id) not in cache.data["ranked_akatsuki"]["total"]
-        ):
-            continue
-        beatmap = cache.data["metadata"][id]
-        if not beatmap["length"]:
-            continue
+    maps = get_by_leaderboard(
+        columns=["beatmap_id", "length", "sliders", "circles", "spinners"],
+        leaderboards=["akatsuki_ranked", "bancho_ranked"],
+    )
+    for id, length, sliders, circles, spinners in (
+        maps["akatsuki_ranked"] + maps["bancho_ranked"]
+    ):
+        beatmap = {}
+        beatmap["length"] = length
+        beatmap["max_score"] = (sliders * 350) + (circles * 300) + (spinners * 1000)
         beatmap["beatmap_id"] = id
         beatmap["score_minute"] = beatmap["max_score"] / (beatmap["length"] / 60)
         max_score = max(beatmap["score_minute"], max_score)

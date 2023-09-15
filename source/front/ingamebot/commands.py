@@ -160,9 +160,10 @@ def recommend_score(player: Player, message, args):
             int(beatmapid) for beatmapid in list(scores.data["std_rx"].keys())
         )
 
-    beatmap = farmer.recommend_score(skip_id, 1)[0]
+    beatmap_metadata = farmer.recommend_score(skip_id, 1)[0]
+    beatmap = beatmaps.load_beatmap(beatmap_metadata['beatmap_id'])
     link = f"osu://b/{beatmap['beatmap_id']}"
-    title = f"{beatmap['title']} [{beatmap['difficulty_name']}] {int(beatmap['max_score']):,} (score/minute: {int(beatmap['score_minute']):,})"
+    title = f"{beatmap['title']} [{beatmap['difficulty_name']}] {int(beatmap_metadata['max_score']):,} (score/minute: {int(beatmap_metadata['score_minute']):,})"
     player.send_message(f"[{link} {title}]")
 
 
