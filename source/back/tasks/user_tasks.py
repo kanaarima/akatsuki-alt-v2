@@ -128,64 +128,50 @@ class StorePlayerScores(Task):
         super().__init__(asynchronous=False)
 
     def can_run(self) -> bool:
-        userfile = DataFile(self._get_path_users())
-        userfile.load_data(default=[])
         infofile = DataFile(f"{self._get_path()}/scores.json.gz")
         infofile.load_data(default={})
 
-        users: List[objects.LinkedPlayer] = userfile.data
-
-        for user in users:
-            if not user["full_tracking"]:
-                continue
-            if not exists(f"{self._get_path()}/scores/{user['user_id']}.json.gz"):
+        for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
+            user_id = user_id[0]
+            if not exists(f"{self._get_path()}/scores/{user_id}.json.gz"):
                 return True
-            if str(user["user_id"]) not in infofile.data:
+            if str(user_id) not in infofile.data:
                 return True
-            last_fetch = str_to_datetime(infofile.data[str(user["user_id"])])
+            last_fetch = str_to_datetime(infofile.data[user_id])
             if (datetime.datetime.now() - last_fetch) > datetime.timedelta(days=7):
                 return True
         return False
 
     def run(self) -> TaskStatus:
-        userfile = DataFile(self._get_path_users())
-        userfile.load_data(default=[])
         infofile = DataFile(f"{self._get_path()}/scores.json.gz")
         infofile.load_data(default={})
 
-        users: List[objects.LinkedPlayer] = userfile.data
-
-        for user in users:
+        for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
+            user_id = user_id[0]
             if self.suspended:
                 return TaskStatus.SUSPENDED
-            if not user["full_tracking"]:
-                continue
-            if str(user["user_id"]) in infofile.data:
-                last_fetch = str_to_datetime(infofile.data[str(user["user_id"])])
+
+            if str(user_id) in infofile.data:
+                last_fetch = str_to_datetime(infofile.data[str(user_id)])
                 if (datetime.datetime.now() - last_fetch) < datetime.timedelta(days=7):
                     continue
-            path = f"{self._get_path()}/scores/{user['user_id']}.json.gz"
+            path = f"{self._get_path()}/scores/{user_id}.json.gz"
             scorefile = DataFile(path)
             scorefile.load_data(default={})
             for name, gamemode in objects.gamemodes.items():
-                scores, maps = akatsuki.get_user_best(
-                    user["user_id"], gamemode, pages=1000
-                )
+                scores, maps = akatsuki.get_user_best(user_id, gamemode, pages=1000)
                 if name not in scorefile.data or not scorefile.data[name]:
                     scorefile.data[name] = {}
                 for score in scores:
                     scorefile.data[name][score["beatmap_id"]] = score
                 save_beatmaps(maps)
-            infofile.data[user["user_id"]] = datetime_to_str(datetime.datetime.now())
+            infofile.data[user_id] = datetime_to_str(datetime.datetime.now())
             scorefile.save_data()
             infofile.save_data()
         return self._finish()
 
     def _get_path(self):
         return f"{config['common']['data_directory']}/users_statistics/"
-
-    def _get_path_users(self) -> str:
-        return f"{config['common']['data_directory']}/users_statistics/users.json.gz"
 
 
 class TrackUserPlaytime(Task):
