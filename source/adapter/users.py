@@ -13,6 +13,13 @@ def convert_users():
         data = file_links.data[discord_id]
         c.execute(
             "INSERT OR REPLACE INTO users VALUES(?,?,?,?,?)",
-            (data[0]["id"], data[0]["name"], data[0]["country"], discord_id, data[1]),
+            (
+                data[0]["id"],
+                data[0]["clan_id"],
+                data[0]["name"],
+                data[0]["country"],
+                discord_id,
+                data[1],
+            ),
         )
     database.conn.commit()

@@ -150,6 +150,7 @@ def create_users_table(conn):
     c = conn.cursor()
     query = """CREATE TABLE "users" (
 	"user_id"	INTEGER NOT NULL UNIQUE,
+    "clan_id"   INTEGER NOT NULL,
 	"name"	INTEGER,
 	"country"	TEXT,
 	"discord_id"	INTEGER NOT NULL UNIQUE,

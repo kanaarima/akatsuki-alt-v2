@@ -46,7 +46,14 @@ async def link(full: str, split: list[str], message: discord.Message):
     else:
         c.execute(
             "INSERT INTO users VALUES(?,?,?,?,?)",
-            (info["id"], info["name"], info["country"], message.author.id, "std"),
+            (
+                info["id"],
+                info["clan_id"],
+                info["name"],
+                info["country"],
+                message.author.id,
+                "std",
+            ),
         )
         await message.reply("Linked successfully.")
 
@@ -664,7 +671,12 @@ async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     ).fetchall()
     if not check:
         return None, None
-    return Player(id=check[0][0], name=check[0][1], country=check[0][2]), check[0][4]
+    return (
+        Player(
+            id=check[0][0], clan_id=check[0][1], name=check[0][2], country=check[0][3]
+        ),
+        check[0][5],
+    )
 
 
 async def _link_warning(message: discord.Message):
