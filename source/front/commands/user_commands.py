@@ -737,7 +737,7 @@ def _add_extra(player: Player, fetch):
         submitted_plays, unsubmitted_plays, most_played = database.conn.execute(
             "SELECT submitted_plays, unsubmitted_plays, most_played FROM users_playtime WHERE user_id = ? AND mode = ?",
             (player["id"], name),
-        )
+        ).fetchall()[0]
         stats["play_time"] = submitted_plays + unsubmitted_plays + most_played
     return fetch
 
