@@ -1,5 +1,9 @@
+from api.logging import get_logger
 import api.objects as objects
 import datetime
+import time
+
+logger = get_logger("utils")
 
 
 def merge_dict(source: dict, target: dict) -> None:
@@ -191,3 +195,18 @@ def calculate_max_score(attributes: objects.BeatmapAttributes):
         + (attributes["sliders"] * 350)
         + (attributes["spinners"] * 1000)
     )
+
+
+def execute(conn, query, args, timeout=100):
+    elapsed = time.time()
+    while True:
+        try:
+            return conn.execute(query, args)
+        except Exception as e:
+            logger.warn(
+                f"Got exception {type(e)} running query {query} with args {args}! retrying...",
+                exc_info=True,
+            )
+            if time.time() - elapsed > timeout:
+                break
+            time.sleep(0.2)

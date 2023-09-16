@@ -1,4 +1,5 @@
 from api.logging import get_logger, type
+from api.utils import execute
 import api.database as database
 
 logger = get_logger("api.metrics")
@@ -15,39 +16,46 @@ def log_request(request, post=False):
         logger.info(f"{type} {request.url} {request.status_code}")
     method = request.url.split("?")[0]
 
-    check = cur.execute(f'SELECT * FROM metrics WHERE endpoint = "global"').fetchall()
+    check = execute(cur, f'SELECT * FROM metrics WHERE endpoint = "global"').fetchall()
     if not check:
-        cur.execute(
+        execute(
+            cur,
             f"""INSERT INTO "main"."metrics"(endpoint, requests, errors) VALUES (?,?,?) """,
             ("global", 0, 0),
         )
 
-    check = cur.execute(
-        f"SELECT * FROM metrics WHERE endpoint = ?", (method,)
+    check = execute(
+        cur, f"SELECT * FROM metrics WHERE endpoint = ?", (method,)
     ).fetchall()
     if not check:
-        cur.execute(
+        execute(
+            cur,
             f"""INSERT INTO "main"."metrics"(endpoint, requests, errors) VALUES (?,?,?) """,
             (method, 0, 0),
         )
     if error:
-        cur.execute(
+        execute(
+            cur,
             f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = ? """,
             (method,),
         )
-        cur.execute(
+        execute(
+            cur,
             f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = ? """,
             ("global",),
         )
     else:
-        cur.execute(
+        execute(
+            cur,
             f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = ? """,
             (method,),
         )
-        cur.execute(
+        execute(
+            cur,
             f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = ? """,
             ("global",),
         )
+    cur.close()
     database.conn.commit()
 
 
