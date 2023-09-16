@@ -40,5 +40,5 @@ def search_maps():
                 )
                 db.conn.commit()
                 print(
-                    f"Result: {db.conn.execute('SELECT * FROM beatmaps WHERE beatmap_id = ?', (beatmap.id,))}"
+                    f"Result: {db.conn.execute('SELECT * FROM beatmaps WHERE beatmap_id = ?', (beatmap.id,)).fetchall()}"
                 )
