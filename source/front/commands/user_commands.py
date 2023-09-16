@@ -743,7 +743,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
             for x in database.conn_uri.execute(
                 "SELECT beatmap_id FROM users_scores WHERE user_id = ? AND mode = ?",
                 (player["id"], gamemode),
-            )
+            ).fetchall()
         ]
     for item in res:
         if blacklist and item[0] in blacklist:
