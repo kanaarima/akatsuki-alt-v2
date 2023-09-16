@@ -383,7 +383,7 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
         view = args["view"]
     cur = database.ConnectionHandler()
     scores = cur.execute(
-        "SELECT * FROM users_scores WHERE user_id = ?, mode = ?",
+        "SELECT * FROM users_scores WHERE user_id = ? AND mode = ?",
         (player["id"], gamemode),
     ).fetchall()
     cur.close()
