@@ -515,7 +515,7 @@ class CrawlMaps(Task):
                     continue
             logger.info(f"crawling {beatmap_id}")
             leaderboard = akatsuki.get_map_leaderboard(
-                beatmap_id, gamemode=objects.gamemodes["std_rx"], pages=5
+                beatmap_id, gamemode=objects.gamemodes["std_rx"]
             )
             if len(leaderboard) > 2:  # workaround for akatsuki weirdness
                 if leaderboard[0][1]["pp"] == leaderboard[1][1]["pp"]:
