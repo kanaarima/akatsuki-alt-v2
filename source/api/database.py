@@ -14,14 +14,31 @@ conn_uri = sqlite3.connect(
     uri=True,
     timeout=3000,
 )
+conn_lb = sqlite3.connect(
+    config["database_leaderboards"],
+    isolation_level=None,
+    check_same_thread=False,
+    timeout=3000,
+)
+conn_uri_lb = sqlite3.connect(
+    f"file:{config['database_leaderboards']}?mode=ro",
+    isolation_level=None,
+    check_same_thread=False,
+    uri=True,
+    timeout=3000,
+)
 
 
 class ConnectionHandler:
-    def __init__(self):
-        self.cur = conn.cursor()
+    def __init__(self, db=None):
+        if not db:
+            self.conn = conn
+        else:
+            self.conn = db
+        self.cur = self.conn.cursor()
 
     def execute(self, query, args=None, timeout=100) -> sqlite3.Cursor:
-        conn.commit()  # maybe not needed
+        self.conn.commit()  # maybe not needed
         elapsed = time.time()
         errors = 0
         while True:
@@ -43,14 +60,17 @@ class ConnectionHandler:
                     break
                 time.sleep(1)
             finally:
-                conn.commit()
+                self.conn.commit()
 
     def close(self):
         self.cur.close()
 
 
-def table_exists(table_name):
-    c = conn.cursor()
+def table_exists(table_name, db=None):
+    if db:
+        c = db.cursor()
+    else:
+        c = conn.cursor()
     c.execute(
         f""" SELECT count(name) FROM sqlite_master WHERE type='table' AND name='{table_name}' """
     )
@@ -240,8 +260,8 @@ def create_users_playtime_table(conn):
 def create_tables(conn):
     if not table_exists("beatmaps"):
         create_beatmap_table(conn)
-    if not table_exists("beatmaps_leaderboard"):
-        create_map_leaderboard_table(conn)
+    if not table_exists("beatmaps_leaderboard", conn_lb):
+        create_map_leaderboard_table(conn_lb)
     if not table_exists("metrics"):
         create_metrics_table(conn)
     if not table_exists("leaderboard_user_daily1s"):
@@ -258,6 +278,10 @@ def create_tables(conn):
     conn.execute("PRAGMA synchronous=normal;")
     conn.execute("PRAGMA busy_timeout = 30000")
     conn.commit()
+    conn_lb.execute("PRAGMA journal_mode=WAL;")
+    conn_lb.execute("PRAGMA synchronous=normal;")
+    conn_lb.execute("PRAGMA busy_timeout = 30000")
+    conn_lb.commit()
 
 
 create_tables(conn)

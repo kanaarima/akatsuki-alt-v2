@@ -493,7 +493,7 @@ class CrawlMaps(Task):
         return True
 
     def run(self):
-        cur = database.ConnectionHandler()
+        cur = database.ConnectionHandler(database.conn_lb)
         beatmap_ids = cur.execute(
             "SELECT beatmap_id FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND MODE = 0"
         ).fetchall()
