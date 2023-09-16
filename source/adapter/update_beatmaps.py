@@ -1,5 +1,6 @@
 import api.database as db
 import api.beatmaps as beatmaps
+import time
 from ossapi.enums import BeatmapsetSearchSort, BeatmapsetSearchCategory
 
 
@@ -42,3 +43,4 @@ def search_maps():
                 print(
                     f"Result: {db.conn.execute('SELECT * FROM beatmaps WHERE beatmap_id = ?', (beatmap.id,)).fetchall()}"
                 )
+        time.sleep(1)
