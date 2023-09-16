@@ -38,7 +38,7 @@ async def link(full: str, split: list[str], message: discord.Message):
     if not info:
         await message.reply("No user matching found. Perhaps use UserID?")
         return
-    c = database.conn.cursor()
+    c = database.ConnectionHandler()
     check = c.execute(
         "SELECT user_id FROM users WHERE discord_id = ?", (message.author.id,)
     ).fetchone()
@@ -57,13 +57,14 @@ async def link(full: str, split: list[str], message: discord.Message):
             ),
         )
         await message.reply("Linked successfully.")
+    c.close()
 
 
 async def set_default_gamemode(full: str, split: list[str], message: discord.Message):
     if not split:
         await message.reply("!setdefault gamemode")
         return
-    c = database.conn.cursor()
+    c = database.ConnectionHandler()
     check = c.execute(
         "SELECT user_id FROM users WHERE discord_id = ?", (message.author.id,)
     ).fetchone()
@@ -78,6 +79,7 @@ async def set_default_gamemode(full: str, split: list[str], message: discord.Mes
         """UPDATE users SET "default_mode" = ? WHERE discord_id = ?""",
         (mode, message.author.id),
     )
+    c.close()
     await message.reply(f"Default gamemode set to {gamemodes_full[mode]}")
 
 
@@ -378,10 +380,12 @@ async def show_scores(full: str, split: list[str], message: discord.Message):
             await message.reply(f"Invalid view! {','.join(valid_types)}")
             return
         view = args["view"]
-    scores = database.conn.execute(
+    cur = database.ConnectionHandler()
+    scores = cur.execute(
         "SELECT * FROM users_scores WHERE user_id = ?, mode = ?",
         (player["id"], gamemode),
     ).fetchall()
+    cur.close()
     if not scores:
         await message.reply("Your statistics aren't fetched yet. Please wait!")
         return
@@ -564,9 +568,11 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
 
 
 async def show_1s_leaderboard(full: str, split: list[str], message: discord.Message):
-    positions = database.conn.execute(
+    cur = database.ConnectionHandler()
+    positions = cur.execute(
         "SELECT user_id FROM beatmaps_leaderboard WHERE position = 1"
     ).fetchall()
+    cur.close()
     user_ids = {}
     for user_id in positions:
         user_id = user_id[0]
@@ -667,10 +673,11 @@ async def get_help(full: str, split: list[str], message: discord.Message):
 
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
-    c = database.conn.cursor()
+    c = database.ConnectionHandler()
     check = c.execute(
         "SELECT * FROM users WHERE discord_id = ?", (int(discord_id),)
     ).fetchall()
+    c.close()
     if not check:
         return None, None
     return (
@@ -717,12 +724,13 @@ def _update_fetch(player: Player, user_file: DataFile):
 
 
 def _add_extra(player: Player, fetch):
+    cur = database.ConnectionHandler()
     for name in gamemodes.keys():
         stats = fetch[name][0]
-        if database.conn.execute(
+        if cur.execute(
             "SELECT * FROM users_scores WHERE user_id = ? LIMIT 1", (player["id"],)
         ).fetchall():
-            stats["clears"] = database.conn.execute(
+            stats["clears"] = cur.execute(
                 "SELECT COUNT(score_id) FROM users_scores WHERE user_id = ? AND mode = ?",
                 (player["id"], name),
             ).fetchall()[0][0]
@@ -730,15 +738,16 @@ def _add_extra(player: Player, fetch):
             stats["clears"] = -1
         if "rx" not in name and "ap" not in name:
             continue
-        if not database.conn.execute(
+        if not cur.execute(
             "SELECT * FROM users_playtime WHERE user_id = ?", (player["id"],)
         ).fetchall():
             continue
-        submitted_plays, unsubmitted_plays, most_played = database.conn.execute(
+        submitted_plays, unsubmitted_plays, most_played = cur.execute(
             "SELECT submitted_plays, unsubmitted_plays, most_played FROM users_playtime WHERE user_id = ? AND mode = ?",
             (player["id"], name),
         ).fetchall()[0]
         stats["play_time"] = submitted_plays + unsubmitted_plays + most_played
+    cur.close()
     return fetch
 
 

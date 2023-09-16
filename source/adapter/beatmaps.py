@@ -93,5 +93,5 @@ def main():
                 tags = ",".join(line[5:].split())
         beatmap["tags"] = tags
         beatmap["md5"] = hashlib.md5(filemap.data).hexdigest()
-        insert_beatmap(database.conn.cursor(), beatmap)
-    database.conn.commit()
+        insert_beatmap(database.ConnectionHandler(), beatmap)
+

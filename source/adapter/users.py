@@ -8,7 +8,7 @@ def convert_users():
         filepath=f"{config['common']['data_directory']}/users_statistics/users_discord.json.gz"
     )
     file_links.load_data()
-    c = database.conn.cursor()
+    c = database.ConnectionHandler()
     for discord_id in file_links.data:
         data = file_links.data[discord_id]
         c.execute(
@@ -22,4 +22,3 @@ def convert_users():
                 data[1],
             ),
         )
-    database.conn.commit()

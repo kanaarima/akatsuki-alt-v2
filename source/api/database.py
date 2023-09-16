@@ -1,6 +1,7 @@
 from api.logging import get_logger
 from config import config
 import sqlite3
+import time
 
 logger = get_logger("api.database")
 conn = sqlite3.connect(
@@ -13,6 +14,39 @@ conn_uri = sqlite3.connect(
     uri=True,
     timeout=3000,
 )
+
+
+class ConnectionHandler:
+    def __init__(self):
+        self.cur = conn.cursor()
+
+    def execute(self, query, args=None, timeout=100) -> sqlite3.Cursor:
+        conn.commit()  # maybe not needed
+        elapsed = time.time()
+        errors = 0
+        while True:
+            try:
+                if args:
+                    return self.cur.execute(query, args)
+                else:
+                    return self.cur.execute(query)
+            except Exception as e:
+                if "locked" not in str(e):
+                    raise e
+                errors += 1
+                if errors % 40 == 0:
+                    logger.warn(
+                        f"Database locked for {errors} seconds!",
+                        exc_info=True,
+                    )
+                if time.time() - elapsed > timeout:
+                    break
+                time.sleep(1)
+            finally:
+                conn.commit()
+
+    def close(self):
+        self.cur.close()
 
 
 def table_exists(table_name):

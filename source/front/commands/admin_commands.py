@@ -40,12 +40,14 @@ async def query(full: str, split: list[str], message: discord.Message):
 async def show_snipes(full: str, split: list[str], message: discord.Message):
     if not await authorized(message, auth_level=0):
         return
-    positions_1 = database.conn.execute(
+    cur = database.ConnectionHandler()
+    positions_1 = cur.execute(
         "SELECT user_id, beatmap_id, mods, accuracy FROM beatmaps_leaderboard WHERE position = 1"
     ).fetchall()
-    positions_2 = database.conn.execute(
+    positions_2 = cur.execute(
         "SELECT user_id, beatmap_id, mods, accuracy FROM beatmaps_leaderboard WHERE position = 2"
     ).fetchall()
+    cur.close()
     snipes = {}
     for user_id, beatmap_id, mods, accuracy in positions_1:
         for user_id_2, beatmap_id_2, mods_2, accuracy_2 in positions_2:

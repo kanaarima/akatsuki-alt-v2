@@ -126,18 +126,20 @@ async def refresh_status():
                 .decode("utf-8")
             )
             maps_downloaded = len(glob.glob(f"{maps_path}/*.osu.gz"))
-            count_akatsuki = database.conn.execute(
+            cur = database.ConnectionHandler()
+            count_akatsuki = cur.execute(
                 "SELECT count(beatmap_id) FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0"
             ).fetchall()[0][0]
-            count_bancho = database.conn.execute(
+            count_bancho = cur.execute(
                 "SELECT count(beatmap_id) FROM beatmaps WHERE bancho_status BETWEEN 1 AND 4"
             ).fetchall()[0][0]
-            count_requests = database.conn.execute(
+            count_requests = cur.execute(
                 'SELECT requests FROM metrics WHERE endpoint = "global"'
             ).fetchall()[0][0]
-            count_errors = database.conn.execute(
+            count_errors = cur.execute(
                 'SELECT errors FROM metrics WHERE endpoint = "global"'
             ).fetchall()[0][0]
+            cur.close()
             req_min = (count_requests - last_request_count) / 2
             last_request_count = count_requests
             update_embed.add_field(
@@ -224,8 +226,8 @@ async def handle_events():
                     use_thumbnail=False,
                 )
                 await bot.client.get_channel(
-                        config["discord"]["forward_channels"]["#announce"]
-                    ).send(embed=embed)
+                    config["discord"]["forward_channels"]["#announce"]
+                ).send(embed=embed)
     except:
         logger.error("Could not handle events!", exc_info=True)
 
@@ -273,7 +275,7 @@ async def post_beatmaps():
         elif tag.name.lower() == "mania":
             gamemodes[3] = tag
 
-    cur = database.conn.cursor()
+    cur = database.ConnectionHandler()
     loved_to_ranked_sets = cur.execute(
         "SELECT DISTINCT	beatmap_set_id FROM beatmaps WHERE bancho_status = 4 and akatsuki_status = 1"
     ).fetchall()
@@ -303,7 +305,7 @@ async def post_beatmaps():
         except:
             logger.error(f"Can't post {_setid}!", exc_info=True)
             await asyncio.sleep(6)
-
+    cur.close()
 
 def get_replay(scoreid):
     req = requests.get(

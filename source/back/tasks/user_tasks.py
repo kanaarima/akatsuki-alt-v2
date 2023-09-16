@@ -85,14 +85,15 @@ class StorePlayerStats(Task):
         return not exists(self._get_path())
 
     def run(self) -> TaskStatus:
-        for user_id in database.conn.execute("SELECT user_id FROM users"):
+        cur = database.ConnectionHandler()
+        for user_id in cur.execute("SELECT user_id FROM users"):
             user_id = user_id[0]
             userfile = DataFile(filepath=f"{self._get_path()}{user_id}.json.gz")
             userfile.data = {}
             player, stats = akatsuki.get_user_stats(user_id)
             first_places = {}
             for name, gamemode in objects.gamemodes.items():
-                playtime = database.conn.execute(
+                playtime = cur.execute(
                     "SELECT submitted_plays, unsubmitted_plays, most_played FROM users_playtime WHERE user_id = ? AND mode = ?",
                     (user_id, name),
                 ).fetchall()
@@ -100,7 +101,7 @@ class StorePlayerStats(Task):
                     stats[name][0]["play_time"] = (
                         playtime[0][0] + playtime[0][1] + playtime[0][2]
                     )
-                clears = database.conn.execute(
+                clears = cur.execute(
                     "SELECT COUNT(score_id) FROM users_scores WHERE user_id = ? AND mode = ?",
                     (user_id, name),
                 ).fetchall()
@@ -116,6 +117,7 @@ class StorePlayerStats(Task):
             userfile.data["statistics"] = stats
             userfile.data["first_places"] = first_places
             userfile.save_data()
+        cur.close()
         return self._finish()
 
     def _get_path(self) -> str:
@@ -127,30 +129,32 @@ class StorePlayerScores(Task):
         super().__init__(asynchronous=False)
 
     def can_run(self) -> bool:
-        for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
+        cur = database.ConnectionHandler()
+        for user_id in cur.execute("SELECT user_id FROM users").fetchall():
             user_id = user_id[0]
-            if not database.conn.execute(
+            if not cur.execute(
                 "SELECT user_id FROM users_scores WHERE user_id = ?", (user_id,)
             ).fetchone():
+                cur.close()
                 return True
         return False
 
     def run(self) -> TaskStatus:
-        for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
+        cur = database.ConnectionHandler()
+        for user_id in cur.execute("SELECT user_id FROM users").fetchall():
             user_id = user_id[0]
             if self.suspended:
                 return TaskStatus.SUSPENDED
 
-            if database.conn.execute(
+            if cur.execute(
                 "SELECT user_id FROM users_scores WHERE user_id = ?", (user_id,)
             ).fetchone():
                 continue  # recent scores fetch is 100% accurate, no need
 
             for name, gamemode in objects.gamemodes.items():
                 scores, maps = akatsuki.get_user_best(user_id, gamemode, pages=1000)
-                c = database.conn.cursor()
                 for score in scores:
-                    c.execute(
+                    cur.execute(
                         "INSERT INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (
                             score["beatmap_id"],
@@ -171,6 +175,7 @@ class StorePlayerScores(Task):
                         ),
                     )
                 save_beatmaps(maps)
+        cur.close()
         return self._finish()
 
     def _get_path(self):
@@ -189,16 +194,16 @@ class TrackUserPlaytime(Task):
 
     def run(self) -> TaskStatus:
         database.set_task("trackuserplaytime", time.time())
-
-        for user_id in database.conn.execute("SELECT user_id FROM users").fetchall():
+        cur = database.ConnectionHandler()
+        for user_id in cur.execute("SELECT user_id FROM users").fetchall():
             user_id = user_id[0]
             if self.suspended:
                 return TaskStatus.SUSPENDED
-            if not database.conn.execute(
+            if not cur.execute(
                 "SELECT user_id FROM users_scores WHERE user_id = ?", (user_id,)
             ).fetchone():
                 continue
-            playtime = database.conn.execute(
+            playtime = cur.execute(
                 "SELECT * FROM users_playtime WHERE user_id = ?",
                 (user_id,),
             ).fetchall()
@@ -210,7 +215,7 @@ class TrackUserPlaytime(Task):
                         "most_played": 0,
                         "last_score_id": 0,
                     }
-                    scores: database.conn.execute(
+                    scores: cur.execute(
                         "SELECT beatmap_id, mods FROM users_scores WHERE user_id = ? AND mode = ?",
                         (user_id, name),
                     ).fetchall()
@@ -222,7 +227,7 @@ class TrackUserPlaytime(Task):
                                 beatmap["attributes"]["length"] / divisor
                             )
                     self._add_most_played(user_id, pt, name, gamemode)
-                    database.conn.execute(
+                    cur.execute(
                         "INSERT INTO users_playtime VALUES(?,?,?,?,?,?)",
                         (
                             user_id,
@@ -234,7 +239,7 @@ class TrackUserPlaytime(Task):
                     )
                     database.conn.commit()
             for name, gamemode in objects.gamemodes.items():
-                last_score_id = database.conn.execute(
+                last_score_id = cur.execute(
                     "SELECT last_score_id FROM users_playtime WHERE user_id = ? and mode = ?",
                     (user_id, name),
                 ).fetchall()[0][0]
@@ -257,11 +262,11 @@ class TrackUserPlaytime(Task):
                         #    continue
                         divisor = 1.5 if (score["mods"] & 64) else 1
                         if score["completed"] == 3:  # personal best
-                            new = not database.conn.execute(
+                            new = not cur.execute(
                                 "SELECT beatmap_id FROM users_scores WHERE user_id = ? AND mode = ? AND beatmap_id = ?",
                                 (user_id, name, score["beatmap_id"]),
                             ).fetchone()
-                            database.conn.execute(
+                            cur.execute(
                                 "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                                 (
                                     score["beatmap_id"],
@@ -282,7 +287,7 @@ class TrackUserPlaytime(Task):
                                 ),
                             )
                             if "attributes" in map:
-                                database.conn.execute(
+                                cur.execute(
                                     """UPDATE users_playtime SET "submitted_plays" = submitted_plays+? WHERE user_id = ? AND mode = ?""",
                                     (
                                         map["attributes"]["length"] / divisor,
@@ -308,7 +313,7 @@ class TrackUserPlaytime(Task):
                                 logger.warn(f"Bugged map {map['beatmap_id']}")
                                 continue
                             multiplier = total_hits / map["attributes"]["max_combo"]
-                            database.conn.execute(
+                            cur.execute(
                                 """UPDATE users_playtime SET "unsubmitted_plays" = unsubmitted_plays+? WHERE user_id = ? AND mode = ?""",
                                 (
                                     (map["attributes"]["length"] / divisor)
@@ -317,9 +322,8 @@ class TrackUserPlaytime(Task):
                                     name,
                                 ),
                             )
-                            database.conn.commit()
                     if skip == 0:
-                        database.conn.execute(
+                        cur.execute(
                             """UPDATE users_playtime SET "last_score_id" = ? WHERE user_id = ? AND mode = ?""",
                             (
                                 int(_scores[0]["id"]),
@@ -331,7 +335,9 @@ class TrackUserPlaytime(Task):
                         break
                     else:
                         skip += 1
+
             database.conn.commit()
+        cur.close()
         return self._finish()
 
     def _add_most_played(self, userid: int, pt, name, gamemode):
@@ -364,7 +370,8 @@ class TrackUserPlaytime(Task):
         logger.info(f"{user_id} set play {score['id']}")
         # TODO: Fix this hack someday
         scores = list()
-        for _score in database.conn.execute(
+        cur = database.ConnectionHandler()
+        for _score in cur.execute(
             "SELECT beatmap_id, score_id, score, pp FROM users_scores WHERE user_id = ? AND mode = ?",
             (user_id, gamemode),
         ):
@@ -437,25 +444,24 @@ class CrawlLovedMaps(Task):
 
     def run(self):
         database.set_task("crawllovedmaps", time.time())
+        cur = database.ConnectionHandler()
         leaderboards = get_by_leaderboard(["loved_bancho", "loved_akatsuki"])
         loved_maps = leaderboards["loved_bancho"] + leaderboards["loved_akatsuki"]
         logger.info(f"Crawling {len(loved_maps)} maps")
-        userid = database.conn.execute(
-            "SELECT DISTINCT user_id FROM users_scores"
-        ).fetchall()[0]
+        userid = cur.execute("SELECT DISTINCT user_id FROM users_scores").fetchall()[0]
         for loved_map in loved_maps:
             scores = akatsuki.get_map_leaderboard(
                 loved_map, objects.gamemodes["std_rx"], pages=10000
             )
             for player, score in scores:
                 if player["id"] in userid:
-                    if database.conn.execute(
+                    if cur.execute(
                         "SELECT user_id FROM users_scores WHERE score_id = ?",
                         (score["id"],),
                     ).fetchall():
                         continue
                     logger.info(f"Found score on {loved_map} by {player['id']}")
-                    database.conn.execute(
+                    cur.execute(
                         "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (
                             score["beatmap_id"],
@@ -475,6 +481,7 @@ class CrawlLovedMaps(Task):
                             score["date"],
                         ),
                     )
+        cur.close()
         return self._finish()
 
 
@@ -486,7 +493,7 @@ class CrawlMaps(Task):
         return True
 
     def run(self):
-        cur = database.conn.cursor()
+        cur = database.ConnectionHandler()
         beatmap_ids = cur.execute(
             "SELECT beatmap_id FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND MODE = 0"
         ).fetchall()
@@ -553,4 +560,5 @@ class CrawlMaps(Task):
                 )
                 database.conn.commit()
             time.sleep(0.8)
+        cur.close
         return self._finish()

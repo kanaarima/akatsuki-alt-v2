@@ -34,26 +34,26 @@ class AppMetrics:
         Get metrics from application and refresh Prometheus metrics with
         new values.
         """
+        cur = database.ConnectionHandler()
         self.total_beatmaps.set(
-            database.conn.execute("SELECT COUNT(beatmap_id) FROM beatmaps").fetchall()[
-                0
-            ][0]
+            cur.execute("SELECT COUNT(beatmap_id) FROM beatmaps").fetchall()[0][0]
         )
         self.akatsuki_beatmaps.set(
-            database.conn.execute(
+            cur.execute(
                 "SELECT COUNT(beatmap_id) FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND bancho_status BETWEEN -2 AND 0"
             ).fetchall()[0][0]
         )
         self.bancho_beatmaps.set(
-            database.conn.execute(
+            cur.execute(
                 "SELECT COUNT(beatmap_id) FROM beatmaps WHERE bancho_status BETWEEN 1 AND 4"
             ).fetchall()[0][0]
         )
         self.requests.set(
-            database.conn.execute(
+            cur.execute(
                 'SELECT requests FROM metrics WHERE endpoint = "global"'
             ).fetchall()[0][0]
         )
+        cur.close()
 
 
 def main():

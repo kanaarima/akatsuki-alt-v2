@@ -320,9 +320,11 @@ def get_score_embed(
 
 
 def get_mapset_embed(mapsetid):
-    beatmap_ids = database.conn.execute(
+    cur = database.ConnectionHandler()
+    beatmap_ids = cur.execute(
         "SELECT beatmap_id FROM beatmaps WHERE beatmap_set_id = ?", (mapsetid,)
     ).fetchall()
+    cur.close()
     beatmaps = list()
     min_sr = 1000
     max_sr = 0

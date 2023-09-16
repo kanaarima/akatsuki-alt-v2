@@ -118,14 +118,14 @@ def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatma
         if len(new.keys()) == 1:
             return
         return new
-    cur = database.conn.cursor()
+    cur = database.ConnectionHandler()
     query = "SELECT * FROM beatmaps WHERE beatmap_id = ?"
     check = cur.execute(query, (beatmap_id,))
     map = check.fetchall()
     cur.close()
     if not map:
         new = process_beatmap(beatmap=Beatmap(beatmap_id=beatmap_id))
-        _insert_beatmap(database.conn.cursor(), new)
+        _insert_beatmap(database.ConnectionHandler(), new)
         return new
     map = map[0]
     beatmap = _get_beatmap(map)
@@ -135,7 +135,7 @@ def load_beatmap(beatmap_id, force_fetch=False, difficulty_info=False) -> Beatma
 
 
 def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
-    cur = database.conn.cursor()
+    cur = database.ConnectionHandler()
     query = "select exists(select 1 from beatmaps where beatmap_id=? collate nocase) limit 1"
     check = cur.execute(query, (beatmap["beatmap_id"],)).fetchone()[0]
     cur.close()
@@ -143,7 +143,7 @@ def save_beatmap(beatmap: Beatmap, overwrite=False, trustable=False):
         return
     if not trustable:
         process_beatmap(beatmap)
-    _insert_beatmap(database.conn.cursor(), beatmap)
+    _insert_beatmap(database.ConnectionHandler(), beatmap)
 
 
 def save_beatmaps(beatmaps: List[Beatmap], overwrite=False, trustable=False):
@@ -390,7 +390,7 @@ def get_by_leaderboard(leaderboards=[], columns="beatmap_id", mode=0):
         if leaderboards and query not in leaderboards:
             continue
         result[query] = list()
-        cur = database.conn.cursor()
+        cur = database.ConnectionHandler()
         check = cur.execute(queries[query], (mode,))
         for map in check.fetchall():
             result[query] += map
@@ -429,7 +429,7 @@ def get_by_range(entry, min, max, leaderboards=[], mode=0):
         if leaderboards and query not in leaderboards:
             continue
         result[query] = list()
-        cur = database.conn.cursor()
+        cur = database.ConnectionHandler()
         check = cur.execute(queries[query], [min, max, mode])
         for map in check.fetchall():
             result[query] += map

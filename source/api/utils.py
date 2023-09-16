@@ -198,25 +198,3 @@ def calculate_max_score(attributes: objects.BeatmapAttributes):
     )
 
 
-def execute(conn, query, args=None, timeout=100):
-    database.conn.commit()
-    elapsed = time.time()
-    errors = 0
-    while True:
-        try:
-            if args:
-                return conn.execute(query, args)
-            else:
-                return conn.execute(query)
-        except Exception as e:
-            if "locked" not in str(e):
-                raise e
-            errors += 1
-            if errors % 40 == 0:
-                logger.warn(
-                    f"Got exception {type(e)} running query {query} with args {args}! retrying...",
-                    exc_info=True,
-                )
-            if time.time() - elapsed > timeout:
-                break
-            time.sleep(1)
