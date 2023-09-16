@@ -221,6 +221,7 @@ def create_tables(conn):
         create_users_playtime_table(conn)
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=normal;")
+    conn.execute("PRAGMA busy_timeout = 30000")
     conn.commit()
 
 
