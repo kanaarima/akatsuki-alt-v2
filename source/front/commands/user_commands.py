@@ -20,6 +20,7 @@ from api.objects import *
 import datetime
 import discord
 import io
+import re
 
 
 async def link(full: str, split: list[str], message: discord.Message):
@@ -666,6 +667,63 @@ async def get_file(full: str, split: list[str], message: discord.Message):
         )
     else:
         await message.reply("Valid file types: beatmaps, beatmapsets")
+
+
+async def search_maps(full: str, split: list[str], message: discord.Message):
+    args = _parse_args(split, nodefault=True)
+    date_pattern = "^\d{4}-\d{2}-\d{2}$"
+    filters = list()
+
+    def parse_value(value):
+        if re.match(date_pattern, value):
+            return int(datetime.datetime.strptime(value, "%Y/%m/%d").timestamp())
+        return value
+
+    for arg in args:
+        if arg == "unplayed":
+            pass  # TODO
+        if ":" in args[arg]:
+            values = args[arg].split(":")
+            filters.append(
+                ("BETWEEN", (arg, parse_value(values[0]), parse_value(values[1])))
+            )
+        elif args[arg][0] in ["<", ">", "!"]:
+            filters.append(
+                ("COMPARISON", (arg, args[arg][0], parse_value(args[arg][1:])))
+            )
+        else:
+            filters.append(("MATCH", (arg, args[arg])))
+    query = ""
+    for filter_type, filter_values in filters:
+        filter = ""
+        if filter_type == "MATCH":
+            if filter_values[1].isnumeric():
+                filter = f"{filter_values[0]} = {filter_values[1]}"
+            else:
+                filter = f"{filter_values[0]} LIKE '%{filter_values[1]}%'"
+        elif filter_type == "BETWEEN":
+            filter = (
+                f"{filter_values[0]} BETWEEN {filter_values[1]} AND {filter_values[2]}"
+            )
+        elif filter_type == "COMPARISON":
+            if filter_values[1] == "!":
+                if filter_values[2].isnumeric():
+                    filter = f"{filter_values[0]} != {filter_values[2]}"
+                else:
+                    filter = f"{filter_values[0]} NOT LIKE '%{filter_values[2]}%'"
+            else:
+                filter = f"{filter_values[0]} {filter_values[1]} {filter_values[2]}"
+        if not filter:
+            continue  # TODO
+        if query:
+            query += f"AND {filter}"
+        else:
+            query = f"SELECT * FROM beatmaps WHERE {filter}"
+    res = database.conn_uri.execute(query).fetchall()
+    csv = ','.join([header[1] for header in database.conn_uri.execute("PRAGMA table_info('beatmaps')").fetchall()])+"\n"
+    for item in res:
+        csv+=','.join(str(x) for x in item)+"\n"
+    await message.reply(file=discord.File(fp=io.BytesIO(bytes(csv, 'utf-8')), filename="beatmaps.csv"))
 
 
 async def get_help(full: str, split: list[str], message: discord.Message):

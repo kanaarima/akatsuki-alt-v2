@@ -42,5 +42,6 @@ commands = {
     "show1slb": user_commands.show_1s_leaderboard,
     "showsnipes": admin_commands.show_snipes,
     "getfile": user_commands.get_file,
-    "help": user_commands.get_help
+    "searchmaps": user_commands.search_maps,
+    "help": user_commands.get_help,
 }
