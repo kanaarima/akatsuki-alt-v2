@@ -670,9 +670,14 @@ async def get_file(full: str, split: list[str], message: discord.Message):
 
 
 async def search_maps(full: str, split: list[str], message: discord.Message):
+    player, gamemode = await _get_linked_account(str(message.author.id))
+    if not player:
+        await _link_warning(message)
+        return
     args = _parse_args(split, nodefault=True)
     date_pattern = "^\d{4}-\d{2}-\d{2}$"
     filters = list()
+    unplayed = False
 
     def parse_value(value):
         if re.match(date_pattern, value):
@@ -681,8 +686,8 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
 
     for arg in args:
         if arg == "unplayed":
-            pass  # TODO
-        if ":" in args[arg]:
+            unplayed = True
+        elif ":" in args[arg]:
             values = args[arg].split(":")
             filters.append(
                 ("BETWEEN", (arg, parse_value(values[0]), parse_value(values[1])))
@@ -720,10 +725,33 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
         else:
             query = f"SELECT * FROM beatmaps WHERE {filter}"
     res = database.conn_uri.execute(query).fetchall()
-    csv = ','.join([header[1] for header in database.conn_uri.execute("PRAGMA table_info('beatmaps')").fetchall()])+"\n"
+    csv = (
+        ",".join(
+            [
+                header[1]
+                for header in database.conn_uri.execute(
+                    "PRAGMA table_info('beatmaps')"
+                ).fetchall()
+            ]
+        )
+        + "\n"
+    )
+    blacklist = None
+    if unplayed:
+        blacklist = [
+            x[0]
+            for x in database.conn_uri.execute(
+                "SELECT beatmap_id FROM users_scores WHERE user_id = ? AND mode = ?",
+                (player["id"], gamemode),
+            )
+        ]
     for item in res:
-        csv+=','.join(str(x) for x in item)+"\n"
-    await message.reply(file=discord.File(fp=io.BytesIO(bytes(csv, 'utf-8')), filename="beatmaps.csv"))
+        if blacklist and item[0] in blacklist:
+            continue
+        csv += ",".join(str(x) for x in item) + "\n"
+    await message.reply(
+        file=discord.File(fp=io.BytesIO(bytes(csv, "utf-8")), filename="beatmaps.csv")
+    )
 
 
 async def get_help(full: str, split: list[str], message: discord.Message):
