@@ -1,4 +1,5 @@
 from api.logging import get_logger
+import api.database as database
 import api.objects as objects
 import datetime
 import time
@@ -198,6 +199,7 @@ def calculate_max_score(attributes: objects.BeatmapAttributes):
 
 
 def execute(conn, query, args=None, timeout=100):
+    database.conn.commit()
     elapsed = time.time()
     while True:
         try:
