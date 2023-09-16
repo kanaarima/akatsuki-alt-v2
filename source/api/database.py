@@ -37,7 +37,7 @@ class ConnectionHandler:
             self.conn = db
         self.cur = self.conn.cursor()
 
-    def execute(self, query, args=None, timeout=100) -> sqlite3.Cursor:
+    def execute(self, query, args=None, timeout=300) -> sqlite3.Cursor:
         self.conn.commit()  # maybe not needed
         elapsed = time.time()
         errors = 0
