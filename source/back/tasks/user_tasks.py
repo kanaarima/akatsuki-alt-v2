@@ -493,10 +493,12 @@ class CrawlMaps(Task):
         return True
 
     def run(self):
+        cur_main = database.ConnectionHandler()
         cur = database.ConnectionHandler(database.conn_lb)
-        beatmap_ids = cur.execute(
+        beatmap_ids = cur_main.execute(
             "SELECT beatmap_id FROM beatmaps WHERE akatsuki_status BETWEEN 1 AND 4 AND MODE = 0"
         ).fetchall()
+        cur_main.close()
         for beatmap_id in beatmap_ids:
             beatmap_id = beatmap_id[0]
             if self.suspended:
@@ -514,7 +516,7 @@ class CrawlMaps(Task):
             logger.info(f"crawling {beatmap_id}")
             leaderboard = akatsuki.get_map_leaderboard(
                 beatmap_id, gamemode=objects.gamemodes["std_rx"]
-            )
+            pages=5)
             if len(leaderboard) > 2:  # workaround for akatsuki weirdness
                 if leaderboard[0][1]["pp"] == leaderboard[1][1]["pp"]:
                     new = list()
