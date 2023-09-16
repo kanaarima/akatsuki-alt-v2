@@ -86,7 +86,7 @@ class StorePlayerStats(Task):
 
     def run(self) -> TaskStatus:
         for user_id in database.conn.execute("SELECT user_id FROM users"):
-            user_id = user_id
+            user_id = user_id[0]
             userfile = DataFile(filepath=f"{self._get_path()}{user_id}.json.gz")
             userfile.data = {}
             player, stats = akatsuki.get_user_stats(user_id)
