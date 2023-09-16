@@ -4,13 +4,14 @@ import sqlite3
 
 logger = get_logger("api.database")
 conn = sqlite3.connect(
-    config["database"], isolation_level=None, check_same_thread=False
+    config["database"], isolation_level=None, check_same_thread=False, timeout=3000
 )
 conn_uri = sqlite3.connect(
     f"file:{config['database']}?mode=ro",
     isolation_level=None,
     check_same_thread=False,
     uri=True,
+    timeout=3000,
 )
 
 

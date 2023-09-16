@@ -5,6 +5,7 @@ logger = get_logger("api.metrics")
 
 
 def log_request(request, post=False):
+    cur = database.conn.cursor()
     error = 0
     type = "POST" if post else "GET"
     if request.status_code > 299:
@@ -14,38 +15,36 @@ def log_request(request, post=False):
         logger.info(f"{type} {request.url} {request.status_code}")
     method = request.url.split("?")[0]
 
-    check = database.conn.execute(
-        f'SELECT * FROM metrics WHERE endpoint = "global"'
-    ).fetchall()
+    check = cur.execute(f'SELECT * FROM metrics WHERE endpoint = "global"').fetchall()
     if not check:
-        database.conn.execute(
+        cur.execute(
             f"""INSERT INTO "main"."metrics"(endpoint, requests, errors) VALUES (?,?,?) """,
             ("global", 0, 0),
         )
 
-    check = database.conn.execute(
+    check = cur.execute(
         f"SELECT * FROM metrics WHERE endpoint = ?", (method,)
     ).fetchall()
     if not check:
-        database.conn.execute(
+        cur.execute(
             f"""INSERT INTO "main"."metrics"(endpoint, requests, errors) VALUES (?,?,?) """,
             (method, 0, 0),
         )
     if error:
-        database.conn.execute(
+        cur.execute(
             f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = ? """,
             (method,),
         )
-        database.conn.execute(
+        cur.execute(
             f"""UPDATE metrics SET "errors" = errors + 1   WHERE endpoint = ? """,
             ("global",),
         )
     else:
-        database.conn.execute(
+        cur.execute(
             f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = ? """,
             (method,),
         )
-        database.conn.execute(
+        cur.execute(
             f"""UPDATE metrics SET "requests" = requests + 1   WHERE endpoint = ? """,
             ("global",),
         )
