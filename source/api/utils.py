@@ -209,12 +209,14 @@ def execute(conn, query, args=None, timeout=100):
             else:
                 return conn.execute(query)
         except Exception as e:
+            if "locked" not in str(e):
+                raise e
             errors += 1
-            if errors % 20 == 0:
+            if errors % 40 == 0:
                 logger.warn(
                     f"Got exception {type(e)} running query {query} with args {args}! retrying...",
                     exc_info=True,
                 )
             if time.time() - elapsed > timeout:
                 break
-            time.sleep(0.2)
+            time.sleep(1)
