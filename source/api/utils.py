@@ -201,7 +201,10 @@ def execute(conn, query, args=None, timeout=100):
     elapsed = time.time()
     while True:
         try:
-            return conn.execute(query, args)
+            if args:
+                return conn.execute(query, args)
+            else:
+                return conn.execute(query)
         except Exception as e:
             logger.warn(
                 f"Got exception {type(e)} running query {query} with args {args}! retrying...",
