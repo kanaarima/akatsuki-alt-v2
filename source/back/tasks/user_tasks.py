@@ -101,7 +101,7 @@ class StorePlayerStats(Task):
                         playtime[0][0] + playtime[0][1] + playtime[0][2]
                     )
                 clears = database.conn.execute(
-                    "SELECT COUNT(score_id) FROM users_scores WHERE user_id = ?, mode = ?",
+                    "SELECT COUNT(score_id) FROM users_scores WHERE user_id = ? AND mode = ?",
                     (user_id, name),
                 ).fetchall()
                 if clears:
