@@ -197,7 +197,7 @@ def calculate_max_score(attributes: objects.BeatmapAttributes):
     )
 
 
-def execute(conn, query, args, timeout=100):
+def execute(conn, query, args=None, timeout=100):
     elapsed = time.time()
     while True:
         try:
