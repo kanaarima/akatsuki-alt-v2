@@ -31,7 +31,14 @@ def search_maps():
                 )
                 print(f"Updating {beatmap.id}: {approved_date} {tags_packs}")
                 db.conn.execute(
-                    "UPDATE beatmaps SET tags_packs=? AND approved_date=? WHERE beatmap_id = ?",
-                    (tags_packs, approved_date, beatmap.id),
+                    "UPDATE beatmaps SET tags_packs = ? WHERE beatmap_id = ?",
+                    (tags_packs, beatmap.id),
+                )
+                db.conn.execute(
+                    "UPDATE beatmaps SET approved_date = ? WHERE beatmap_id = ?",
+                    (approved_date, beatmap.id),
                 )
                 db.conn.commit()
+                print(
+                    f"Result: {db.conn.execute('SELECT * FROM beatmaps WHERE beatmap_id = ?', (beatmap.id,))}"
+                )
