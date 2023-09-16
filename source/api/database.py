@@ -124,6 +124,8 @@ def create_beatmap_table(conn):
     "stars_dt"	REAL DEFAULT "0" NOT NULL,
     "stars_dtez"	REAL DEFAULT "0" NOT NULL,
     "stars_dthr"	REAL DEFAULT "0" NOT NULL,
+    "approved_date"	INTEGER DEFAULT 0,
+	"tags_packs"	TEXT DEFAULT ' ',
 	PRIMARY KEY("beatmap_id")
 )"""
     c.execute(query)

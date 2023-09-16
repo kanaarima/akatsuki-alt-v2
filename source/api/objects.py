@@ -72,10 +72,13 @@ class Beatmap(TypedDict):
     title: str
     difficulty_name: str
     mapper: str
-    tags: List[str]
+    tags: str
+    tags_packs: str
+    approved_date: int
     status: Optional[RankedStatus]
     attributes: Optional[BeatmapAttributes]
     difficulty: Optional[Dict[int, BeatmapDifficulty]]
+
 
 class Clan(TypedDict):
     clan_id: int

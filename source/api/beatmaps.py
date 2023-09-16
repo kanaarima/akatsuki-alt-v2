@@ -28,7 +28,7 @@ logger = get_logger("api.beatmaps")
 
 
 def _insert_beatmap(db, beatmap: Beatmap):
-    query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags", "stars_nm", "stars_ez", "stars_hr", "stars_dt", "stars_dtez", "stars_dthr") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);"""
+    query = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags", "stars_nm", "stars_ez", "stars_hr", "stars_dt", "stars_dtez", "stars_dthr", "tags_packs", "approved_date") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?);"""
     query_nodiff = """INSERT OR REPLACE INTO "main"."beatmaps" ("beatmap_id", "beatmap_set_id", "md5", "artist", "title", "difficulty_name", "mapper", "bancho_status", "akatsuki_status", "last_checked", "ar", "od", "cs", "length", "bpm", "max_combo", "circles", "sliders", "spinners", "mode", "tags") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?);"""
     last_checked = None
     if "status" not in beatmap:
@@ -70,6 +70,8 @@ def _insert_beatmap(db, beatmap: Beatmap):
         args.append(beatmap["attributes"]["stars"][utils.DoubleTime])
         args.append(beatmap["attributes"]["stars"][utils.Easy + utils.DoubleTime])
         args.append(beatmap["attributes"]["stars"][utils.HardRock + utils.DoubleTime])
+        args.append(beatmap["approved_date"])
+        args.append(beatmap["tags_packs"])
         db.execute(query, args)
     else:
         db.execute(query_nodiff, args)
@@ -109,6 +111,8 @@ def _get_beatmap(map):
                 80: map[26],
             },
         ),
+        approved_date=map[27],
+        tags_packs=map[28],
     )
 
 
@@ -268,7 +272,13 @@ def fix_metadata(beatmap: Beatmap):
     beatmap["md5"] = b.checksum
     beatmap["difficulty_name"] = b.version
     beatmap["mapper"] = b._beatmapset.creator
-    beatmap["tags"] = ""
+    beatmap["tags"] = b._beatmapset.tags
+    beatmap["tags_packs"] = (
+        ",".join(b._beatmapset.pack_tags) if b._beatmapset.pack_tags else ""
+    )
+    beatmap["approved_date"] = (
+        b._beatmapset.ranked_date.timestamp() if b._beatmapset.ranked_date else 0
+    )
     if "attributes" in beatmap:
         beatmap["attributes"]["length"] = b.hit_length
     else:
