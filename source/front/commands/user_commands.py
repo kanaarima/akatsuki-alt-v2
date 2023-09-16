@@ -716,7 +716,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
         if not filter:
             continue  # TODO
         if query:
-            query += f"AND {filter}"
+            query += f" AND {filter}"
         else:
             query = f"SELECT * FROM beatmaps WHERE {filter}"
     res = database.conn_uri.execute(query).fetchall()
