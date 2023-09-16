@@ -724,6 +724,11 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
             query += f" AND {filter}"
         else:
             query = f"SELECT * FROM beatmaps WHERE {filter}"
+    if not query:
+        if not unplayed:
+            await message.reply("usage: !searchmaps [field=to_match] [field=>X] [field=<X] [field=min:max] [field=YYYY-MM-DD] [unplayed=true]")
+            return
+        query = "SELECT * FROM beatmaps"
     res = database.conn_uri.execute(query).fetchall()
     csv = (
         ",".join(
@@ -745,8 +750,10 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
                 (player["id"], gamemode),
             ).fetchall()
         ]
+    print(blacklist)
     for item in res:
         if blacklist and item[0] in blacklist:
+            print(item[0])
             continue
         csv += ",".join(str(x) for x in item) + "\n"
     await message.reply(
