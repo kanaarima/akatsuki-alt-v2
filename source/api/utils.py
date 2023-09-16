@@ -202,6 +202,7 @@ def execute(conn, query, args=None, timeout=100):
     while True:
         try:
             if args:
+                logger.debug(f"{type(query)} {type(args)}")
                 return conn.execute(query, args)
             else:
                 return conn.execute(query)
