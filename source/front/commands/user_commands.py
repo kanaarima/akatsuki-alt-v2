@@ -7,7 +7,7 @@ from api.utils import (
     today,
     score_from_db,
 )
-from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed
+from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed, get_help_view
 from front.commands.help import help
 from api.collections import generate_collection
 from api.files import DataFile, exists
@@ -787,10 +787,9 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
         await message.reply("Invalid view! Valid views: embed, csv")
         return
 
-
 async def get_help(full: str, split: list[str], message: discord.Message):
-    await message.reply(f"```{help}```")
-
+    view = get_help_view()
+    await view.reply(message)
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     c = database.ConnectionHandler()

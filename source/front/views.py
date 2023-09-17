@@ -2,8 +2,9 @@ from api.utils import get_mods_simple, datetime_to_str, convert_mods
 from api.beatmaps import load_beatmap, get_calc_beatmap
 from akatsuki_pp_py import Beatmap, Calculator
 from api.objects import Player, Score, Beatmap
+from typing import List, Dict, Callable, Tuple
+import front.commands.help as helpinfo
 from datetime import datetime
-from typing import List, Dict
 import api.database as database
 import discord
 
@@ -252,6 +253,54 @@ class StringListView(discord.ui.View):
         )
         embed.add_field(name=list(self.lists.keys())[self.list_index], value=str)
         return embed
+
+
+class Select(discord.ui.Select):
+    def __init__(self, callbacks: Dict[str, Callable]):
+        self.callbacks = callbacks
+        options = []
+        for key in callbacks:
+            options.append(discord.SelectOption(label=key))
+        super().__init__(
+            placeholder="Select an option", max_values=1, min_values=1, options=options
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.callbacks[self.values[0]](self.values[0], interaction)
+
+
+class DocumentView(discord.ui.View):
+    def __init__(self, documents: Dict[str, discord.Embed]):
+        super().__init__(timeout=180)
+        self.documents = documents
+        select_dict = {}
+        self.default = None
+        for key in documents:
+            if not self.default:
+                self.default = key
+            select_dict[key] = self.callback
+        select = Select(select_dict)
+        self.add_item(select)
+
+    async def callback(self, key, interaction: discord.Interaction):
+        await interaction.response.edit_message(embed=self.documents[key])
+
+    async def reply(self, message: discord.Message):
+        self.message = await message.reply(
+            embed=self.documents[self.default], view=self
+        )
+
+
+def get_help_view():
+    help_embeds = {"general": discord.Embed(title="Help", description=helpinfo.help)}
+    for help_key in helpinfo.help_dict:
+        full_description = "No documentation yet. Ping @Adachi"
+        if help_key in helpinfo.help_full:
+            full_description = helpinfo.help_full[help_key]
+        help_embeds[help_key] = discord.Embed(
+            title=help_key, description=full_description
+        )
+    return DocumentView(help_embeds)
 
 
 def get_score_embed(

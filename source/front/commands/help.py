@@ -1,24 +1,38 @@
-link = "!link (username/userID) | link your akatsuki account"
-setdefault = "!setdefault (gamemode) | set your default gamemode"
-recent = "!recent (gamemode) | shows your recent play"
-show = "!show (gamemode) (compareto=YYYY-MM-DD) | show your statistics"
-reset = "!reset | Resets your daily statistics (won't affect stored statistics)"
-show1s = "!show1s (gamemode) (new) | show your first places"
-showclears = "!showclears (gamemode) (view=ranked_bancho/loved_bancho/qualified_bancho/ranked_akatsuki/loved_akatsuki/unranked) | show your clears"
-showcompletion = "!showcompletion (completed) (generate) (type=all/ranked_bancho/loved_bancho/ranked_akatsuki/loved_akatsuki) (view=info/maps/maps_missing) (mappers=mapper1,mapper2...) (artists=artist1,artist2...) (tags=tags1,tags2...) | show your completion"
-show1slb = "!show1slb | shows current top 10 by #1 count"
-getfile = "!getfile (beatmaps/beatmapsets) (type=akatsuki/akatsuki_ranked/akatsuki_loved) | get files"
-help = "\n".join(
-    [
-        link,
-        setdefault,
-        recent,
-        show,
-        reset,
-        show1s,
-        showclears,
-        showcompletion,
-        show1slb,
-        getfile,
-    ]
-)
+import front.commands.documentation.link as link
+import front.commands.documentation.setdefault as setdefault
+import front.commands.documentation.recent as recent
+import front.commands.documentation.show as show
+import front.commands.documentation.reset as reset
+import front.commands.documentation.show1s as show1s
+import front.commands.documentation.showclears as showclears
+import front.commands.documentation.showcompletion as showcompletion
+import front.commands.documentation.show1slb as show1slb
+import front.commands.documentation.getfile as getfile
+
+
+help_dict = {
+    "link": link.title,
+    "setdefault": setdefault.title,
+    "recent": recent.title,
+    "show": show.title,
+    "reset": reset.title,
+    "show1s": show1s.title,
+    "showclears": showclears.title,
+    "showcompletion": showcompletion.title,
+    "show1slb": show1slb.title,
+    "getfile": getfile.title,
+}
+
+help = "\n".join(list(help_dict.values()))
+help_full = {
+    "link": link.documentation,
+    "setdefault": setdefault.documentation,
+    "recent": recent.documentation,
+    "show": show.documentation,
+    "reset": reset.documentation,
+    "show1s": show1s.documentation,
+    "showclears": showclears.documentation,
+    "showcompletion": showcompletion.documentation,
+    "show1slb": show1slb.documentation,
+    "getfile": getfile.documentation,
+}
