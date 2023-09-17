@@ -43,4 +43,4 @@ def search_maps():
                 print(
                     f"Result: {db.conn.execute('SELECT * FROM beatmaps WHERE beatmap_id = ?', (beatmap.id,)).fetchall()}"
                 )
-        time.sleep(1)
+        time.sleep(0.4)
