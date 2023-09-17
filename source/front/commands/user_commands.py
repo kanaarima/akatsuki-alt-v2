@@ -678,6 +678,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
     date_pattern = "^\d{4}-\d{2}-\d{2}$"
     filters = list()
     unplayed = False
+    view = "embed"
 
     def parse_value(value):
         if re.match(date_pattern, value):
@@ -687,6 +688,8 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
     for arg in args:
         if arg == "unplayed":
             unplayed = True
+        elif arg == "view":
+            view = args[arg]
         elif ":" in args[arg]:
             values = args[arg].split(":")
             filters.append(
@@ -752,18 +755,37 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
                 (player["id"], gamemode),
             ).fetchall()
         ]
-    print(blacklist)
-    count = 0
-    for item in res:
-        if blacklist and item[0] in blacklist:
-            print(item[0])
-            continue
-        count += 1
-        csv += ",".join(str(x) for x in item) + "\n"
-    await message.reply(
-        content=f"Found {count} beatmaps.",
-        file=discord.File(fp=io.BytesIO(bytes(csv, "utf-8")), filename="beatmaps.csv"),
-    )
+    if view == "embed":
+        strs = list()
+        count = 0
+
+        for item in res:
+            if blacklist and item[0] in blacklist:
+                continue
+            count += 1
+            title = f"{item[3]}-{item[4]} {item[5]}"[:42]
+            link = f"[{title}](https://kanaarima.github.io/osu/osudl.html?beatmap={item[0]})"
+            strs.append(f"{item[21]:.2f}* | {item[13]/60:.2f} mins | {link}")
+        view = StringListView("Search query results ()", {"result": strs})
+        await view.reply(message)
+        return
+    elif view == "csv":
+        count = 0
+        for item in res:
+            if blacklist and item[0] in blacklist:
+                print(item[0])
+                continue
+            count += 1
+            csv += ",".join(str(x) for x in item) + "\n"
+        await message.reply(
+            content=f"Found {count} beatmaps.",
+            file=discord.File(
+                fp=io.BytesIO(bytes(csv, "utf-8")), filename="beatmaps.csv"
+            ),
+        )
+    else:
+        await message.reply("Invalid view! Valid views: embed, csv")
+        return
 
 
 async def get_help(full: str, split: list[str], message: discord.Message):
