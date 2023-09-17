@@ -7,7 +7,13 @@ from api.utils import (
     today,
     score_from_db,
 )
-from front.views import ScoresView, ScoreDiffView, StringListView, get_score_embed, get_help_view
+from front.views import (
+    ScoresView,
+    ScoreDiffView,
+    StringListView,
+    get_score_embed,
+    get_help_view,
+)
 from front.commands.help import help
 from api.collections import generate_collection
 from api.files import DataFile, exists
@@ -766,7 +772,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
             title = f"{item[3]}-{item[4]} {item[5]}"[:42]
             link = f"[{title}](https://kanaarima.github.io/osu/osudl.html?beatmap={item[0]})"
             strs.append(f"{item[21]:.2f}* | {item[13]/60:.2f} mins | {link}")
-        view = StringListView("Search query results ()", {"result": strs})
+        view = StringListView(f"Search query results ({count})", {"result": strs})
         await view.reply(message)
         return
     elif view == "csv":
@@ -787,9 +793,11 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
         await message.reply("Invalid view! Valid views: embed, csv")
         return
 
+
 async def get_help(full: str, split: list[str], message: discord.Message):
     view = get_help_view()
     await view.reply(message)
+
 
 async def _get_linked_account(discord_id: str) -> Tuple[Player, str]:
     c = database.ConnectionHandler()
