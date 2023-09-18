@@ -37,6 +37,7 @@ async def query(full: str, split: list[str], message: discord.Message):
     )
 
 
+# TODO: Cacne usernames, would be insane speedup
 async def show_snipes(full: str, split: list[str], message: discord.Message):
     if not await authorized(message, auth_level=0):
         return
