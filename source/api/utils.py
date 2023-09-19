@@ -181,8 +181,6 @@ def convert_mods(magic_number):
         new -= TouchDevice
     if magic_number & Perfect:
         new -= Perfect
-    if magic_number & AutoPilot:
-        new -= AutoPilot
     return new
 
 
