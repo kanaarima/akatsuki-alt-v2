@@ -39,7 +39,7 @@ class AkatsukiBackend:
 
                 for command in commands.commands:
                     if trigger in command.triggers:
-                        command.function(sender, message[1:], args)
+                        command.function(sender, message[1:], args, self.game)
                         return
 
                 sender.send_message("Unknown command!")

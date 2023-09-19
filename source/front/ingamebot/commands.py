@@ -11,6 +11,7 @@ import api.farmer as farmer
 from typing import List, Callable, Optional
 from dataclasses import dataclass
 from config import config
+from osu import Game
 
 
 @dataclass
@@ -32,24 +33,28 @@ def command(*aliases: List[str]) -> Callable:
 
 
 @command("ping")
-def ping(player: Player, message, args):
+def ping(player: Player, message, args, game: Game):
     player.send_message("pong!")
 
 
 @command("recommend", "r", "cook")
-def recommend(player: Player, message, args):
+def recommend(player: Player, message, args, game: Game):
     """<min_pp=pp> <max_pp=pp> <mods=mods> <include_mods=mods> <exclude_mods=mods> <algo=old/auto/model_name> - Recommends a farm map"""
 
-    # Fetch user stats
-    _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
-    top100 = akatsuki.get_user_best(player.id, gamemodes["std_rx"])
+    skip_id = []
+    if game.server == "akatsuki.gg":
+        # Fetch user stats
+        _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
+        top100 = akatsuki.get_user_best(player.id, gamemodes["std_rx"])
 
-    # Exclude top play
-    # TODO: Exclude all plays that are already fced?
-    skip_id = [play["beatmap_id"] for play in top100[0]]
-
+        # Exclude top play
+        # TODO: Exclude all plays that are already fced?
+        skip_id = [play["beatmap_id"] for play in top100[0]]
+        total_pp = stats["std_rx"][0]["total_pp"]
+    else:
+        total_pp = player.pp
     # Calculate min/max pp
-    total_pp = stats["std_rx"][0]["total_pp"]
+
     target = total_pp / 20
     min_pp = target - 20
     max_pp = target + 20
@@ -147,7 +152,7 @@ def recommend(player: Player, message, args):
 
 
 @command("recommend_score", "rs", "scoer")
-def recommend_score(player: Player, message, args):
+def recommend_score(player: Player, message, args, game: Game):
     """- Recommends a score farm map"""
     skip_id = []
     # TODO: FIX THIS
@@ -165,7 +170,7 @@ def recommend_score(player: Player, message, args):
 
 
 @command("models", "chefs")
-def show_models(player: Player, message, args):
+def show_models(player: Player, message, args, game: Game):
     """- Shows recommendation algorithms"""
     models = [
         ("old", "old recommendation algorithm"),
@@ -177,7 +182,7 @@ def show_models(player: Player, message, args):
 
 
 @command("help", "h")
-def help(player: Player, message, args):
+def help(player: Player, message, args, game: Game):
     """- Shows this message"""
 
     # Create command string if they have a __doc__ string
