@@ -1,12 +1,13 @@
 from front.commands.user_commands import _parse_args
+from api.utils import get_mods, mods_from_string
 from osu.objects.player import Player
-from api.utils import get_mods
 
 from api.objects import gamemodes
 import api.akatsuki as akatsuki
 import api.beatmaps as beatmaps
 from api.files import DataFile
 import api.farmer as farmer
+import api.farmerv2 as farmerv2
 
 from typing import List, Callable, Optional
 from dataclasses import dataclass
@@ -39,7 +40,7 @@ def ping(player: Player, message, args, game: Game):
 
 @command("recommend", "r", "cook")
 def recommend(player: Player, message, args, game: Game):
-    """<min_pp=pp> <max_pp=pp> <mods=mods> <include_mods=mods> <exclude_mods=mods> <algo=old/auto/model_name> - Recommends a farm map"""
+    """<min_pp=pp> <max_pp=pp> <mods=mods> <include_mods=mods> <exclude_mods=mods> <algo=old/auto/model_name> <magic=true>- Recommends a farm map"""
 
     skip_id = []
     if game.server == "akatsuki.gg":
@@ -63,9 +64,12 @@ def recommend(player: Player, message, args, game: Game):
     mods_exclude = ["EZ", "FL"]
     algo = "old"
     matches_threshold = 0.85
+    enable_apvn = False
     # Parse command arguments
     parsed = _parse_args(args, nodefault=True)
 
+    if "magic" in parsed:
+        enable_apvn = True
     if "min_pp" in parsed:
         if not parsed["min_pp"].isnumeric():
             player.send_message("pp value should be a number.")
@@ -125,16 +129,27 @@ def recommend(player: Player, message, args, game: Game):
             return
         title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
     else:
-        recommend = farmer.recommend_next(
-            pp_min=min_pp,
-            pp_max=max_pp,
-            mods=mods,
-            mods_include=mods_include,
-            mods_exclude=mods_exclude,
-            skip_id=skip_id,
-            matches_types=algo,
-            matches_threshold=matches_threshold,
-        )
+        if enable_apvn:
+            recommend = farmerv2.recommend_next(
+                pp_min=min_pp,
+                pp_max=max_pp,
+                mods=mods_from_string(mods) if mods else None,
+                mods_include=mods_include,
+                mods_exclude=mods_exclude,
+                skip_id=skip_id,
+                models=algo,
+            )
+        else:
+            recommend = farmer.recommend_next(
+                pp_min=min_pp,
+                pp_max=max_pp,
+                mods=mods,
+                mods_include=mods_include,
+                mods_exclude=mods_exclude,
+                skip_id=skip_id,
+                matches_types=algo,
+                matches_threshold=matches_threshold,
+            )
         if not recommend:
             player.send_message("Nothing found.")
             return
