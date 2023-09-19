@@ -371,6 +371,9 @@ def get_difficulties(beatmap: calc_beatmap) -> Dict[int, BeatmapDifficulty]:
             mods = sum(preference_mods) + difficulty_mod + time_mod
             res[str(mods)] = get_difficulty(beatmap, mods)
             res[str(mods + utils.Relax)] = get_difficulty(beatmap, mods + utils.Relax)
+            res[str(mods + utils.AutoPilot)] = get_difficulty(
+                beatmap, mods + utils.AutoPilot
+            )
     return res
 
 
