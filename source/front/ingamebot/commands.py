@@ -136,7 +136,9 @@ def recommend(player: Player, message, args, game: Game):
                 mods=mods_from_string(mods) if mods else None,
                 mods_include=mods_include,
                 mods_exclude=mods_exclude,
-                servers=['bancho', 'akatsuki'] if game.server == "akatsuki.gg" else ['bancho']
+                servers=["bancho", "akatsuki"]
+                if game.server == "akatsuki.gg"
+                else ["bancho"],
                 skip_id=skip_id,
                 models=algo,
             )
