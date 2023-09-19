@@ -289,8 +289,10 @@ def calculate_ratio(beatmap: Beatmap, mods: int) -> MapRatios:
         return value if value else 1
 
     return MapRatios(
-        speed_aim=difficulty["speed_rating"] / difficulty["aim_rating"],
-        speed_aim_pp=difficulty["speed_pp"] / difficulty["aim_pp"],
+        speed_aim=ensure_value(difficulty["speed_rating"])
+        / ensure_value(difficulty["aim_rating"]),
+        speed_aim_pp=ensure_value(difficulty["speed_pp"])
+        / ensure_value(difficulty["aim_pp"]),
         speed_notes=ensure_value(difficulty["speed_note_count"])
         / ensure_value(attributes["circles"]),
         circles_object=ensure_value(attributes["circles"])
