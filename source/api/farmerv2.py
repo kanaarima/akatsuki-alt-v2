@@ -8,6 +8,7 @@ import itertools
 import sqlite3
 
 farmer_db = sqlite3.connect(config["database_farmer"])
+models_full = farmer.load_models()
 
 table_beatmap_query = """CREATE TABLE "beatmaps" (
 	"beatmap_id"	INTEGER NOT NULL,
@@ -131,6 +132,7 @@ def calculate_ratios():
                     )
     farmer_db.commit()
 
+
 def setup_db():
     farmer_db.execute("")
     if not database.table_exists("beatmaps", farmer_db):
@@ -146,6 +148,7 @@ def setup_db():
 
 
 setup_db()
+
 
 def recommend_next(
     pp_min,
@@ -164,7 +167,7 @@ def recommend_next(
     for model in models:
         for loaded_models in farmer.models:
             if loaded_models[0].lower() == model.lower():
-                found_models.append(farmer.models_full[loaded_models])
+                found_models.append(models_full[loaded_models])
     for server in servers:
         possible_beatmaps.extend(
             farmer_db.execute(

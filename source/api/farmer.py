@@ -448,7 +448,6 @@ def load_farm():
         futures_file.load_data()
     futures = futures_file.data
 
-models_full = load_models()
 
 load_farm()
 process_score_farm()
