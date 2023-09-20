@@ -7,7 +7,9 @@ from config import config
 import itertools
 import sqlite3
 
-farmer_db = sqlite3.connect(config["database_farmer"])
+farmer_db = sqlite3.connect(
+    config["database_farmer"], isolation_level=None, check_same_thread=False
+)
 models_full = farmer.load_models()
 
 table_beatmap_query = """CREATE TABLE "beatmaps" (
