@@ -13,6 +13,7 @@ def log_request(request, post=False):
         error = 1
     else:
         logger.info(f"{type} {request.url} {request.status_code}")
+    return
     method = request.url.split("?")[0]
 
     check = cur.execute(f'SELECT * FROM metrics WHERE endpoint = "global"').fetchall()
