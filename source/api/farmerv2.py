@@ -167,7 +167,7 @@ def recommend_next(
     for model in models:
         for loaded_models in farmer.models:
             if loaded_models[0].lower() == model.lower():
-                found_models.append(models_full[loaded_models])
+                found_models.append(models_full[loaded_models[0]])
     for server in servers:
         possible_beatmaps.extend(
             farmer_db.execute(
