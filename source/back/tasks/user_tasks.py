@@ -517,21 +517,6 @@ class CrawlMaps(Task):
             leaderboard = akatsuki.get_map_leaderboard(
                 beatmap_id, gamemode=objects.gamemodes["std_rx"]
             )
-            if len(leaderboard) > 2:  # workaround for akatsuki weirdness
-                if leaderboard[0][1]["pp"] == leaderboard[1][1]["pp"]:
-                    new = list()
-                    pp = leaderboard[0][1]["pp"]
-                    for player, score in leaderboard:
-                        if score["pp"] != pp:
-                            break
-                        score["date"]
-                        new.append((player, score))
-                    new.sort(key=lambda x: x[1]["date"])
-                    for player, score in leaderboard:
-                        if score["pp"] == pp:
-                            continue
-                        new.append((player, score))
-                    leaderboard = new
             if not leaderboard:
                 logger.info(f"Empty leaderboard: {beatmap_id}")
                 continue
