@@ -215,7 +215,7 @@ class TrackUserPlaytime(Task):
                         "most_played": 0,
                         "last_score_id": 0,
                     }
-                    scores: cur.execute(
+                    scores = cur.execute(
                         "SELECT beatmap_id, mods FROM users_scores WHERE user_id = ? AND mode = ?",
                         (user_id, name),
                     ).fetchall()
