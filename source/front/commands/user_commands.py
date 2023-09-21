@@ -575,7 +575,7 @@ async def show_scores_completion(full: str, split: list[str], message: discord.M
 
 
 async def show_1s_leaderboard(full: str, split: list[str], message: discord.Message):
-    cur = database.ConnectionHandler()
+    cur = database.conn_lb.cursor()
     positions = cur.execute(
         "SELECT user_id FROM beatmaps_leaderboard WHERE position = 1"
     ).fetchall()
