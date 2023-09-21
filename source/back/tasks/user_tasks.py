@@ -228,7 +228,7 @@ class TrackUserPlaytime(Task):
                             )
                     self._add_most_played(user_id, pt, name, gamemode)
                     cur.execute(
-                        "INSERT INTO users_playtime VALUES(?,?,?,?,?,?)",
+                        "INSERT INTO users_playtime VALUES(?,?,?,?,?)",
                         (
                             user_id,
                             name,
