@@ -176,8 +176,8 @@ def recommend_next(
             [
                 rows[0]
                 for rows in farmer_db.execute(
-                    "SELECT beatmap_id FROM beatmaps WHERE server = ?"
-                )
+                    "SELECT beatmap_id FROM beatmaps WHERE server = ?", (server,)
+                ).fetchall()
             ]
         )
     possible_beatmaps = farmer_db.execute(
