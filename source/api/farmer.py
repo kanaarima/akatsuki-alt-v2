@@ -404,17 +404,24 @@ def load_models():
             with open(file) as f:
                 data = json.load(f)
             logger.info(f"Loading model {data['name']}")
-            models[data["name"]] = build_model(
-                data["min_sr"],
-                data["max_sr"],
-                [
-                    (
-                        load_beatmap(entry["beatmap_id"], difficulty_info=True),
-                        entry["mods"],
-                    )
-                    for entry in data["entries"]
-                ],
-            )
+            cache = DataFile(file + ".cache")
+            if cache.exists():
+                print("Using cached")
+                cache.load_data()
+            else:
+                models[data["name"]] = build_model(
+                    data["min_sr"],
+                    data["max_sr"],
+                    [
+                        (
+                            load_beatmap(entry["beatmap_id"], difficulty_info=True),
+                            entry["mods"],
+                        )
+                        for entry in data["entries"]
+                    ],
+                )
+                cache.data = models[data["name"]]
+                cache.save_data()
         except:
             logger.warn(f"Could not load model {file}", exc_info=True)
             continue
