@@ -164,6 +164,7 @@ def recommend_next(
     threshold=0.85,
     samples=1,
 ):
+    allowed_ids = list()
     possible_beatmaps = list()
     found_models = []
     for model in models:
@@ -171,12 +172,24 @@ def recommend_next(
             if loaded_models[0].lower() == model.lower():
                 found_models.append(models_full[loaded_models[0]])
     for server in servers:
-        possible_beatmaps.extend(
-            farmer_db.execute(
-                "SELECT * FROM beatmaps_difficulty WHERE pp_98 BETWEEN ? AND ? AND server = ?",
-                (pp_min, pp_max, server),
-            ).fetchall()
+        allowed_ids.extend(
+            [
+                rows[0]
+                for rows in farmer_db.execute(
+                    "SELECT beatmap_id FROM beatmaps WHERE server = ?"
+                )
+            ]
         )
+    possible_beatmaps = farmer_db.execute(
+        "SELECT * FROM beatmaps_difficulty WHERE pp_98 BETWEEN ? AND ?",
+        (pp_min, pp_max, server),
+    ).fetchall()
+    to_remove = list()
+    for possible_beatmap in possible_beatmaps:
+        if possible_beatmap[0] not in allowed_ids:
+            to_remove.append(possible_beatmap)
+    for remove in to_remove:
+        possible_beatmaps.remove(remove)
     futures = list()
     for possible_beatmap in possible_beatmaps:
         if skip_id and possible_beatmap[0] in skip_id:
