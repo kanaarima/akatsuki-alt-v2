@@ -425,6 +425,8 @@ def load_models():
         except:
             logger.warn(f"Could not load model {file}", exc_info=True)
             continue
+    for model in models:
+        logger.info("model name:"+model)
     return models
 
 
