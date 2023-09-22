@@ -191,6 +191,7 @@ def recommend_next(
             to_remove.append(possible_beatmap)
     for remove in to_remove:
         possible_beatmaps.remove(remove)
+    farmer.logger.info(f"found {possible_beatmaps} possible maps")
     futures = list()
     for possible_beatmap in possible_beatmaps:
         if skip_id and possible_beatmap[0] in skip_id:
