@@ -168,10 +168,9 @@ def recommend_next(
     possible_beatmaps = list()
     found_models = []
     for model in models:
-        for loaded_models in farmer.models:
-            if loaded_models[0].lower() == model.lower():
-                if loaded_models[0] not in models_full:
-                    continue
+        for loaded_models in models_full:
+            if loaded_models.lower() == model.lower():
+                farmer.logger.info(f"Found model {loaded_models}")
                 found_models.append(models_full[loaded_models[0]])
     for server in servers:
         allowed_ids.extend(
