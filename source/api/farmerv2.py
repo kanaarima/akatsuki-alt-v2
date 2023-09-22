@@ -171,7 +171,7 @@ def recommend_next(
         for loaded_models in models_full:
             if loaded_models.lower() == model.lower():
                 farmer.logger.info(f"Found model {loaded_models}")
-                found_models.append(models_full[loaded_models[0]])
+                found_models.append(models_full[loaded_models])
     for server in servers:
         allowed_ids.extend(
             [
