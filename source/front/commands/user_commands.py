@@ -803,8 +803,8 @@ async def recommend(full: str, split: list[str], message: discord.Message):
     player, gamemode = await _get_linked_account(str(message.author.id))
     if not player:
         await _link_warning(message)
-    _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
-    top100 = akatsuki.get_user_best(player.id, gamemodes["std_rx"])
+    _, stats = akatsuki.get_user_stats(player["id"], no_1s=True)
+    top100 = akatsuki.get_user_best(player["id"], gamemodes["std_rx"])
     skip_id = [play["beatmap_id"] for play in top100[0]]
     total_pp = stats["std_rx"][0]["total_pp"]
 
@@ -824,14 +824,14 @@ async def recommend(full: str, split: list[str], message: discord.Message):
         enable_apvn = True
     if "min_pp" in parsed:
         if not parsed["min_pp"].isnumeric():
-            player.send_message("pp value should be a number.")
+            await message.reply(content="pp value should be a number.")
             return
         min_pp = int(parsed["min_pp"])
         max_pp = min_pp + 20
 
     if "max_pp" in parsed:
         if not parsed["max_pp"].isnumeric():
-            player.send_message("pp value should be a number.")
+            await message.reply(content="pp value should be a number.")
             return
         max_pp = int(parsed["max_pp"])
 
@@ -839,7 +839,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
         try:
             matches_threshold = float(parsed["threshold"])
         except:
-            player.send_message("threshold value should be a number.")
+            await message.reply(content="threshold value should be a number.")
             return
 
     if "include_mods" in parsed:
@@ -877,7 +877,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
         )
 
         if not (beatmap := beatmaps.load_beatmap(recommend[0]["beatmap_id"])):
-            player.send_message("Failed to load beatmap.")
+            await message.reply(content="Failed to load beatmap.")
             return
         title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
     else:
@@ -904,7 +904,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
                 matches_threshold=matches_threshold,
             )
         if not recommend:
-            player.send_message("Nothing found.")
+            await message.reply(content="Nothing found.")
             return
         recommend = recommend[0]
         threshold = recommend["threshold"]
@@ -912,7 +912,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
         mods = "".join(get_mods(recommend["future"]["mods"]))
 
         if not (beatmap := beatmaps.load_beatmap(recommend["future"]["beatmap_id"])):
-            player.send_message("Failed to load beatmap.")
+            await message.reply(content="Failed to load beatmap.")
             return
         title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(recommend['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
     link = f"osu://b/{beatmap['beatmap_id']}"
