@@ -406,7 +406,6 @@ def load_models():
             logger.info(f"Loading model {data['name']}")
             cache = DataFile(file + ".cache")
             if cache.exists():
-                print("Using cached")
                 cache.load_data()
             else:
                 models[data["name"]] = build_model(
@@ -422,11 +421,12 @@ def load_models():
                 )
                 cache.data = models[data["name"]]
                 cache.save_data()
+                logger.info(data["name"])
         except:
             logger.warn(f"Could not load model {file}", exc_info=True)
             continue
     for model in models:
-        logger.info("model name:"+model)
+        logger.info("model name:" + model)
     return models
 
 
