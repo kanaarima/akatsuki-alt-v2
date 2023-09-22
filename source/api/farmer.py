@@ -407,6 +407,7 @@ def load_models():
             cache = DataFile(file + ".cache")
             if cache.exists():
                 cache.load_data()
+                models[data["name"]] = cache.data
             else:
                 models[data["name"]] = build_model(
                     data["min_sr"],
@@ -421,7 +422,6 @@ def load_models():
                 )
                 cache.data = models[data["name"]]
                 cache.save_data()
-                logger.info(data["name"])
         except:
             logger.warn(f"Could not load model {file}", exc_info=True)
             continue
