@@ -184,7 +184,7 @@ def recommend_next(
         )
     possible_beatmaps = farmer_db.execute(
         "SELECT * FROM beatmaps_difficulty WHERE pp_98 BETWEEN ? AND ?",
-        (pp_min, pp_max, server),
+        (pp_min, pp_max),
     ).fetchall()
     to_remove = list()
     for possible_beatmap in possible_beatmaps:
