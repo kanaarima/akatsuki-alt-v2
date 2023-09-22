@@ -181,20 +181,16 @@ def recommend_next(
                 ).fetchall()
             ]
         )
-    farmer.logger.info(allowed_ids[0])
     possible_beatmaps = farmer_db.execute(
         "SELECT * FROM beatmaps_difficulty WHERE pp_98 BETWEEN ? AND ?",
         (pp_min, pp_max),
     ).fetchall()
     to_remove = list()
-    for possible_beatmap in possible_beatmaps:
-        if possible_beatmap[0] not in allowed_ids:
-            to_remove.append(possible_beatmap)
-    for remove in to_remove:
-        possible_beatmaps.remove(remove)
     futures = list()
     for possible_beatmap in possible_beatmaps:
         if skip_id and possible_beatmap[0] in skip_id:
+            continue
+        if possible_beatmap[0] not in allowed_ids:
             continue
         if mods:
             if possible_beatmap[2] != mods:
