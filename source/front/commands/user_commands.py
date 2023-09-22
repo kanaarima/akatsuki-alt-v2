@@ -5,6 +5,8 @@ from api.utils import (
     convert_mods,
     datetime_to_str,
     today,
+    get_mods,
+    mods_from_string,
     score_from_db,
 )
 from front.views import (
@@ -21,6 +23,8 @@ from typing import List, Tuple, Dict
 import api.beatmaps as beatmaps
 import api.akatsuki as akatsuki
 import api.database as database
+import api.farmerv2 as farmerv2
+import api.farmer as farmer
 from config import config
 from api.objects import *
 import datetime
@@ -792,6 +796,127 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
     else:
         await message.reply("Invalid view! Valid views: embed, csv")
         return
+
+
+async def recommend(full: str, split: list[str], message: discord.Message):
+    skip_id = []
+    player, gamemode = await _get_linked_account(str(message.author.id))
+    if not player:
+        await _link_warning(message)
+    _, stats = akatsuki.get_user_stats(player.id, no_1s=True)
+    top100 = akatsuki.get_user_best(player.id, gamemodes["std_rx"])
+    skip_id = [play["beatmap_id"] for play in top100[0]]
+    total_pp = stats["std_rx"][0]["total_pp"]
+
+    target = total_pp / 20
+    min_pp = target - 20
+    max_pp = target + 20
+
+    mods_include = []
+    mods_exclude = ["EZ", "FL"]
+    algo = "old"
+    matches_threshold = 0.85
+    enable_apvn = False
+    # Parse command arguments
+    parsed = _parse_args(split, nodefault=True)
+
+    if "magic" in parsed:
+        enable_apvn = True
+    if "min_pp" in parsed:
+        if not parsed["min_pp"].isnumeric():
+            player.send_message("pp value should be a number.")
+            return
+        min_pp = int(parsed["min_pp"])
+        max_pp = min_pp + 20
+
+    if "max_pp" in parsed:
+        if not parsed["max_pp"].isnumeric():
+            player.send_message("pp value should be a number.")
+            return
+        max_pp = int(parsed["max_pp"])
+
+    if "threshold" in parsed:
+        try:
+            matches_threshold = float(parsed["threshold"])
+        except:
+            player.send_message("threshold value should be a number.")
+            return
+
+    if "include_mods" in parsed:
+        mods_include = [
+            parsed["include_mods"][i : i + 2]
+            for i in range(0, len(parsed["include_mods"]), 2)
+        ]
+        for mod in mods_include:
+            if mod in mods_exclude:
+                mods_exclude.remove(mod)
+    if "exclude_mods" in parsed:
+        mods_exclude = [
+            parsed["exclude_mods"][i : i + 2]
+            for i in range(0, len(parsed["exclude_mods"]), 2)
+        ]
+    if "algo" in parsed:
+        algo = parsed["algo"].lower().split(",")
+        if algo == "auto":
+            algo = [
+                "aim",
+                "stream",
+            ]  # TODO: automatically chose algorithmn by top 100 plays
+    mods = parsed["mods"].upper() if "mods" in parsed else None
+    if mods:
+        mods_exclude = []
+        mods_include = []
+    if algo == "old":
+        recommend = farmer.recommend(
+            pp_min=min_pp,
+            pp_max=max_pp,
+            mods=mods,
+            mods_include=mods_include,
+            mods_exclude=mods_exclude,
+            skip_id=skip_id,
+        )
+
+        if not (beatmap := beatmaps.load_beatmap(recommend[0]["beatmap_id"])):
+            player.send_message("Failed to load beatmap.")
+            return
+        title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
+    else:
+        if enable_apvn:
+            recommend = farmerv2.recommend_next(
+                pp_min=min_pp,
+                pp_max=max_pp,
+                mods=mods_from_string(mods) if mods else None,
+                mods_include=mods_include,
+                mods_exclude=mods_exclude,
+                servers=["bancho", "akatsuki"],
+                skip_id=skip_id,
+                models=algo,
+            )
+        else:
+            recommend = farmer.recommend_next(
+                pp_min=min_pp,
+                pp_max=max_pp,
+                mods=mods,
+                mods_include=mods_include,
+                mods_exclude=mods_exclude,
+                skip_id=skip_id,
+                matches_types=algo,
+                matches_threshold=matches_threshold,
+            )
+        if not recommend:
+            player.send_message("Nothing found.")
+            return
+        recommend = recommend[0]
+        threshold = recommend["threshold"]
+        algo = recommend["match"]
+        mods = "".join(get_mods(recommend["future"]["mods"]))
+
+        if not (beatmap := beatmaps.load_beatmap(recommend["future"]["beatmap_id"])):
+            player.send_message("Failed to load beatmap.")
+            return
+        title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(recommend['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
+    link = f"osu://b/{beatmap['beatmap_id']}"
+    await message.reply(content=f"[{link} {title}]")
 
 
 async def get_help(full: str, split: list[str], message: discord.Message):
