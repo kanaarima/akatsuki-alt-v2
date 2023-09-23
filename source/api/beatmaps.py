@@ -3,7 +3,6 @@ from api.files import BinaryFile, exists
 from akatsuki_pp_py import Beatmap as calc_beatmap
 from akatsuki_pp_py import Calculator
 from utils.api import DEFAULT_HEADERS
-from api.akatsuki import get_map_info
 from api.logging import get_logger
 from itertools import zip_longest
 import api.database as database
@@ -508,3 +507,10 @@ def get_completion_cache(
         )
 
     return data
+
+
+def get_map_info(beatmap_id: int):
+    res = requests.get(f"https://akatsuki.gg/api/v1/beatmaps?b={beatmap_id}")
+    if not res.ok:
+        return
+    return res.json()
