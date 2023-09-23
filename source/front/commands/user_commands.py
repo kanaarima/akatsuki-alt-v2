@@ -924,7 +924,16 @@ async def recommend(full: str, split: list[str], message: discord.Message):
                 continue
             title_nolink = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(rec['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
             title += f"[{title_nolink}](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap['beatmap_id']})\n"
-    await message.reply(embed=discord.Embed(title="Recommendations", description=title))
+    if quantity > 10:
+        await message.reply(
+            file=discord.File(
+                fp=io.BytesIO(bytes(title, "utf-8")), filename="recipes.txt"
+            )
+        )
+    else:
+        await message.reply(
+            embed=discord.Embed(title="Recommendations", description=title)
+        )
 
 
 async def get_help(full: str, split: list[str], message: discord.Message):
