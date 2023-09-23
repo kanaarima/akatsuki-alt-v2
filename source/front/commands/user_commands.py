@@ -817,9 +817,10 @@ async def recommend(full: str, split: list[str], message: discord.Message):
     algo = "old"
     matches_threshold = 0.85
     enable_apvn = False
+    quantity=1
     # Parse command arguments
     parsed = _parse_args(split, nodefault=True)
-
+    
     if "magic" in parsed:
         enable_apvn = True
     if "min_pp" in parsed:
@@ -834,7 +835,11 @@ async def recommend(full: str, split: list[str], message: discord.Message):
             await message.reply(content="pp value should be a number.")
             return
         max_pp = int(parsed["max_pp"])
-
+    if "quantity" in parsed:
+        if not parsed["quantity"].isnumeric():
+            await message.reply(content="quantity value should be a number.")
+            return
+        quantity = int(parsed["quantity"])
     if "threshold" in parsed:
         try:
             matches_threshold = float(parsed["threshold"])
@@ -874,12 +879,13 @@ async def recommend(full: str, split: list[str], message: discord.Message):
             mods_include=mods_include,
             mods_exclude=mods_exclude,
             skip_id=skip_id,
+            samples=quantity
         )
-
-        if not (beatmap := beatmaps.load_beatmap(recommend[0]["beatmap_id"])):
-            await message.reply(content="Failed to load beatmap.")
-            return
-        title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{recommend[0]['mods']} {int(recommend[0]['average_pp'])}pp (confidence: {recommend[0]['weight']*100:.2f}%)"
+        title = ""
+        for rec in recommend:
+            if not (beatmap := beatmaps.load_beatmap(rec["beatmap_id"])):
+                continue
+            title += f"{beatmap['title']} [{beatmap['difficulty_name']}] +{rec['mods']} {int(rec['average_pp'])}pp (confidence: {rec['weight']*100:.2f}%)\n"
     else:
         if enable_apvn:
             recommend = farmerv2.recommend_next(
@@ -891,6 +897,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
                 servers=["bancho", "akatsuki"],
                 skip_id=skip_id,
                 models=algo,
+                samples=quantity
             )
         else:
             recommend = farmer.recommend_next(
@@ -902,21 +909,22 @@ async def recommend(full: str, split: list[str], message: discord.Message):
                 skip_id=skip_id,
                 matches_types=algo,
                 matches_threshold=matches_threshold,
+                samples=quantity
             )
         if not recommend:
             await message.reply(content="Nothing found.")
             return
-        recommend = recommend[0]
+    title = ""
+    for rec in recommend:
+        recommend = rec
         threshold = recommend["threshold"]
         algo = recommend["match"]
         mods = "".join(get_mods(recommend["future"]["mods"]))
-
+        title = ""
         if not (beatmap := beatmaps.load_beatmap(recommend["future"]["beatmap_id"])):
-            await message.reply(content="Failed to load beatmap.")
-            return
-        title = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(recommend['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
-    link = f"osu://b/{beatmap['beatmap_id']}"
-    await message.reply(content=f"[{link} {title}]")
+            continue
+        title += f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(recommend['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)\n"
+    await message.reply(content=f"[{title}]")
 
 
 async def get_help(full: str, split: list[str], message: discord.Message):
