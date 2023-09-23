@@ -8,12 +8,4 @@ from back.tasks.user_tasks import (
 
 
 def test_backend():
-    manager = TaskManager(
-        [
-            StoreClanLeaderboardsTask(),
-            StoreUserLeaderboardsTask(),
-            StorePlayerStats(),
-            TrackUserPlaytime(),
-        ]
-    )
-    manager.loop()
+    import api.farmerv2
