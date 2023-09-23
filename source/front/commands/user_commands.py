@@ -885,7 +885,8 @@ async def recommend(full: str, split: list[str], message: discord.Message):
         for rec in recommend:
             if not (beatmap := beatmaps.load_beatmap(rec["beatmap_id"])):
                 continue
-            title += f"{beatmap['title']} [{beatmap['difficulty_name']}] +{rec['mods']} {int(rec['average_pp'])}pp (confidence: {rec['weight']*100:.2f}%)\n"
+            title_nolink = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{rec['mods']} {int(rec['average_pp'])}pp (confidence: {rec['weight']*100:.2f}%)"
+            title += f"[{title_nolink}](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap['beatmap_id']})\n"
     else:
         if enable_apvn:
             recommend = farmerv2.recommend_next(
@@ -921,8 +922,9 @@ async def recommend(full: str, split: list[str], message: discord.Message):
             mods = "".join(get_mods(rec["future"]["mods"]))
             if not (beatmap := beatmaps.load_beatmap(rec["future"]["beatmap_id"])):
                 continue
-            title += f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(rec['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)\n"
-    await message.reply(content=f"[{title}]")
+            title_nolink = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(rec['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
+            title += f"[{title_nolink}](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap['beatmap_id']})\n"
+    await message.reply(embed=discord.Embed(title="Recommendations", description=title))
 
 
 async def get_help(full: str, split: list[str], message: discord.Message):
