@@ -817,10 +817,10 @@ async def recommend(full: str, split: list[str], message: discord.Message):
     algo = "old"
     matches_threshold = 0.85
     enable_apvn = False
-    quantity=1
+    quantity = 1
     # Parse command arguments
     parsed = _parse_args(split, nodefault=True)
-    
+
     if "magic" in parsed:
         enable_apvn = True
     if "min_pp" in parsed:
@@ -879,7 +879,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
             mods_include=mods_include,
             mods_exclude=mods_exclude,
             skip_id=skip_id,
-            samples=quantity
+            samples=quantity,
         )
         title = ""
         for rec in recommend:
@@ -897,7 +897,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
                 servers=["bancho", "akatsuki"],
                 skip_id=skip_id,
                 models=algo,
-                samples=quantity
+                samples=quantity,
             )
         else:
             recommend = farmer.recommend_next(
@@ -909,21 +909,19 @@ async def recommend(full: str, split: list[str], message: discord.Message):
                 skip_id=skip_id,
                 matches_types=algo,
                 matches_threshold=matches_threshold,
-                samples=quantity
+                samples=quantity,
             )
         if not recommend:
             await message.reply(content="Nothing found.")
             return
-    title = ""
-    for rec in recommend:
-        recommend = rec
-        threshold = recommend["threshold"]
-        algo = recommend["match"]
-        mods = "".join(get_mods(recommend["future"]["mods"]))
         title = ""
-        if not (beatmap := beatmaps.load_beatmap(recommend["future"]["beatmap_id"])):
-            continue
-        title += f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(recommend['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)\n"
+        for rec in recommend:
+            threshold = rec["threshold"]
+            algo = rec["match"]
+            mods = "".join(get_mods(rec["future"]["mods"]))
+            if not (beatmap := beatmaps.load_beatmap(rec["future"]["beatmap_id"])):
+                continue
+            title += f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(rec['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)\n"
     await message.reply(content=f"[{title}]")
 
 
