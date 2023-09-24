@@ -269,10 +269,10 @@ class StoreTopPlays(Task):
     def run(self) -> TaskStatus:
         scores_all = []
         for player, _, _ in akatsuki.get_user_leaderboard(
-            gamemode=gamemodes["std_rx"], sort=akatsuki.Sort_Method.PP_ALL, pages=10
+            gamemode=gamemodes["std_rx"], sort=akatsuki.Sort_Method.PP_ALL, pages=15
         ):
             scores, apimaps = akatsuki.get_user_best(
-                player["id"], gamemodes["std_rx"], pages=4
+                player["id"], gamemodes["std_rx"], pages=8
             )
             scores_all.extend(scores)
             beatmaps.save_beatmaps(apimaps)
