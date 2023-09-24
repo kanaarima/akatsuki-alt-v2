@@ -591,7 +591,7 @@ async def show_1s_leaderboard(full: str, split: list[str], message: discord.Mess
             user_ids[user_id] += 1
         else:
             user_ids[user_id] = 1
-    user_ids = sorted(user_ids.items(), key=lambda x: x[1], reverse=True)[:10]
+    user_ids = sorted(user_ids.items(), key=lambda x: x[1], reverse=True)[:50]
     str = "```"
     for user_id in user_ids:
         player = akatsuki.get_user_info(user_id[0])
