@@ -705,7 +705,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
             filters.append(
                 ("BETWEEN", (arg, parse_value(values[0]), parse_value(values[1])))
             )
-        elif args[arg][0] in ["<", ">", "!"]:
+        elif args[arg][0] in ["<", ">", "!", "="]:
             filters.append(
                 ("COMPARISON", (arg, args[arg][0], parse_value(args[arg][1:])))
             )
@@ -1037,7 +1037,7 @@ def _format_notation(gain):
 def _parse_args(args: List[str], nodefault=False) -> dict:
     parsed = {}
     for arg in args:
-        s = arg.split("=")
+        s = arg.split("=", 1)
         if len(s) == 1:
             if "default" in parsed or nodefault:
                 parsed[arg] = ""
