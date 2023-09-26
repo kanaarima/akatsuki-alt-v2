@@ -75,3 +75,35 @@ def generate_collection(beatmaps: List[Beatmap], collection_name, filename):
     with open(filename, "wb") as f:
         f.write(format_str("o!dm8"))
         f.write(gzip.compress(temp_bytes))
+
+
+
+def generate_collection_from_rows(beatmaps: List, collection_name, filename):
+    temp_bytes = format_str("o!dm8")
+    temp_bytes += struct.pack("d", OADoubleNow())
+    temp_bytes += format_str("N/A")
+    temp_bytes += struct.pack("i", 1)
+
+    temp_bytes += format_str(collection_name)
+    temp_bytes += struct.pack("i", -1)  # online ID
+    temp_bytes += struct.pack("i", len(beatmaps))  # amount of beatmaps
+
+    for row in beatmaps:
+        temp_bytes += struct.pack("i", row[0])
+        temp_bytes += struct.pack("i", row[1])
+        temp_bytes += format_str(row[3])
+        temp_bytes += format_str(row[4])
+        temp_bytes += format_str(row[5])
+        temp_bytes += format_str(row[2])
+        temp_bytes += format_str("")
+        mode = row[19]
+        temp_bytes += struct.pack("b", mode)
+        stars = row[21]
+        temp_bytes += struct.pack("d", stars)
+
+    temp_bytes += struct.pack("i", 0)
+    temp_bytes += format_str("By Piotrekol")
+
+    with open(filename, "wb") as f:
+        f.write(format_str("o!dm8"))
+        f.write(gzip.compress(temp_bytes))

@@ -155,7 +155,7 @@ class StorePlayerScores(Task):
                 scores, maps = akatsuki.get_user_best(user_id, gamemode, pages=1000)
                 for score in scores:
                     cur.execute(
-                        "INSERT INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                        "INSERT OR REPLACE INTO users_scores VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (
                             score["beatmap_id"],
                             name,
