@@ -17,7 +17,7 @@ from front.views import (
     get_help_view,
 )
 from front.commands.help import help
-from api.collections import generate_collection
+from api.collections import generate_collection, generate_collection_from_rows
 from api.files import DataFile, exists
 from typing import List, Tuple, Dict
 import api.beatmaps as beatmaps
@@ -689,7 +689,6 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
     filters = list()
     unplayed = False
     view = "embed"
-
     def parse_value(value):
         if re.match(date_pattern, value):
             return int(datetime.datetime.strptime(value, "%Y/%m/%d").timestamp())
@@ -793,8 +792,23 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
                 fp=io.BytesIO(bytes(csv, "utf-8")), filename="beatmaps.csv"
             ),
         )
+    elif view == "collection":
+        count = 0
+        rows = list()
+        for item in res:
+            if blacklist and item[0] in blacklist:
+                print(item[0])
+                continue
+            count += 1
+            rows.append(item) 
+        filepath = f"{config['common']['cache_directory']}/{message.author.id}.osdb"
+        generate_collection_from_rows(rows, "Search result", filepath)
+        await message.reply(
+            content=f"Found {count} beatmaps.",
+            file=discord.File(fp=filepath, filename="collection.osdb"),
+        )
     else:
-        await message.reply("Invalid view! Valid views: embed, csv")
+        await message.reply("Invalid view! Valid views: embed, csv, collection")
         return
 
 
