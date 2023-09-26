@@ -689,6 +689,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
     filters = list()
     unplayed = False
     view = "embed"
+
     def parse_value(value):
         if re.match(date_pattern, value):
             return int(datetime.datetime.strptime(value, "%Y/%m/%d").timestamp())
@@ -729,7 +730,12 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
                 else:
                     filter = f"{filter_values[0]} NOT LIKE '%{filter_values[2]}%'"
             else:
-                filter = f"{filter_values[0]} {filter_values[1]} {filter_values[2]}"
+                if filter_values[2].isnumeric():
+                    filter = f"{filter_values[0]} {filter_values[1]} {filter_values[2]}"
+                else:
+                    filter = (
+                        f"{filter_values[0]} {filter_values[1]} '{filter_values[2]}'"
+                    )
         if not filter:
             continue  # TODO
         if query:
@@ -800,7 +806,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
                 print(item[0])
                 continue
             count += 1
-            rows.append(item) 
+            rows.append(item)
         filepath = f"{config['common']['cache_directory']}/{message.author.id}.osdb"
         generate_collection_from_rows(rows, "Search result", filepath)
         await message.reply(
