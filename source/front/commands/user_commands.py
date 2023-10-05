@@ -751,7 +751,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
         query = "SELECT * FROM beatmaps"
     res = database.conn_uri.execute(query).fetchall()
     csv = (
-        ",".join(
+        ";".join(
             [
                 header[1]
                 for header in database.conn_uri.execute(
