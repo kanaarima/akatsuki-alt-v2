@@ -791,7 +791,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
                 print(item[0])
                 continue
             count += 1
-            csv += ",".join(str(x) for x in item) + "\n"
+            csv += ";".join(str(x) for x in item) + "\n"
         await message.reply(
             content=f"Found {count} beatmaps.",
             file=discord.File(
