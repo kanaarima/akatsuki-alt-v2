@@ -840,7 +840,7 @@ async def recommend(full: str, split: list[str], message: discord.Message):
     quantity = 1
     # Parse command arguments
     parsed = _parse_args(split, nodefault=True)
-
+    use_new = "file" in parsed
     if "magic" in parsed:
         enable_apvn = True
     if "min_pp" in parsed:
@@ -905,8 +905,12 @@ async def recommend(full: str, split: list[str], message: discord.Message):
         for rec in recommend:
             if not (beatmap := beatmaps.load_beatmap(rec["beatmap_id"])):
                 continue
-            title_nolink = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{rec['mods']} {int(rec['average_pp'])}pp (confidence: {rec['weight']*100:.2f}%)"
-            title += f"[{title_nolink}](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap['beatmap_id']})\n"
+                title_nolink = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{rec['mods']} {int(rec['average_pp'])}pp (confidence: {rec['weight']*100:.2f}%)"
+            if use_new:
+                title += f"{beatmap['beatmap_set_id']},{title_nolink}\n"
+            else:
+                title += f"[{title_nolink}](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap['beatmap_id']})\n"
+
     else:
         if enable_apvn:
             recommend = farmerv2.recommend_next(
@@ -943,7 +947,10 @@ async def recommend(full: str, split: list[str], message: discord.Message):
             if not (beatmap := beatmaps.load_beatmap(rec["future"]["beatmap_id"])):
                 continue
             title_nolink = f"{beatmap['title']} [{beatmap['difficulty_name']}] +{mods} {int(rec['pp_avg'])}pp (algo: {algo}, confidence: {threshold*100:.2f}%)"
-            title += f"[{title_nolink}](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap['beatmap_id']})\n"
+            if use_new:
+                title += f"{beatmap['beatmap_set_id']},{title_nolink}"
+            else:
+                title += f"[{title_nolink}](https://kanaarima.github.io/osu/osudl.html?beatmap={beatmap['beatmap_id']})\n"
     if quantity > 10:
         await message.reply(
             file=discord.File(
