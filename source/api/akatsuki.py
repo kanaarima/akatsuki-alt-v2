@@ -97,7 +97,7 @@ def lookup_user(username: str) -> int:
 
 
 def get_user_leaderboard(
-    gamemode: Gamemode, sort: Sort_Method, pages=1, length=100
+    gamemode: Gamemode, sort: Sort_Method, pages=1, length=500
 ) -> List[Tuple[Player, GamemodeStatistics, Ranking]]:
     res = []
     rank = 0
@@ -396,7 +396,7 @@ def update_score_cache():
         return
     last_fetched = datetime.datetime.now()
     for name, gamemode in objects.gamemodes.items():
-        pages = 8 if gamemode["mode"] == 0 and gamemode["relax"] == 1 else 1
+        pages = 3 if gamemode["mode"] == 0 and gamemode["relax"] == 1 else 1
         lb_score_cache[name] = get_user_leaderboard(
             gamemode=gamemode, sort=Sort_Method.SCORE, pages=pages
         )
