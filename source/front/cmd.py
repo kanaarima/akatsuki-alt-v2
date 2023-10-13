@@ -30,6 +30,7 @@ commands = {
     "ping": ping,
     "link": user_commands.link,
     "recent": user_commands.show_recent,
+    "r": user_commands.show_recent,
     "setdefault": user_commands.set_default_gamemode,
     "show": user_commands.show,
     "reset": user_commands.reset,
