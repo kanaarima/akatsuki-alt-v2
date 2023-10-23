@@ -692,7 +692,7 @@ async def search_maps(full: str, split: list[str], message: discord.Message):
 
     def parse_value(value):
         if re.match(date_pattern, value):
-            return int(datetime.datetime.strptime(value, "%Y/%m/%d").timestamp())
+            return int(datetime.datetime.strptime(value, "%Y-%m-%d").timestamp())
         return value
 
     for arg in args:
