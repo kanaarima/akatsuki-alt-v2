@@ -354,15 +354,18 @@ def get_score_embed(
             )
             run = f" ({int((total/total_map)*100)}%)"
         rank = f"F{run}"
-    if_fc = ""
-    if (
-        score["count_miss"] > 0
-        or beatmap["attributes"]["max_combo"] - score["combo"] > 10
-    ):
-        calc_beatmap = get_calc_beatmap(beatmap["beatmap_id"])
-        calc = Calculator(mods=score["mods"])
-        calc.set_acc(score["accuracy"])
-        if_fc += f" ({int(calc.performance(calc_beatmap).pp)}pp if FC)"
+    try:
+        if_fc = ""
+        if (
+            score["count_miss"] > 0
+            or beatmap["attributes"]["max_combo"] - score["combo"] > 10
+        ):
+            calc_beatmap = get_calc_beatmap(beatmap["beatmap_id"])
+            calc = Calculator(mods=score["mods"])
+            calc.set_acc(score["accuracy"])
+            if_fc += f" ({int(calc.performance(calc_beatmap).pp)}pp if FC)"
+    except:
+        if_fc = ""
     text = f"➤**{rank} {score['combo']}{combo} {score['accuracy']:.2f}% [{score['count_300']}/{score['count_100']}/{score['count_50']}/{score['count_miss']}] {score['pp']}pp {score['score']:,}{if_fc}**"
     embed.description = text
     return embed
