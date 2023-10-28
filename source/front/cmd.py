@@ -46,4 +46,5 @@ commands = {
     "searchmaps": user_commands.search_maps,
     "help": user_commands.get_help,
     "recommend": user_commands.recommend,
+    "ban": user_commands.ban,
 }

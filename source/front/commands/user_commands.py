@@ -351,6 +351,10 @@ async def show_1s(full: str, split: list[str], message: discord.Message):
     await view.reply(message)
 
 
+async def ban(full: str, split: list[str], message: discord.Message):
+    await message.reply("User banned sucessfully.")
+
+
 async def reset(full: str, split: list[str], message: discord.Message):
     player, _ = await _get_linked_account(str(message.author.id))
     if not player:
