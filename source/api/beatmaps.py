@@ -493,9 +493,9 @@ def get_completion_cache(
         for beatmap_id, mapper, artist, tags in data["Completion"][key]:
             data[key]["total"].append(beatmap_id)
             for tag in tags.split(","):
-                add(data[key]["tags"], tag, beatmap_id)
-            add(data[key]["mappers"], mapper, beatmap_id)
-            add(data[key]["artists"], artist, beatmap_id)
+                add(data[key]["tags"], tag.lower(), beatmap_id)
+            add(data[key]["mappers"], mapper.lower(), beatmap_id)
+            add(data[key]["artists"], artist.lower(), beatmap_id)
         data[key]["mappers"] = sort_dict(
             data[key]["mappers"], lambda x: len(x[1]), reverse=True
         )
