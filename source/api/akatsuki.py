@@ -255,6 +255,8 @@ def get_user_stats(
         for player, _, ranking in lb_score_cache[name]:
             if player["id"] == user["id"]:
                 ranking_score = ranking
+                if gamemode["mode"] == 0 and gamemode["relax"] == 1 and ranking > 5:
+                    ranking_score -= 2
                 break
         for player, _, ranking in lb_total_score_cache[name]:
             if player["id"] == user["id"]:
